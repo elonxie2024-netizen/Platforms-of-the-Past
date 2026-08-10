@@ -22,6 +22,7 @@ const FRICTION = 2600;
 const JUMP_SPEED = 720;
 const COYOTE_TIME = 0.1;
 const JUMP_BUFFER = 0.12;
+const DEATH_DURATION = 0.42;
 
 const R = (x, y, w, h, kind = "grass") => ({ x, y, w, h, kind });
 const levels = [
@@ -57,6 +58,8 @@ let accumulator = 0;
 let lastTime = performance.now();
 let won = false;
 let levelTransition = 0;
+let deathTimer = 0;
+let deathParticles = [];
 
 const spriteSheet = new Image();
 let spritesReady = false;
@@ -69,9 +72,31 @@ function playerBox() { return { x: player.x, y: player.y, w: PLAYER_W, h: PLAYER
 
 function resetPlayer(countDeath = false) {
   if (countDeath) deaths++;
+  deathTimer = 0;
+  deathParticles = [];
   const [x, y] = currentLevel().start;
   Object.assign(player, { x, y, vx: 0, vy: 0, grounded: false, coyote: 0, jumpBuffer: 0 });
   cameraX = Math.max(0, x - VIEW_W * .3);
+}
+
+function startSpikeDeath() {
+  deaths++;
+  deathTimer = DEATH_DURATION;
+  pressed.jump = false;
+  const x = player.x + PLAYER_W / 2;
+  const y = player.y + PLAYER_H / 2;
+  deathParticles = Array.from({ length: 7 }, (_, index) => {
+    const angle = index / 7 * Math.PI * 2;
+    const speed = 65 + index % 3 * 18;
+    return {
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 75,
+      size: 4 + index % 2 * 2,
+      rotation: index * .7,
+      spin: (index % 2 ? -1 : 1) * (3 + index * .3)
+    };
+  });
 }
 
 function loadLevel(index, keepScore = true) {
@@ -192,6 +217,18 @@ function moveAndCollideY(dt) {
 }
 
 function update(dt) {
+  if (deathTimer > 0) {
+    deathTimer = Math.max(0, deathTimer - dt);
+    for (const particle of deathParticles) {
+      particle.x += particle.vx * dt;
+      particle.y += particle.vy * dt;
+      particle.vy += 500 * dt;
+      particle.rotation += particle.spin * dt;
+    }
+    if (deathTimer === 0) resetPlayer(false);
+    return;
+  }
+
   if (won || levelTransition > 0) {
     if (levelTransition > 0) {
       levelTransition -= dt;
@@ -229,8 +266,12 @@ function update(dt) {
   player.x = Math.max(0, Math.min(currentLevel().width - PLAYER_W, player.x));
 
   const box = playerBox();
-  if (player.y > VIEW_H + 100 || currentLevel().hazards.some((hazard) => overlaps(box, hazard))) {
+  if (player.y > VIEW_H + 100) {
     resetPlayer(true);
+    return;
+  }
+  if (currentLevel().hazards.some((hazard) => overlaps(box, hazard))) {
+    startSpikeDeath();
     return;
   }
 
@@ -375,6 +416,23 @@ function drawPlayer(time) {
   ctx.restore();
 }
 
+function drawDeathParticles() {
+  const opacity = Math.min(1, deathTimer / .14);
+  ctx.fillStyle = `rgba(85, 201, 107, ${opacity})`;
+  ctx.strokeStyle = `rgba(32, 122, 67, ${opacity * .75})`;
+  ctx.lineWidth = 1;
+  for (const particle of deathParticles) {
+    ctx.save();
+    ctx.translate(particle.x - cameraX, particle.y);
+    ctx.rotate(particle.rotation);
+    ctx.beginPath();
+    ctx.roundRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size, 1.5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 function render(time) {
   ctx.clearRect(0, 0, VIEW_W, VIEW_H);
   drawBackground();
@@ -382,7 +440,8 @@ function render(time) {
   for (const h of currentLevel().hazards) drawHazard(h);
   currentLevel().stars.forEach(([x, y], i) => drawStar(x, y, i, time));
   drawFlag(currentLevel().finish);
-  drawPlayer(time);
+  if (deathTimer > 0) drawDeathParticles();
+  else drawPlayer(time);
   if (levelTransition > 0) {
     ctx.fillStyle = `rgba(255,255,255,${Math.sin((.65 - levelTransition) / .65 * Math.PI) * .65})`;
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
