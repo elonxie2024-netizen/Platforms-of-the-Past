@@ -1,5 +1,7 @@
 # Platforms of the Past
 
+Play at: https://elonxie2024-netizen.github.io/Platforms-of-the-Past/
+
 A browser-based platformer where the world changes across time. Run, jump, avoid hazards, and collect stars while exploring levels that will eventually shift between the past, present, and future.
 
 No install, download, or plugins. It runs entirely in the browser.
