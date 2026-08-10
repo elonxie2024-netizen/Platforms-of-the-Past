@@ -55,6 +55,29 @@ const levels = [
   }
 ];
 
+const MUSIC_TRACKS = {
+  menu: {
+    tempo: 92, wave: "triangle", gain: .11,
+    melody: [72, null, 76, null, 79, null, 76, null, 74, null, 77, null, 81, null, 77, null],
+    bass: [48, null, null, null, 55, null, null, null, 50, null, null, null, 55, null, null, null]
+  },
+  level1: {
+    tempo: 112, wave: "triangle", gain: .1,
+    melody: [64, 67, 71, 72, 71, 67, 64, null, 67, 71, 74, 76, 74, 71, 67, null],
+    bass: [48, null, 55, null, 52, null, 55, null, 48, null, 55, null, 52, null, 55, null]
+  },
+  level2: {
+    tempo: 94, wave: "sawtooth", gain: .065,
+    melody: [57, null, 60, 64, 62, null, 60, null, 55, null, 59, 62, 60, null, 57, null],
+    bass: [45, null, null, null, 40, null, null, null, 43, null, null, null, 40, null, null, null]
+  },
+  level3: {
+    tempo: 124, wave: "sine", gain: .12,
+    melody: [76, 79, 83, 86, 83, 79, 78, 81, 84, 88, 84, 81, 79, 83, 86, 91],
+    bass: [52, null, 59, null, 55, null, 59, null, 52, null, 59, null, 55, null, 59, null]
+  }
+};
+
 const input = { left: false, right: false, jump: false };
 const pressed = { jump: false };
 const player = { x: 0, y: 0, vx: 0, vy: 0, grounded: false, facing: 1, coyote: 0, jumpBuffer: 0 };
@@ -71,6 +94,15 @@ let deathTimer = 0;
 let deathParticles = [];
 let gameStarted = false;
 let masterVolume = 1;
+let audioContext = null;
+let masterGain = null;
+let musicGain = null;
+let sfxGain = null;
+let musicTimer = null;
+let currentTrack = "menu";
+let musicStep = 0;
+let nextMusicNoteTime = 0;
+const activeMusicVoices = new Set();
 
 const spriteSheet = new Image();
 let spritesReady = false;
@@ -92,6 +124,7 @@ function resetPlayer(countDeath = false) {
 
 function startSpikeDeath() {
   deaths++;
+  playSfx("death");
   deathTimer = DEATH_DURATION;
   pressed.jump = false;
   const x = player.x + PLAYER_W / 2;
@@ -119,6 +152,7 @@ function loadLevel(index, keepScore = true) {
   message.hidden = true;
   resetPlayer(false);
   updateHud();
+  if (gameStarted) startMusic(`level${index + 1}`);
 }
 
 function restartLevel() {
@@ -155,11 +189,137 @@ addEventListener("blur", () => Object.assign(input, { left: false, right: false,
 restartButton.addEventListener("click", restartLevel);
 document.querySelector("#playAgainButton").addEventListener("click", startOver);
 
+function midiToFrequency(note) {
+  return 440 * 2 ** ((note - 69) / 12);
+}
+
+function scheduleTone(frequency, start, duration, wave, gain, destination, musicVoice = false) {
+  if (!audioContext || !destination) return;
+  const oscillator = audioContext.createOscillator();
+  const envelope = audioContext.createGain();
+  oscillator.type = wave;
+  oscillator.frequency.setValueAtTime(frequency, start);
+  envelope.gain.setValueAtTime(.0001, start);
+  envelope.gain.exponentialRampToValueAtTime(Math.max(.0001, gain), start + .018);
+  envelope.gain.exponentialRampToValueAtTime(.0001, start + duration);
+  oscillator.connect(envelope).connect(destination);
+  oscillator.start(start);
+  oscillator.stop(start + duration + .025);
+  if (musicVoice) {
+    activeMusicVoices.add(oscillator);
+    oscillator.addEventListener("ended", () => activeMusicVoices.delete(oscillator), { once: true });
+  }
+}
+
+function stopMusicVoices() {
+  if (!audioContext) return;
+  for (const voice of activeMusicVoices) {
+    try { voice.stop(audioContext.currentTime + .015); } catch { /* Voice already ended. */ }
+  }
+  activeMusicVoices.clear();
+}
+
+function scheduleMusic() {
+  if (!audioContext || audioContext.state !== "running" || !currentTrack) return;
+  const track = MUSIC_TRACKS[currentTrack];
+  if (!track) return;
+  const stepDuration = 60 / track.tempo / 2;
+  while (nextMusicNoteTime < audioContext.currentTime + .16) {
+    const melody = track.melody[musicStep % track.melody.length];
+    const bass = track.bass[musicStep % track.bass.length];
+    if (melody !== null) {
+      scheduleTone(midiToFrequency(melody), nextMusicNoteTime, stepDuration * .78, track.wave, track.gain, musicGain, true);
+    }
+    if (bass !== null) {
+      scheduleTone(midiToFrequency(bass), nextMusicNoteTime, stepDuration * 1.7, "sine", .095, musicGain, true);
+    }
+    musicStep++;
+    nextMusicNoteTime += stepDuration;
+  }
+}
+
+function startMusic(trackName) {
+  if (!MUSIC_TRACKS[trackName] || currentTrack === trackName && musicStep > 0) return;
+  currentTrack = trackName;
+  musicStep = 0;
+  stopMusicVoices();
+  if (audioContext) {
+    nextMusicNoteTime = audioContext.currentTime + .04;
+    scheduleMusic();
+  }
+}
+
+async function ensureAudio() {
+  if (!audioContext) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return false;
+    audioContext = new AudioContextClass();
+    masterGain = audioContext.createGain();
+    musicGain = audioContext.createGain();
+    sfxGain = audioContext.createGain();
+    masterGain.gain.value = masterVolume;
+    musicGain.gain.value = .42;
+    sfxGain.gain.value = .55;
+    musicGain.connect(masterGain);
+    sfxGain.connect(masterGain);
+    masterGain.connect(audioContext.destination);
+    nextMusicNoteTime = audioContext.currentTime + .04;
+    musicTimer = setInterval(scheduleMusic, 50);
+  }
+  if (audioContext.state === "suspended") await audioContext.resume();
+  scheduleMusic();
+  return true;
+}
+
+function playNoise(duration, gain) {
+  if (!audioContext || !sfxGain) return;
+  const frameCount = Math.max(1, Math.floor(audioContext.sampleRate * duration));
+  const buffer = audioContext.createBuffer(1, frameCount, audioContext.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let index = 0; index < frameCount; index++) data[index] = Math.random() * 2 - 1;
+  const source = audioContext.createBufferSource();
+  const filter = audioContext.createBiquadFilter();
+  const envelope = audioContext.createGain();
+  filter.type = "lowpass";
+  filter.frequency.value = 900;
+  envelope.gain.setValueAtTime(gain, audioContext.currentTime);
+  envelope.gain.exponentialRampToValueAtTime(.0001, audioContext.currentTime + duration);
+  source.buffer = buffer;
+  source.connect(filter).connect(envelope).connect(sfxGain);
+  source.start();
+}
+
+function playSfx(name) {
+  if (!audioContext || audioContext.state !== "running" || !sfxGain || masterVolume === 0) return;
+  const now = audioContext.currentTime;
+  if (name === "jump") {
+    scheduleTone(330, now, .09, "square", .13, sfxGain);
+    scheduleTone(440, now + .045, .09, "triangle", .12, sfxGain);
+  } else if (name === "death") {
+    const oscillator = audioContext.createOscillator();
+    const envelope = audioContext.createGain();
+    oscillator.type = "sawtooth";
+    oscillator.frequency.setValueAtTime(180, now);
+    oscillator.frequency.exponentialRampToValueAtTime(65, now + .2);
+    envelope.gain.setValueAtTime(.12, now);
+    envelope.gain.exponentialRampToValueAtTime(.0001, now + .22);
+    oscillator.connect(envelope).connect(sfxGain);
+    oscillator.start(now);
+    oscillator.stop(now + .23);
+    playNoise(.11, .06);
+  } else if (name === "star") {
+    [79, 83, 86].forEach((note, index) => scheduleTone(midiToFrequency(note), now + index * .045, .12, "sine", .14, sfxGain));
+  } else if (name === "flag") {
+    [72, 76, 79, 84].forEach((note, index) => scheduleTone(midiToFrequency(note), now + index * .07, .18, "triangle", .15, sfxGain));
+  }
+}
+
 function setVolume(value) {
   masterVolume = Math.max(0, Math.min(1, Number(value) / 100));
   const percent = Math.round(masterVolume * 100);
   volumeInput.value = String(percent);
   volumeValue.textContent = `${percent}%`;
+  if (masterGain && audioContext) masterGain.gain.setTargetAtTime(masterVolume, audioContext.currentTime, .02);
   try { localStorage.setItem("platforms-volume", String(percent)); } catch { /* Storage may be unavailable. */ }
 }
 
@@ -171,6 +331,8 @@ setVolume(volumeInput.value);
 
 playButton.addEventListener("click", () => {
   gameStarted = true;
+  startMusic("level1");
+  ensureAudio();
   mainMenu.hidden = true;
   settingsPanel.hidden = true;
   restartButton.disabled = false;
@@ -185,6 +347,8 @@ settingsButton.addEventListener("click", () => {
 });
 
 volumeInput.addEventListener("input", () => setVolume(volumeInput.value));
+document.addEventListener("pointerdown", () => ensureAudio(), { once: true });
+document.addEventListener("keydown", () => ensureAudio(), { once: true });
 
 function updateMenuAnimation(time) {
   if (mainMenu.hidden) return;
@@ -350,6 +514,7 @@ function update(dt) {
 
   if (player.jumpBuffer > 0 && player.coyote > 0) {
     player.vy = -JUMP_SPEED;
+    playSfx("jump");
     player.grounded = false;
     player.coyote = 0;
     player.jumpBuffer = 0;
@@ -363,6 +528,7 @@ function update(dt) {
 
   const box = playerBox();
   if (player.y > VIEW_H + 100) {
+    playSfx("death");
     resetPlayer(true);
     return;
   }
@@ -373,10 +539,16 @@ function update(dt) {
 
   currentLevel().stars.forEach(([x, y], i) => {
     const star = { x: x - 15, y: y - 15, w: 30, h: 30 };
-    if (!collected[i] && overlaps(box, star)) { collected[i] = true; totalStars++; updateHud(); }
+    if (!collected[i] && overlaps(box, star)) {
+      collected[i] = true;
+      totalStars++;
+      playSfx("star");
+      updateHud();
+    }
   });
 
   if (overlaps(box, currentLevel().finish)) {
+    playSfx("flag");
     if (levelIndex === levels.length - 1) {
       won = true;
       scoreSummary.textContent = `${totalStars} stars collected · ${deaths} ${deaths === 1 ? "restart" : "restarts"}`;
