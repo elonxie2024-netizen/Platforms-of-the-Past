@@ -9,6 +9,8 @@ const scoreSummary = document.querySelector("#scoreSummary");
 const gameShell = document.querySelector(".game-shell");
 const fullscreenButton = document.querySelector("#fullscreenButton");
 const restartButton = document.querySelector("#restartButton");
+const quitButton = document.querySelector("#quitButton");
+const victoryQuitButton = document.querySelector("#victoryQuitButton");
 const mainMenu = document.querySelector("#mainMenu");
 const playButton = document.querySelector("#playButton");
 const settingsButton = document.querySelector("#settingsButton");
@@ -188,6 +190,8 @@ addEventListener("keyup", (event) => { if (gameStarted) setKey(event.code, false
 addEventListener("blur", () => Object.assign(input, { left: false, right: false, jump: false }));
 restartButton.addEventListener("click", restartLevel);
 document.querySelector("#playAgainButton").addEventListener("click", startOver);
+quitButton.addEventListener("click", quitRun);
+victoryQuitButton.addEventListener("click", quitRun);
 
 function midiToFrequency(note) {
   return 440 * 2 ** ((note - 69) / 12);
@@ -344,6 +348,7 @@ playButton.addEventListener("click", () => {
   mainMenu.hidden = true;
   settingsPanel.hidden = true;
   restartButton.disabled = false;
+  quitButton.disabled = false;
   canvas.focus();
 });
 
@@ -456,6 +461,20 @@ document.querySelectorAll("[data-control]").forEach((button) => {
 });
 
 function startOver() { totalStars = 0; deaths = 0; loadLevel(0, false); }
+
+function quitRun() {
+  gameStarted = false;
+  Object.assign(input, { left: false, right: false, jump: false });
+  pressed.jump = false;
+  restartButton.disabled = true;
+  quitButton.disabled = true;
+  settingsPanel.hidden = true;
+  settingsButton.setAttribute("aria-expanded", "false");
+  loadLevel(0, false);
+  mainMenu.hidden = false;
+  startMusic("menu");
+  playButton.focus();
+}
 
 function moveAndCollideX(dt) {
   player.x += player.vx * dt;

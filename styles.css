@@ -33,11 +33,13 @@ header {
   margin-bottom: 14px;
 }
 
+.header-actions { display: flex; gap: 9px; }
+
 h1, h2, p { margin: 0; }
 h1 { font-size: clamp(1.7rem, 5vw, 3rem); letter-spacing: -.045em; line-height: .95; }
 .eyebrow { margin-bottom: 5px; color: #8de4ff; font-size: .74rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
 
-.restart, .message button {
+.restart, .quit-button, .message button {
   border: 1px solid #ffffff36;
   border-radius: 999px;
   padding: 10px 16px;
@@ -308,6 +310,12 @@ canvas {
 .message[hidden] { display: none; }
 .message h2 { font-size: clamp(1.7rem, 5vw, 3.3rem); }
 .message button { background: #ffe05d; color: #17233b; border: 0; }
+.message-actions { display: flex; justify-content: center; gap: 10px; }
+.message #victoryQuitButton {
+  border: 1px solid #ffffff36;
+  color: #fff;
+  background: #ffffff14;
+}
 
 .instructions { margin: 13px auto 0; text-align: center; color: #b8c5db; font-size: clamp(.74rem, 2vw, .95rem); }
 .instructions span { margin: 0 8px; color: #546784; }
@@ -335,7 +343,7 @@ canvas {
 @media (max-width: 480px) {
   body { padding: 10px; align-content: center; }
   header { margin-bottom: 9px; }
-  .restart { padding: 8px 12px; }
+  .restart, .quit-button { padding: 8px 12px; }
   .main-menu { padding: 12px; }
   .menu-stage { width: 100%; }
   .menu-actions button { min-width: 112px; padding-inline: 18px; }

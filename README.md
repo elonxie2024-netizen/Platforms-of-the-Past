@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. The time-travel mechanic is the next major feature and is not implemented yet.
 
-**Current version:** `v0.1.3`
+**Current version:** `v0.1.4`
 
 ## How it works
 
@@ -43,6 +43,7 @@ The playable prototype includes:
 - Hazards, collectibles, and level exits
 - A following camera and completion summary
 - A main menu with a saved volume setting
+- Quit controls during a run and after completing the game
 - Procedural soundtracks for the menu and each level
 - Surface-aware landing sounds plus effects for collecting, finishing, and dying
 - Keyboard and touchscreen controls
