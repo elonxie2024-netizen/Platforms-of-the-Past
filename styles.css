@@ -90,6 +90,22 @@ canvas {
   backdrop-filter: blur(8px);
 }
 
+.version-badge {
+  position: absolute;
+  z-index: 2;
+  right: 14px;
+  bottom: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #e7f7ff;
+  background: #0a173799;
+  font-size: clamp(.6rem, 1.6vw, .75rem);
+  font-weight: 800;
+  letter-spacing: .04em;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+}
+
 .message {
   position: absolute;
   z-index: 3;
