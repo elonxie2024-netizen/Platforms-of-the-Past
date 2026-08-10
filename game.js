@@ -8,6 +8,13 @@ const message = document.querySelector("#message");
 const scoreSummary = document.querySelector("#scoreSummary");
 const gameShell = document.querySelector(".game-shell");
 const fullscreenButton = document.querySelector("#fullscreenButton");
+const restartButton = document.querySelector("#restartButton");
+const mainMenu = document.querySelector("#mainMenu");
+const playButton = document.querySelector("#playButton");
+const settingsButton = document.querySelector("#settingsButton");
+const settingsPanel = document.querySelector("#settingsPanel");
+const volumeInput = document.querySelector("#volumeInput");
+const volumeValue = document.querySelector("#volumeValue");
 
 const VIEW_W = canvas.width;
 const VIEW_H = canvas.height;
@@ -60,6 +67,8 @@ let won = false;
 let levelTransition = 0;
 let deathTimer = 0;
 let deathParticles = [];
+let gameStarted = false;
+let masterVolume = 1;
 
 const spriteSheet = new Image();
 let spritesReady = false;
@@ -133,15 +142,47 @@ function setKey(code, down) {
 }
 
 addEventListener("keydown", (event) => {
+  if (!gameStarted) return;
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "Space"].includes(event.code)) event.preventDefault();
   if (event.code === "KeyR") restartLevel();
   if (event.code === "Enter" && won) startOver();
   setKey(event.code, true);
 });
-addEventListener("keyup", (event) => setKey(event.code, false));
+addEventListener("keyup", (event) => { if (gameStarted) setKey(event.code, false); });
 addEventListener("blur", () => Object.assign(input, { left: false, right: false, jump: false }));
-document.querySelector("#restartButton").addEventListener("click", restartLevel);
+restartButton.addEventListener("click", restartLevel);
 document.querySelector("#playAgainButton").addEventListener("click", startOver);
+
+function setVolume(value) {
+  masterVolume = Math.max(0, Math.min(1, Number(value) / 100));
+  const percent = Math.round(masterVolume * 100);
+  volumeInput.value = String(percent);
+  volumeValue.textContent = `${percent}%`;
+  try { localStorage.setItem("platforms-volume", String(percent)); } catch { /* Storage may be unavailable. */ }
+}
+
+try {
+  const savedVolume = localStorage.getItem("platforms-volume");
+  if (savedVolume !== null) volumeInput.value = savedVolume;
+} catch { /* Use the default volume. */ }
+setVolume(volumeInput.value);
+
+playButton.addEventListener("click", () => {
+  gameStarted = true;
+  mainMenu.hidden = true;
+  settingsPanel.hidden = true;
+  restartButton.disabled = false;
+  canvas.focus();
+});
+
+settingsButton.addEventListener("click", () => {
+  const opening = settingsPanel.hidden;
+  settingsPanel.hidden = !opening;
+  settingsButton.setAttribute("aria-expanded", String(opening));
+  if (opening) volumeInput.focus();
+});
+
+volumeInput.addEventListener("input", () => setVolume(volumeInput.value));
 
 const requestFullscreen = gameShell.requestFullscreen?.bind(gameShell)
   || gameShell.webkitRequestFullscreen?.bind(gameShell);
@@ -217,6 +258,8 @@ function moveAndCollideY(dt) {
 }
 
 function update(dt) {
+  if (!gameStarted) return;
+
   if (deathTimer > 0) {
     deathTimer = Math.max(0, deathTimer - dt);
     for (const particle of deathParticles) {

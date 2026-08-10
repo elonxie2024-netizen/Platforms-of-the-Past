@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. The time-travel mechanic is the next major feature and is not implemented yet.
 
-**Current version:** `v0.0.13`
+**Current version:** `v0.1.0`
 
 ## How it works
 
@@ -42,6 +42,7 @@ The playable prototype includes:
 - Coyote time and jump buffering
 - Hazards, collectibles, and level exits
 - A following camera and completion summary
+- A main menu with a saved volume setting
 - Keyboard and touchscreen controls
 
 ## Time-travel plans
