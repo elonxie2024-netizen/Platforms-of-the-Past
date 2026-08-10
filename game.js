@@ -338,39 +338,38 @@ function drawPlayer(time) {
   const bounce = moving ? Math.sin(time * .018) * 1.6 : Math.sin(time * .004) * .6;
   const squash = player.grounded ? bounce : -1.4;
 
-  // A soft, friendly slime body that squashes slightly as it moves.
+  // A squat rounded-square slime body that gently squashes as it moves.
   ctx.fillStyle = "#55c96b";
   ctx.strokeStyle = "#207a43";
   ctx.lineWidth = 2.5;
   ctx.beginPath();
-  ctx.moveTo(-15 - squash, 19);
-  ctx.quadraticCurveTo(-17, 8, -13, -4);
-  ctx.quadraticCurveTo(-9, -17 + squash, 0, -18 + squash);
-  ctx.quadraticCurveTo(10, -17 + squash, 14, -4);
-  ctx.quadraticCurveTo(18, 8, 15 + squash, 19);
-  ctx.quadraticCurveTo(8, 22, 0, 19.5);
-  ctx.quadraticCurveTo(-8, 22, -15 - squash, 19);
-  ctx.closePath();
+  ctx.roundRect(
+    -17 - squash * .45,
+    -11 + Math.abs(squash) * .1,
+    34 + squash * .9,
+    31 - squash * .35,
+    9
+  );
   ctx.fill();
   ctx.stroke();
 
   // Gloss, simple eyes, and a tiny smile keep the character readable at game size.
   ctx.fillStyle = "#9af0a2";
-  ctx.beginPath(); ctx.ellipse(-7, -8, 4, 6, .45, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-8, -5, 3.5, 4.5, .55, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = "#173d2c";
   ctx.beginPath();
-  ctx.ellipse(-5, -2, 2.6, 4.2, 0, 0, Math.PI * 2);
-  ctx.ellipse(6, -2, 2.6, 4.2, 0, 0, Math.PI * 2);
+  ctx.ellipse(-5, 0, 2.5, 3.8, 0, 0, Math.PI * 2);
+  ctx.ellipse(6, 0, 2.5, 3.8, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = "#ffffff";
   ctx.beginPath();
-  ctx.arc(-5.7, -3.4, .8, 0, Math.PI * 2);
-  ctx.arc(5.3, -3.4, .8, 0, Math.PI * 2);
+  ctx.arc(-5.7, -1.2, .8, 0, Math.PI * 2);
+  ctx.arc(5.3, -1.2, .8, 0, Math.PI * 2);
   ctx.fill();
   ctx.strokeStyle = "#173d2c";
   ctx.lineWidth = 1.7;
   ctx.lineCap = "round";
-  ctx.beginPath(); ctx.arc(.5, 5, 4.5, .15, Math.PI - .15); ctx.stroke();
+  ctx.beginPath(); ctx.arc(.5, 7, 4.5, .15, Math.PI - .15); ctx.stroke();
   ctx.restore();
 }
 
