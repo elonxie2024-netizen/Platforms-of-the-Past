@@ -54,6 +54,48 @@ const levels = [
     platforms: [R(0,490,220,80), R(295,420,135,150), R(500,330,145,240), R(715,430,145,140), R(930,345,150,225), R(1160,445,140,125), R(1380,350,150,220), R(1610,275,145,295), R(1835,420,265,150), R(750,345,58,58,"crate"), R(1200,365,58,80,"crate")],
     hazards: [R(220,472,75,18), R(430,472,70,18), R(645,472,70,18), R(860,472,70,18), R(1080,472,80,18), R(1300,472,80,18), R(1530,472,80,18), R(1755,472,80,18)],
     stars: [[355,375],[570,285],[785,300],[1005,300],[1230,320],[1455,305],[1680,230]], finish: R(1990,330,34,90)
+  },
+  {
+    name: "Ruined Causeway", width: 2350, start: [45, 430], music: "level2",
+    platforms: [R(0,490,260,80,"stone"), R(330,430,200,140,"stone"), R(600,350,160,220,"stone"), R(830,420,200,150,"stone"), R(1100,310,160,260,"stone"), R(1330,390,180,180,"stone"), R(1590,285,160,285,"stone"), R(1830,400,220,170,"stone"), R(2140,475,210,95,"stone"), R(930,355,64,65,"crate"), R(1420,330,60,60,"crate")],
+    hazards: [R(260,472,70,18), R(530,472,70,18), R(760,472,70,18), R(1030,472,70,18), R(1260,472,70,18), R(1510,472,80,18), R(1750,472,80,18), R(2050,472,90,18)],
+    stars: [[430,375],[680,285],[955,305],[1180,245],[1420,285],[1670,220],[1940,335],[2205,420]], finish: R(2260,385,34,90)
+  },
+  {
+    name: "Magma Galleries", width: 2600, start: [45, 430], music: "level2", theme: "lava",
+    platforms: [R(0,490,240,80,"stone"), R(330,440,170,130,"stone"), R(580,360,160,210,"stone"), R(820,430,210,140,"stone"), R(1120,330,170,240,"stone"), R(1370,410,170,160,"stone"), R(1630,300,180,270,"stone"), R(1900,390,200,180,"stone"), R(2190,310,180,260,"stone"), R(2450,470,150,100,"stone"), R(900,370,60,60,"crate")],
+    hazards: [R(240,490,90,80,"lava"), R(500,490,80,80,"lava"), R(740,490,80,80,"lava"), R(1030,490,90,80,"lava"), R(1290,490,80,80,"lava"), R(1540,490,90,80,"lava"), R(1810,490,90,80,"lava"), R(2100,490,90,80,"lava"), R(2370,490,80,80,"lava")],
+    stars: [[415,385],[660,300],[925,325],[1205,265],[1455,345],[1720,235],[2000,325],[2280,245],[2505,415]], finish: R(2520,380,34,90)
+  },
+  {
+    name: "Ember Ascent", width: 2800, start: [45, 430], music: "level3", theme: "lava",
+    platforms: [R(0,490,220,80,"stone"), R(290,410,160,160,"stone"), R(530,320,140,250,"stone"), R(750,400,180,170,"stone"), R(1010,290,140,280,"stone"), R(1230,370,200,200,"stone"), R(1510,260,150,310,"stone"), R(1740,350,200,220,"stone"), R(2020,245,160,325,"stone"), R(2260,335,190,235,"stone"), R(2530,455,270,115,"stone"), R(835,340,60,60,"crate"), R(1825,290,60,60,"crate")],
+    hazards: [R(220,490,70,80,"lava"), R(450,490,80,80,"lava"), R(670,490,80,80,"lava"), R(930,490,80,80,"lava"), R(1150,490,80,80,"lava"), R(1430,490,80,80,"lava"), R(1660,490,80,80,"lava"), R(1940,490,80,80,"lava"), R(2180,490,80,80,"lava"), R(2450,490,80,80,"lava")],
+    stars: [[370,345],[600,250],[855,290],[1080,220],[1335,300],[1585,190],[1840,285],[2100,175],[2355,265],[2660,390]], finish: R(2690,365,34,90)
+  },
+  {
+    name: "Clockwork Cliffs", width: 3000, start: [45, 430], music: "level2",
+    platforms: [R(0,490,280,80,"stone"), R(360,420,190,150,"stone"), R(620,340,170,230,"stone"), R(870,440,200,130,"stone"), R(1150,335,170,235,"stone"), R(1400,415,200,155,"stone"), R(1680,315,160,255,"stone"), R(1920,390,220,180,"stone"), R(2220,285,180,285,"stone"), R(2490,380,180,190,"stone"), R(2750,470,250,100,"stone"), R(950,376,64,64,"crate"), R(2010,330,60,60,"crate")],
+    hazards: [R(280,472,80,18), R(550,472,70,18), R(790,472,80,18), R(1070,472,80,18), R(1320,472,80,18), R(1600,472,80,18), R(1840,472,80,18), R(2140,472,80,18), R(2400,472,90,18), R(2670,472,80,18)],
+    stars: [[455,355],[705,275],[980,330],[1235,270],[1500,350],[1760,250],[2030,325],[2310,215],[2580,315],[2840,415]], finish: R(2900,380,34,90)
+  },
+  {
+    name: "Ashen Crossing", width: 3200, start: [45, 430], music: "level2", theme: "lava",
+    platforms: [R(0,490,220,80,"stone"), R(300,390,180,180,"stone"), R(560,300,160,270,"stone"), R(800,400,220,170,"stone"), R(1100,290,170,280,"stone"), R(1350,370,210,200,"stone"), R(1640,265,160,305,"stone"), R(1880,350,220,220,"stone"), R(2180,245,180,325,"stone"), R(2440,335,200,235,"stone"), R(2720,235,170,335,"stone"), R(2970,455,230,115,"stone"), R(880,340,60,60,"crate"), R(2510,275,60,60,"crate")],
+    hazards: [R(220,490,80,80,"lava"), R(480,490,80,80,"lava"), R(720,490,80,80,"lava"), R(1020,490,80,80,"lava"), R(1270,490,80,80,"lava"), R(1560,490,80,80,"lava"), R(1800,490,80,80,"lava"), R(2100,490,80,80,"lava"), R(2360,490,80,80,"lava"), R(2640,490,80,80,"lava"), R(2890,490,80,80,"lava")],
+    stars: [[390,325],[640,230],[910,285],[1185,220],[1450,300],[1720,195],[1990,280],[2270,175],[2535,240],[2805,165],[3065,390]], finish: R(3100,365,34,90)
+  },
+  {
+    name: "Skyforge Gauntlet", width: 3400, start: [45, 430], music: "level3", theme: "lava",
+    platforms: [R(0,490,240,80,"stone"), R(310,430,160,140,"stone"), R(540,350,150,220,"stone"), R(760,450,190,120,"stone"), R(1020,340,150,230,"stone"), R(1240,260,180,310,"stone"), R(1490,370,200,200,"stone"), R(1760,270,140,300,"stone"), R(1970,390,220,180,"stone"), R(2260,285,160,285,"stone"), R(2490,365,200,205,"stone"), R(2760,255,160,315,"stone"), R(2990,345,180,225,"stone"), R(3240,455,160,115,"stone"), R(1300,200,60,60,"crate"), R(2050,330,60,60,"crate")],
+    hazards: [R(240,490,70,80,"lava"), R(470,472,70,18), R(690,490,70,80,"lava"), R(950,472,70,18), R(1170,490,70,80,"lava"), R(1420,472,70,18), R(1690,490,70,80,"lava"), R(1900,472,70,18), R(2190,490,70,80,"lava"), R(2420,472,70,18), R(2690,490,70,80,"lava"), R(2920,472,70,18), R(3170,490,70,80,"lava")],
+    stars: [[390,375],[615,285],[855,395],[1095,275],[1330,155],[1585,305],[1830,205],[2075,280],[2340,220],[2585,300],[2840,185],[3080,280],[3295,400]], finish: R(3310,365,34,90)
+  },
+  {
+    name: "Edge of Tomorrow", width: 3650, start: [45, 430], music: "level3", theme: "lava",
+    platforms: [R(0,490,220,80,"stone"), R(290,400,150,170,"stone"), R(510,300,150,270,"stone"), R(730,390,170,180,"stone"), R(970,280,150,290,"stone"), R(1190,380,200,190,"stone"), R(1460,270,150,300,"stone"), R(1680,360,200,210,"stone"), R(1950,250,160,320,"stone"), R(2180,350,200,220,"stone"), R(2450,240,160,330,"stone"), R(2680,340,190,230,"stone"), R(2940,230,170,340,"stone"), R(3180,330,190,240,"stone"), R(3440,450,210,120,"stone"), R(790,330,60,60,"crate"), R(2250,290,60,60,"crate"), R(3010,170,60,60,"crate")],
+    hazards: [R(220,490,70,80,"lava"), R(440,472,70,18), R(660,490,70,80,"lava"), R(900,472,70,18), R(1120,490,70,80,"lava"), R(1390,472,70,18), R(1610,490,70,80,"lava"), R(1880,472,70,18), R(2110,490,70,80,"lava"), R(2380,472,70,18), R(2610,490,70,80,"lava"), R(2870,472,70,18), R(3110,490,70,80,"lava"), R(3370,472,70,18)],
+    stars: [[365,335],[585,225],[815,275],[1045,210],[1290,315],[1535,200],[1780,295],[2030,180],[2280,235],[2530,170],[2775,275],[3035,125],[3275,265],[3525,395]], finish: R(3540,360,34,90)
   }
 ];
 
@@ -154,7 +196,7 @@ function loadLevel(index, keepScore = true) {
   message.hidden = true;
   resetPlayer(false);
   updateHud();
-  if (gameStarted) startMusic(`level${index + 1}`);
+  if (gameStarted) startMusic(currentLevel().music || `level${index + 1}`);
 }
 
 function restartLevel() {
@@ -614,15 +656,18 @@ function drawSprite(index, x, y, w, h) {
 }
 
 function drawBackground() {
+  const isLavaLevel = currentLevel().theme === "lava";
   const gradient = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-  gradient.addColorStop(0, "#5ac8fa"); gradient.addColorStop(.62, "#b9edff"); gradient.addColorStop(1, "#edfaff");
+  gradient.addColorStop(0, isLavaLevel ? "#382337" : "#5ac8fa");
+  gradient.addColorStop(.62, isLavaLevel ? "#9d493c" : "#b9edff");
+  gradient.addColorStop(1, isLavaLevel ? "#ef9b47" : "#edfaff");
   ctx.fillStyle = gradient; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-  ctx.fillStyle = "#ffffff7a";
+  ctx.fillStyle = isLavaLevel ? "#d7b3a34a" : "#ffffff7a";
   for (let i = -1; i < 7; i++) {
     const x = ((i * 230 - cameraX * .14) % 1500) - 80;
     ctx.beginPath(); ctx.ellipse(x, 125 + (i % 3) * 54, 60, 20, 0, 0, Math.PI * 2); ctx.ellipse(x + 42, 118 + (i % 3) * 54, 38, 27, 0, 0, Math.PI * 2); ctx.fill();
   }
-  ctx.fillStyle = "#6798a966";
+  ctx.fillStyle = isLavaLevel ? "#352b386e" : "#6798a966";
   ctx.beginPath(); ctx.moveTo(0, 420);
   for (let x = 0; x <= VIEW_W; x += 100) ctx.lineTo(x, 330 + Math.sin((x + cameraX * .09) * .009) * 45);
   ctx.lineTo(VIEW_W, VIEW_H); ctx.lineTo(0, VIEW_H); ctx.fill();
@@ -649,8 +694,33 @@ function drawPlatform(p) {
   for (let tx = 0; tx < p.w; tx += 44) ctx.strokeRect(x + tx, p.y + 14, Math.min(44, p.w - tx), Math.min(42, p.h - 14));
 }
 
-function drawHazard(h) {
+function drawHazard(h, time) {
   const x = h.x - cameraX;
+  if (x + h.w < -40 || x > VIEW_W + 40) return;
+  if (h.kind === "lava") {
+    ctx.save();
+    ctx.fillStyle = "#d43a25";
+    ctx.fillRect(x, h.y, h.w, h.h);
+    ctx.fillStyle = "#ff8128";
+    ctx.beginPath();
+    ctx.moveTo(x, h.y + 5);
+    for (let px = 0; px <= h.w; px += 10) {
+      ctx.lineTo(x + px, h.y + 5 + Math.sin(time * .006 + (h.x + px) * .05) * 4);
+    }
+    ctx.lineTo(x + h.w, h.y + h.h);
+    ctx.lineTo(x, h.y + h.h);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#ffd65a";
+    const bubbleCount = Math.max(1, Math.floor(h.w / 45));
+    for (let i = 0; i < bubbleCount; i++) {
+      const bx = x + ((i * 53 + time * .018) % h.w);
+      const by = h.y + 13 + Math.sin(time * .004 + i * 2.1) * 5;
+      ctx.beginPath(); ctx.arc(bx, by, 2.5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+    return;
+  }
   if (drawSprite(3, x, h.y - 29, h.w, 48)) return;
   ctx.fillStyle = "#e9f5ff"; ctx.strokeStyle = "#526478"; ctx.lineWidth = 2;
   const count = Math.max(1, Math.round(h.w / 24));
@@ -739,7 +809,7 @@ function render(time) {
   ctx.clearRect(0, 0, VIEW_W, VIEW_H);
   drawBackground();
   for (const p of currentLevel().platforms) drawPlatform(p);
-  for (const h of currentLevel().hazards) drawHazard(h);
+  for (const h of currentLevel().hazards) drawHazard(h, time);
   currentLevel().stars.forEach(([x, y], i) => drawStar(x, y, i, time));
   drawFlag(currentLevel().finish);
   if (deathTimer > 0) drawDeathParticles();

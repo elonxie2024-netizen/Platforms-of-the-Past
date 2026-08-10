@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. The time-travel mechanic is the next major feature and is not implemented yet.
 
-**Current version:** `v0.1.4`
+**Current version:** `v0.2.0`
 
 ## How it works
 
@@ -20,7 +20,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Collect stars.** Each level hides stars across its main route and more dangerous jumps.
 
-**Reach the flag.** Finish all three levels to complete the current adventure and see your final results.
+**Reach the flag.** Finish all ten levels to complete the current adventure and see your final results.
 
 **Change the past.** In the finished game, time travel will let you switch eras and reshape the level. A bridge that is broken in the present may still stand in the past, while a seed planted long ago could become a path through the future.
 
@@ -37,7 +37,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 The playable prototype includes:
 
-- Three side-scrolling levels
+- Ten increasingly long and difficult side-scrolling levels
+- Animated lava, spikes, steeper elevation changes, and more demanding star routes
 - Responsive running and jumping
 - Coyote time and jump buffering
 - Hazards, collectibles, and level exits
