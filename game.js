@@ -15,6 +15,8 @@ const settingsButton = document.querySelector("#settingsButton");
 const settingsPanel = document.querySelector("#settingsPanel");
 const volumeInput = document.querySelector("#volumeInput");
 const volumeValue = document.querySelector("#volumeValue");
+const menuStage = document.querySelector(".menu-stage");
+const menuSlime = document.querySelector(".menu-slime");
 
 const VIEW_W = canvas.width;
 const VIEW_H = canvas.height;
@@ -183,6 +185,57 @@ settingsButton.addEventListener("click", () => {
 });
 
 volumeInput.addEventListener("input", () => setVolume(volumeInput.value));
+
+function updateMenuAnimation(time) {
+  if (mainMenu.hidden) return;
+
+  const stageWidth = menuStage.clientWidth;
+  const stageHeight = menuStage.clientHeight;
+  const slimeWidth = menuSlime.offsetWidth || 44;
+  const leftPlatform = stageWidth * .23;
+  const rightPlatform = stageWidth * .77;
+  const baseBottom = 48;
+
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    menuSlime.style.left = `${leftPlatform - slimeWidth / 2}px`;
+    menuSlime.style.bottom = `${baseBottom}px`;
+    menuSlime.style.transform = "none";
+    return;
+  }
+
+  const legDuration = 900;
+  const landingPause = 110;
+  const leg = Math.floor(time / legDuration);
+  const legTime = time % legDuration;
+  const movingRight = leg % 2 === 0;
+  const from = movingRight ? leftPlatform : rightPlatform;
+  const to = movingRight ? rightPlatform : leftPlatform;
+
+  let x = from;
+  let height = 0;
+  let scaleX = 1;
+  let scaleY = 1;
+  let rotation = 0;
+
+  if (legTime < landingPause) {
+    const settle = 1 - legTime / landingPause;
+    scaleX = 1 + settle * .08;
+    scaleY = 1 - settle * .08;
+  } else {
+    const progress = (legTime - landingPause) / (legDuration - landingPause);
+    const peakHeight = Math.max(38, Math.min(70, stageHeight - 95));
+    x = from + (to - from) * progress;
+    height = 4 * peakHeight * progress * (1 - progress);
+    const stretch = Math.sin(Math.PI * progress);
+    scaleX = 1 - stretch * .04;
+    scaleY = 1 + stretch * .04;
+    rotation = (movingRight ? 1 : -1) * stretch * 4;
+  }
+
+  menuSlime.style.left = `${x - slimeWidth / 2}px`;
+  menuSlime.style.bottom = `${baseBottom + height}px`;
+  menuSlime.style.transform = `rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
+}
 
 const requestFullscreen = gameShell.requestFullscreen?.bind(gameShell)
   || gameShell.webkitRequestFullscreen?.bind(gameShell);
@@ -495,6 +548,7 @@ function frame(time) {
   accumulator += Math.min(.05, (time - lastTime) / 1000);
   lastTime = time;
   while (accumulator >= STEP) { update(STEP); accumulator -= STEP; }
+  updateMenuAnimation(time);
   render(time);
   requestAnimationFrame(frame);
 }

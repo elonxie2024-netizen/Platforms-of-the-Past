@@ -202,7 +202,7 @@ canvas {
   border-radius: 12px;
   background: #55c96b;
   box-shadow: inset 7px 7px #9af0a255, 0 6px 10px #17482b45;
-  animation: menu-slime-jump 2.8s ease-in-out infinite;
+  will-change: left, bottom, transform;
 }
 
 .menu-slime::before {
@@ -226,14 +226,6 @@ canvas {
   height: 5px;
   border-bottom: 2px solid #173d2c;
   border-radius: 0 0 9px 9px;
-}
-
-@keyframes menu-slime-jump {
-  0%, 10%, 100% { left: 19%; bottom: 48px; transform: scale(1.06, .94); }
-  25% { left: 44%; bottom: 112px; transform: rotate(7deg) scale(.96, 1.04); }
-  40%, 52% { left: 73%; bottom: 48px; transform: scale(1.06, .94); }
-  67% { left: 44%; bottom: 112px; transform: rotate(-7deg) scale(.96, 1.04); }
-  82%, 92% { left: 19%; bottom: 48px; transform: scale(1.06, .94); }
 }
 
 .menu-actions {
@@ -351,5 +343,4 @@ canvas {
 
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; }
-  .menu-slime { animation: none; }
 }
