@@ -6,6 +6,8 @@ const levelLabel = document.querySelector("#levelLabel");
 const starLabel = document.querySelector("#starLabel");
 const message = document.querySelector("#message");
 const scoreSummary = document.querySelector("#scoreSummary");
+const gameShell = document.querySelector(".game-shell");
+const fullscreenButton = document.querySelector("#fullscreenButton");
 
 const VIEW_W = canvas.width;
 const VIEW_H = canvas.height;
@@ -115,6 +117,38 @@ addEventListener("keyup", (event) => setKey(event.code, false));
 addEventListener("blur", () => Object.assign(input, { left: false, right: false, jump: false }));
 document.querySelector("#restartButton").addEventListener("click", restartLevel);
 document.querySelector("#playAgainButton").addEventListener("click", startOver);
+
+const requestFullscreen = gameShell.requestFullscreen?.bind(gameShell)
+  || gameShell.webkitRequestFullscreen?.bind(gameShell);
+const exitFullscreen = document.exitFullscreen?.bind(document)
+  || document.webkitExitFullscreen?.bind(document);
+
+function fullscreenElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement;
+}
+
+async function toggleFullscreen() {
+  try {
+    if (fullscreenElement()) await exitFullscreen?.();
+    else await requestFullscreen?.();
+  } catch (error) {
+    console.warn("Unable to change full-screen mode.", error);
+  }
+}
+
+function updateFullscreenButton() {
+  const active = fullscreenElement() === gameShell;
+  fullscreenButton.textContent = active ? "Exit full screen" : "Full screen";
+  fullscreenButton.setAttribute("aria-pressed", String(active));
+}
+
+if (requestFullscreen && exitFullscreen) {
+  fullscreenButton.addEventListener("click", toggleFullscreen);
+  document.addEventListener("fullscreenchange", updateFullscreenButton);
+  document.addEventListener("webkitfullscreenchange", updateFullscreenButton);
+} else {
+  fullscreenButton.hidden = true;
+}
 
 document.querySelectorAll("[data-control]").forEach((button) => {
   const control = button.dataset.control;
