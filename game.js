@@ -271,7 +271,7 @@ async function ensureAudio() {
   return true;
 }
 
-function playNoise(duration, gain) {
+function playNoise(duration, gain, cutoff = 900) {
   if (!audioContext || !sfxGain) return;
   const frameCount = Math.max(1, Math.floor(audioContext.sampleRate * duration));
   const buffer = audioContext.createBuffer(1, frameCount, audioContext.sampleRate);
@@ -281,7 +281,7 @@ function playNoise(duration, gain) {
   const filter = audioContext.createBiquadFilter();
   const envelope = audioContext.createGain();
   filter.type = "lowpass";
-  filter.frequency.value = 900;
+  filter.frequency.value = cutoff;
   envelope.gain.setValueAtTime(gain, audioContext.currentTime);
   envelope.gain.exponentialRampToValueAtTime(.0001, audioContext.currentTime + duration);
   source.buffer = buffer;
@@ -289,12 +289,20 @@ function playNoise(duration, gain) {
   source.start();
 }
 
-function playSfx(name) {
+function playSfx(name, intensity = 1) {
   if (!audioContext || audioContext.state !== "running" || !sfxGain || masterVolume === 0) return;
   const now = audioContext.currentTime;
-  if (name === "jump") {
-    scheduleTone(330, now, .09, "square", .13, sfxGain);
-    scheduleTone(440, now + .045, .09, "triangle", .12, sfxGain);
+  if (name === "land-grass") {
+    playNoise(.085, .035 * intensity, 520);
+    scheduleTone(95, now, .07, "sine", .045 * intensity, sfxGain);
+  } else if (name === "land-stone") {
+    playNoise(.045, .08 * intensity, 3200);
+    scheduleTone(175, now, .055, "square", .085 * intensity, sfxGain);
+    scheduleTone(115, now + .018, .05, "triangle", .065 * intensity, sfxGain);
+  } else if (name === "land-crate") {
+    playNoise(.06, .05 * intensity, 1400);
+    scheduleTone(145, now, .065, "triangle", .075 * intensity, sfxGain);
+    scheduleTone(105, now + .025, .055, "sine", .055 * intensity, sfxGain);
   } else if (name === "death") {
     const oscillator = audioContext.createOscillator();
     const envelope = audioContext.createGain();
@@ -464,14 +472,20 @@ function moveAndCollideX(dt) {
 function moveAndCollideY(dt) {
   player.y += player.vy * dt;
   player.grounded = false;
+  let landedOn = null;
   const box = playerBox();
   for (const solid of currentLevel().platforms) {
     if (!overlaps(box, solid)) continue;
-    if (player.vy > 0) { player.y = solid.y - PLAYER_H; player.grounded = true; }
+    if (player.vy > 0) {
+      landedOn = { kind: solid.kind, intensity: Math.max(.45, Math.min(1, player.vy / 700)) };
+      player.y = solid.y - PLAYER_H;
+      player.grounded = true;
+    }
     else if (player.vy < 0) player.y = solid.y + solid.h;
     player.vy = 0;
     box.y = player.y;
   }
+  return landedOn;
 }
 
 function update(dt) {
@@ -497,6 +511,7 @@ function update(dt) {
     return;
   }
 
+  const wasGrounded = player.grounded;
   const direction = Number(input.right) - Number(input.left);
   const acceleration = player.grounded ? GROUND_ACCEL : AIR_ACCEL;
   if (direction) {
@@ -514,7 +529,6 @@ function update(dt) {
 
   if (player.jumpBuffer > 0 && player.coyote > 0) {
     player.vy = -JUMP_SPEED;
-    playSfx("jump");
     player.grounded = false;
     player.coyote = 0;
     player.jumpBuffer = 0;
@@ -523,7 +537,8 @@ function update(dt) {
   player.vy = Math.min(player.vy + GRAVITY * dt, 900);
 
   moveAndCollideX(dt);
-  moveAndCollideY(dt);
+  const landedOn = moveAndCollideY(dt);
+  if (!wasGrounded && landedOn) playSfx(`land-${landedOn.kind}`, landedOn.intensity);
   player.x = Math.max(0, Math.min(currentLevel().width - PLAYER_W, player.x));
 
   const box = playerBox();
