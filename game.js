@@ -17,7 +17,7 @@ const RUN_SPEED = 285;
 const GROUND_ACCEL = 2400;
 const AIR_ACCEL = 1450;
 const FRICTION = 2600;
-const JUMP_SPEED = 700;
+const JUMP_SPEED = 720;
 const COYOTE_TIME = 0.1;
 const JUMP_BUFFER = 0.12;
 
@@ -25,9 +25,9 @@ const R = (x, y, w, h, kind = "grass") => ({ x, y, w, h, kind });
 const levels = [
   {
     name: "Meadow Run", width: 1680, start: [75, 430],
-    platforms: [R(0,490,390,80), R(470,445,190,125), R(730,390,165,180), R(980,455,210,115), R(1280,405,180,165), R(1530,480,150,90), R(245,370,95,30,"crate")],
+    platforms: [R(0,490,390,80), R(470,445,190,125), R(730,390,165,180), R(980,455,210,115), R(1280,405,180,165), R(1530,480,150,90), R(245,390,95,30,"crate")],
     hazards: [R(390,472,80,18), R(660,472,70,18), R(1190,472,90,18), R(1460,472,70,18)],
-    stars: [[290,330],[565,400],[810,345],[1085,410],[1365,360]], finish: R(1595,390,34,90)
+    stars: [[290,345],[565,400],[810,345],[1085,410],[1365,360]], finish: R(1595,390,34,90)
   },
   {
     name: "Canyon Climb", width: 1900, start: [55, 430],
