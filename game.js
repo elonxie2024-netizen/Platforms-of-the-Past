@@ -138,7 +138,9 @@ async function toggleFullscreen() {
 
 function updateFullscreenButton() {
   const active = fullscreenElement() === gameShell;
-  fullscreenButton.textContent = active ? "Exit full screen" : "Full screen";
+  const label = active ? "Exit full screen" : "Enter full screen";
+  fullscreenButton.setAttribute("aria-label", label);
+  fullscreenButton.title = label;
   fullscreenButton.setAttribute("aria-pressed", String(active));
 }
 
