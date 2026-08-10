@@ -17,7 +17,7 @@ const RUN_SPEED = 285;
 const GROUND_ACCEL = 2400;
 const AIR_ACCEL = 1450;
 const FRICTION = 2600;
-const JUMP_SPEED = 650;
+const JUMP_SPEED = 700;
 const COYOTE_TIME = 0.1;
 const JUMP_BUFFER = 0.12;
 
@@ -300,13 +300,43 @@ function drawPlayer(time) {
   ctx.save(); ctx.translate(x + PLAYER_W / 2, y + PLAYER_H / 2);
   if (!player.grounded) ctx.rotate(player.vx * .00025);
   ctx.scale(player.facing, 1);
-  ctx.fillStyle = "#314c8f"; roundedRect(-15, -18, 30, 38, 9);
-  ctx.fillStyle = "#ffe6c5"; ctx.beginPath(); ctx.arc(0, -13, 11, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#172645"; ctx.beginPath(); ctx.arc(-4, -15, 2, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#ffcc48"; ctx.fillRect(-15, 5, 30, 6);
-  const stride = player.grounded && Math.abs(player.vx) > 20 ? Math.sin(time * .018) * 4 : 0;
-  ctx.strokeStyle = "#1a294b"; ctx.lineWidth = 7; ctx.lineCap = "round";
-  ctx.beginPath(); ctx.moveTo(-7, 17); ctx.lineTo(-8 + stride, 22); ctx.moveTo(7, 17); ctx.lineTo(8 - stride, 22); ctx.stroke();
+  const moving = player.grounded && Math.abs(player.vx) > 20;
+  const bounce = moving ? Math.sin(time * .018) * 1.6 : Math.sin(time * .004) * .6;
+  const squash = player.grounded ? bounce : -1.4;
+
+  // A soft, friendly slime body that squashes slightly as it moves.
+  ctx.fillStyle = "#55c96b";
+  ctx.strokeStyle = "#207a43";
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(-15 - squash, 19);
+  ctx.quadraticCurveTo(-17, 8, -13, -4);
+  ctx.quadraticCurveTo(-9, -17 + squash, 0, -18 + squash);
+  ctx.quadraticCurveTo(10, -17 + squash, 14, -4);
+  ctx.quadraticCurveTo(18, 8, 15 + squash, 19);
+  ctx.quadraticCurveTo(8, 22, 0, 19.5);
+  ctx.quadraticCurveTo(-8, 22, -15 - squash, 19);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Gloss, simple eyes, and a tiny smile keep the character readable at game size.
+  ctx.fillStyle = "#9af0a2";
+  ctx.beginPath(); ctx.ellipse(-7, -8, 4, 6, .45, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#173d2c";
+  ctx.beginPath();
+  ctx.ellipse(-5, -2, 2.6, 4.2, 0, 0, Math.PI * 2);
+  ctx.ellipse(6, -2, 2.6, 4.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(-5.7, -3.4, .8, 0, Math.PI * 2);
+  ctx.arc(5.3, -3.4, .8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#173d2c";
+  ctx.lineWidth = 1.7;
+  ctx.lineCap = "round";
+  ctx.beginPath(); ctx.arc(.5, 5, 4.5, .15, Math.PI - .15); ctx.stroke();
   ctx.restore();
 }
 
