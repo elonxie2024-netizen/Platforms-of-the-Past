@@ -673,25 +673,102 @@ function drawBackground() {
   ctx.lineTo(VIEW_W, VIEW_H); ctx.lineTo(0, VIEW_H); ctx.fill();
 }
 
+function seededNoise(seed) {
+  const value = Math.sin(seed * 12.9898) * 43758.5453;
+  return value - Math.floor(value);
+}
+
+function drawPlatformBase(p, x, top) {
+  const height = p.y + p.h - top;
+  if (height <= 0) return;
+  const stone = p.kind === "stone";
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x, top, p.w, height); ctx.clip();
+
+  const baseGradient = ctx.createLinearGradient(0, top, 0, top + Math.max(120, height));
+  if (stone) {
+    baseGradient.addColorStop(0, "#77828d");
+    baseGradient.addColorStop(.22, "#66717d");
+    baseGradient.addColorStop(1, "#4c5662");
+  } else {
+    baseGradient.addColorStop(0, "#925b35");
+    baseGradient.addColorStop(.22, "#7c4b2e");
+    baseGradient.addColorStop(1, "#583522");
+  }
+  ctx.fillStyle = baseGradient;
+  ctx.fillRect(x, top, p.w, height);
+
+  if (stone) {
+    ctx.lineWidth = 2;
+    for (let row = 0, y = top + 25; y < top + height; row++, y += 34) {
+      ctx.strokeStyle = row % 2 ? "#3f495566" : "#414c586f";
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + p.w, y); ctx.stroke();
+      const offset = row % 2 ? 22 : 0;
+      for (let joint = offset; joint < p.w; joint += 46) {
+        ctx.beginPath(); ctx.moveTo(x + joint, y - 34); ctx.lineTo(x + joint, y); ctx.stroke();
+      }
+      ctx.strokeStyle = "#aab3bb28";
+      ctx.beginPath(); ctx.moveTo(x, y + 2); ctx.lineTo(x + p.w, y + 2); ctx.stroke();
+    }
+    for (let py = top + 12; py < top + height; py += 26) {
+      for (let px = 12; px < p.w; px += 31) {
+        const noise = seededNoise(p.x + px * 3 + py * 7);
+        ctx.fillStyle = noise > .5 ? "#aeb6bd24" : "#3039442d";
+        ctx.beginPath(); ctx.ellipse(x + px + noise * 8, py, 3 + noise * 3, 1.5 + noise * 2, noise, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  } else {
+    ctx.lineWidth = 2;
+    for (let y = top + 25; y < top + height; y += 30) {
+      ctx.strokeStyle = "#47291955";
+      ctx.beginPath();
+      for (let px = 0; px <= p.w; px += 14) {
+        const waveY = y + Math.sin((p.x + px) * .075 + y) * 2.5;
+        if (px === 0) ctx.moveTo(x + px, waveY); else ctx.lineTo(x + px, waveY);
+      }
+      ctx.stroke();
+    }
+    for (let py = top + 14; py < top + height; py += 27) {
+      for (let px = 15; px < p.w; px += 34) {
+        const noise = seededNoise(p.x * 5 + px * 11 + py * 3);
+        ctx.fillStyle = noise > .48 ? "#b982522d" : "#39221635";
+        ctx.beginPath(); ctx.ellipse(x + px + noise * 9, py, 2.5 + noise * 3, 1.5 + noise * 2, noise * 2, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.strokeStyle = "#4b2a1d70";
+    ctx.lineWidth = 2;
+    for (let root = 18; root < p.w; root += 52) {
+      const length = 18 + seededNoise(p.x + root) * 22;
+      ctx.beginPath(); ctx.moveTo(x + root, top); ctx.quadraticCurveTo(x + root + 8, top + length * .5, x + root - 2, top + length); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
 function drawPlatform(p) {
   const x = p.x - cameraX;
   if (x + p.w < -80 || x > VIEW_W + 80) return;
-  if (p.kind === "crate" && p.w <= 100 && drawSprite(2, x, p.y, p.w, p.h)) return;
+  if (p.kind === "crate") {
+    if (p.w <= 100 && drawSprite(2, x, p.y, p.w, p.h)) return;
+    ctx.fillStyle = "#a76728"; roundedRect(x, p.y, p.w, p.h, 6);
+    ctx.fillStyle = "#d7963c"; ctx.fillRect(x, p.y, p.w, Math.min(13, p.h));
+    return;
+  }
+
   const tile = p.kind === "stone" ? 1 : 0;
+  const topDepth = Math.min(82, p.h);
+  drawPlatformBase(p, x, p.y + Math.min(70, topDepth));
   if (spritesReady) {
     for (let tx = 0; tx < p.w; tx += 64) {
       const w = Math.min(64, p.w - tx);
-      drawSprite(tile, x + tx, p.y, w, Math.min(82, p.h));
+      drawSprite(tile, x + tx, p.y, w, topDepth);
     }
-    if (p.h > 80) { ctx.fillStyle = p.kind === "stone" ? "#606b78" : "#85502c"; ctx.fillRect(x, p.y + 78, p.w, p.h - 78); }
     return;
   }
-  ctx.fillStyle = p.kind === "stone" ? "#657383" : p.kind === "crate" ? "#a76728" : "#8b542e";
-  roundedRect(x, p.y, p.w, p.h, 6);
-  ctx.fillStyle = p.kind === "stone" ? "#9aa9b5" : p.kind === "crate" ? "#d7963c" : "#61bb3c";
+  ctx.fillStyle = p.kind === "stone" ? "#77828d" : "#925b35";
+  ctx.fillRect(x, p.y, p.w, topDepth);
+  ctx.fillStyle = p.kind === "stone" ? "#aab3bb" : "#61bb3c";
   ctx.fillRect(x, p.y, p.w, Math.min(13, p.h));
-  ctx.strokeStyle = "#ffffff22"; ctx.lineWidth = 2;
-  for (let tx = 0; tx < p.w; tx += 44) ctx.strokeRect(x + tx, p.y + 14, Math.min(44, p.w - tx), Math.min(42, p.h - 14));
 }
 
 function drawHazard(h, time) {
