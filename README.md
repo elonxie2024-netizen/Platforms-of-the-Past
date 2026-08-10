@@ -8,8 +8,6 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. The time-travel mechanic is the next major feature and is not implemented yet.
 
-**Current version:** `v0.0.5`
-
 ## How it works
 
 Reach the flag at the end of each level while crossing gaps, avoiding spikes, and collecting stars along the way.
