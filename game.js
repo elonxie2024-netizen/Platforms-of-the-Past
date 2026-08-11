@@ -4,6 +4,7 @@ const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
 const levelLabel = document.querySelector("#levelLabel");
 const timerLabel = document.querySelector("#timerLabel");
+const levelTimerLabel = document.querySelector("#levelTimerLabel");
 const starLabel = document.querySelector("#starLabel");
 const message = document.querySelector("#message");
 const scoreSummary = document.querySelector("#scoreSummary");
@@ -35,6 +36,7 @@ const closeLeaderboardButton = document.querySelector("#closeLeaderboardButton")
 const runNameInput = document.querySelector("#runNameInput");
 const publishRunButton = document.querySelector("#publishRunButton");
 const publishStatus = document.querySelector("#publishStatus");
+const splitList = document.querySelector("#splitList");
 
 const VIEW_W = canvas.width;
 const VIEW_H = canvas.height;
@@ -156,8 +158,13 @@ let gameStarted = false;
 let runStartedAt = 0;
 let runElapsed = 0;
 let timerRunning = false;
+let levelStartedAt = 0;
+let levelElapsed = 0;
+let levelTimerRunning = false;
+let levelSplits = [];
 let paused = false;
 let timerWasRunningBeforePause = false;
+let levelTimerWasRunningBeforePause = false;
 let leaderboardReturn = "main";
 let finishedRun = null;
 let runPublished = false;
@@ -221,6 +228,8 @@ function loadLevel(index, keepScore = true) {
   won = false;
   message.hidden = true;
   resetPlayer(false);
+  if (timerRunning && gameStarted) beginLevelTimer();
+  else resetLevelTimer();
   updateHud();
   if (gameStarted) startMusic(currentLevel().music || `level${index + 1}`);
 }
@@ -242,6 +251,10 @@ function currentRunTime() {
   return timerRunning ? (performance.now() - runStartedAt) / 1000 : runElapsed;
 }
 
+function currentLevelTime() {
+  return levelTimerRunning ? (performance.now() - levelStartedAt) / 1000 : levelElapsed;
+}
+
 function formatRunTime(seconds) {
   const minutes = Math.floor(seconds / 60);
   const remainder = (seconds % 60).toFixed(1).padStart(4, "0");
@@ -249,13 +262,18 @@ function formatRunTime(seconds) {
 }
 
 function updateTimerHud() {
-  timerLabel.textContent = `Time ${formatRunTime(currentRunTime())}`;
+  timerLabel.textContent = `Run ${formatRunTime(currentRunTime())}`;
+  levelTimerLabel.textContent = `Level ${formatRunTime(currentLevelTime())}`;
 }
 
 function startRunTimer() {
   if (timerRunning || paused || won || !gameStarted) return;
   runStartedAt = performance.now() - runElapsed * 1000;
   timerRunning = true;
+  if (!levelTimerRunning) {
+    levelStartedAt = performance.now() - levelElapsed * 1000;
+    levelTimerRunning = true;
+  }
 }
 
 function finishRunTimer() {
@@ -264,11 +282,49 @@ function finishRunTimer() {
   updateTimerHud();
 }
 
+function finishLevelTimer() {
+  levelElapsed = currentLevelTime();
+  levelTimerRunning = false;
+  updateTimerHud();
+}
+
+function beginLevelTimer() {
+  levelElapsed = 0;
+  levelStartedAt = performance.now();
+  levelTimerRunning = timerRunning && !paused;
+  updateTimerHud();
+}
+
+function resetLevelTimer() {
+  levelStartedAt = 0;
+  levelElapsed = 0;
+  levelTimerRunning = false;
+}
+
 function resetRunTimer() {
   runStartedAt = 0;
   runElapsed = 0;
   timerRunning = false;
+  resetLevelTimer();
   updateTimerHud();
+}
+
+function completeLevelSplit() {
+  finishLevelTimer();
+  levelSplits[levelIndex] = Math.round(levelElapsed * 10) / 10;
+}
+
+function renderSplitSummary() {
+  splitList.replaceChildren();
+  levels.forEach((level, index) => {
+    const item = document.createElement("li");
+    const name = document.createElement("span");
+    name.textContent = `${index + 1}. ${level.name}`;
+    const time = document.createElement("strong");
+    time.textContent = formatRunTime(levelSplits[index] || 0);
+    item.append(name, time);
+    splitList.append(item);
+  });
 }
 
 function loadLeaderboardEntries() {
@@ -357,7 +413,11 @@ function setPaused(shouldPause) {
   if (!gameStarted || won || paused === shouldPause) return;
   if (shouldPause) {
     timerWasRunningBeforePause = timerRunning;
-    if (timerRunning) finishRunTimer();
+    levelTimerWasRunningBeforePause = levelTimerRunning;
+    if (timerRunning) {
+      finishRunTimer();
+      if (levelTimerRunning) finishLevelTimer();
+    }
     paused = true;
     Object.assign(input, { left: false, right: false, jump: false });
     pressed.jump = false;
@@ -373,8 +433,17 @@ function setPaused(shouldPause) {
     restartButton.disabled = false;
     restartRunButton.disabled = false;
     quitButton.disabled = false;
-    if (timerWasRunningBeforePause) startRunTimer();
+    if (timerWasRunningBeforePause) {
+      runStartedAt = performance.now() - runElapsed * 1000;
+      timerRunning = true;
+    }
+    if (levelTimerWasRunningBeforePause) {
+      levelStartedAt = performance.now() - levelElapsed * 1000;
+      levelTimerRunning = true;
+    }
     timerWasRunningBeforePause = false;
+    levelTimerWasRunningBeforePause = false;
+    updateTimerHud();
     canvas.focus();
   }
   updatePauseButton();
@@ -405,6 +474,7 @@ function resetFinishedRun() {
   runNameInput.disabled = false;
   publishRunButton.disabled = false;
   publishStatus.textContent = "";
+  splitList.replaceChildren();
 }
 
 function setKey(code, down) {
@@ -607,6 +677,9 @@ playButton.addEventListener("click", () => {
   gameStarted = true;
   paused = false;
   timerWasRunningBeforePause = false;
+  levelTimerWasRunningBeforePause = false;
+  levelSplits = [];
+  resetRunTimer();
   resetFinishedRun();
   startMusic("level1");
   ensureAudio();
@@ -732,8 +805,10 @@ document.querySelectorAll("[data-control]").forEach((button) => {
 function startOver() {
   paused = false;
   timerWasRunningBeforePause = false;
+  levelTimerWasRunningBeforePause = false;
   pauseMenu.hidden = true;
   leaderboardMenu.hidden = true;
+  levelSplits = [];
   resetFinishedRun();
   resetRunTimer();
   loadLevel(0, false);
@@ -749,6 +824,7 @@ function quitRun() {
   gameStarted = false;
   paused = false;
   timerWasRunningBeforePause = false;
+  levelTimerWasRunningBeforePause = false;
   Object.assign(input, { left: false, right: false, jump: false });
   pressed.jump = false;
   pauseButton.disabled = true;
@@ -759,6 +835,7 @@ function quitRun() {
   pauseMenu.hidden = true;
   leaderboardMenu.hidden = true;
   settingsButton.setAttribute("aria-expanded", "false");
+  levelSplits = [];
   resetRunTimer();
   resetFinishedRun();
   loadLevel(0, false);
@@ -876,6 +953,7 @@ function update(dt) {
 
   if (overlaps(box, currentLevel().finish)) {
     playSfx("flag");
+    completeLevelSplit();
     if (levelIndex === levels.length - 1) {
       won = true;
       finishRunTimer();
@@ -884,13 +962,14 @@ function update(dt) {
       const starBonus = totalStars * 2;
       const finalScore = Math.round((timeScore + starBonus) * 10) / 10;
       scoreSummary.textContent = `Time ${formatRunTime(seconds)} · ${totalStars} stars (+${starBonus}) · Final score ${finalScore}`;
-      finishedRun = { seconds, stars: totalStars, score: finalScore };
+      finishedRun = { seconds, stars: totalStars, score: finalScore, splits: [...levelSplits] };
       runPublished = false;
       runNameInput.value = "";
       runNameInput.disabled = false;
       publishRunButton.disabled = false;
       publishStatus.textContent = "";
       pauseButton.disabled = true;
+      renderSplitSummary();
       message.hidden = false;
       runNameInput.focus();
     } else levelTransition = .65;

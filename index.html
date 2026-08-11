@@ -25,7 +25,8 @@
     <section class="game-frame" aria-label="Platforms of the Past game">
       <div class="hud" aria-live="polite">
         <span id="levelLabel">Level 1 / 10</span>
-        <span id="timerLabel">Time 0:00.0</span>
+        <span id="timerLabel">Run 0:00.0</span>
+        <span id="levelTimerLabel">Level 0:00.0</span>
         <span id="starLabel">Stars 0 / 0</span>
       </div>
       <button id="fullscreenButton" class="fullscreen-toggle" type="button" aria-label="Enter full screen" title="Enter full screen" aria-pressed="false">
@@ -38,7 +39,7 @@
       </button>
       <div id="mainMenu" class="main-menu">
         <div class="menu-panel">
-          <p class="menu-version">v0.3.0</p>
+          <p class="menu-version">v0.3.1</p>
           <h2>Platforms of the Past</h2>
           <div class="menu-stage" role="img" aria-label="A green slime endlessly jumping between two grassy platforms">
             <div class="menu-platform menu-platform-left" aria-hidden="true"></div>
@@ -83,6 +84,10 @@
         <p class="eyebrow">Adventure complete</p>
         <h2>You reached the summit!</h2>
         <p id="scoreSummary"></p>
+        <div class="split-summary">
+          <h3>Level splits</h3>
+          <ol id="splitList" class="split-list"></ol>
+        </div>
         <div class="publish-run">
           <label for="runNameInput">Name this run</label>
           <div class="publish-row">
@@ -106,6 +111,6 @@
 
     <p class="instructions"><strong>Move</strong> A / D or arrows <span aria-hidden="true">&bull;</span> <strong>Jump</strong> W / Up / Space <span aria-hidden="true">&bull;</span> <strong>Pause</strong> P <span aria-hidden="true">&bull;</span> <strong>Restart level</strong> R <span aria-hidden="true">&bull;</span> <strong>Restart run</strong> T</p>
   </main>
-  <script src="game.js?v=0.3.0"></script>
+  <script src="game.js?v=0.3.1"></script>
 </body>
 </html>
