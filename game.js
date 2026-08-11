@@ -44,7 +44,8 @@ const changelogList = document.querySelector("#changelogList");
 const closeChangelogButton = document.querySelector("#closeChangelogButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.4.2", commit: "Pending commit", date: "2026-08-11", message: "Buff jump pad strength", description: "Increased the level 3 jump pad's launch force and prevented manual short-hop gravity from cutting pad launches short. The first springboard now comfortably clears the elevated platform without a perfectly timed manual jump." },
+  { version: "v0.4.3", commit: "Pending commit", date: "2026-08-11", message: "Add required crate puzzles", description: "Added a fifth compact level built around two required crate puzzles. Each raised wall is too tall for a normal jump, so its crate must be pushed into place and used as a step. Crates move from either side, stop against solid terrain, support the player, and reset with the level; pulling is not available." },
+  { version: "v0.4.2", commit: "0bfb27c", date: "2026-08-11", message: "Buffed jump pad strength", description: "Increased the level 3 jump pad's launch force and prevented manual short-hop gravity from cutting pad launches short. The first springboard now comfortably clears the elevated platform without a perfectly timed manual jump." },
   { version: "v0.4.1", commit: "e2c2041", date: "2026-08-11", message: "Modified restart level", description: "Changed Restart so it begins the current level timer again from zero while preserving the full run timer. Completed splits now represent only the successful attempt after the most recent level restart." },
   { version: "v0.4.0", commit: "fd83beb", date: "2026-08-11", message: "Added first mechanics", description: "Replaced the ten long stages with four compact levels that introduce grass, dirt, stone, crates, lava, and mechanical surfaces. Added a powerful jump pad in level 3 and automatically cycling horizontal and vertical moving platforms in level 4." },
   { version: "v0.3.2", commit: "6756a1a", date: "2026-08-10", message: "Added changelog", description: "Added a complete, scrollable development history based on every Git commit. The changelog can be opened from both the main menu and pause menu." },
@@ -92,6 +93,7 @@ const JUMP_BUFFER = 0.12;
 const DEATH_DURATION = 0.42;
 
 const R = (x, y, w, h, kind = "grass") => ({ x, y, w, h, kind });
+const P = (x, y, w = 60, h = 60) => ({ x, y, w, h, kind: "crate", pushable: true, baseX: x, baseY: y });
 const M = (x, y, w, h, axis, range, speed, phase = 0, kind = "stone") => ({
   x, y, w, h, kind, moving: true, axis, range, speed, phase, baseX: x, baseY: y
 });
@@ -120,6 +122,12 @@ const levels = [
     platforms: [R(0,490,300,80,"stone"), M(350,430,150,40,"x",65,1.15,0,"stone"), R(570,380,170,190,"stone"), M(790,420,150,40,"y",70,1.3,-Math.PI / 2,"stone"), R(1000,330,170,240,"stone"), M(1210,410,140,40,"x",45,1.45,Math.PI,"stone"), R(1380,450,120,120,"stone")],
     hazards: [R(300,490,270,80,"lava"), R(740,490,260,80,"lava"), R(1170,490,210,80,"lava")],
     stars: [[420,365],[655,325],[855,335],[1085,285],[1275,345]], finish: R(1415,360,34,90)
+  },
+  {
+    name: "Crateyard Climb", width: 1500, start: [55, 430], music: "level1",
+    platforms: [R(0,490,720,80), R(720,330,90,240,"stone"), R(880,430,190,140), R(1130,270,180,300,"stone"), R(1370,390,130,180), P(520,430), P(930,370)],
+    hazards: [R(810,472,70,18), R(1070,472,60,18), R(1310,472,60,18)],
+    stars: [[575,385],[765,285],[970,325],[1215,225],[1425,345]], finish: R(1415,300,34,90)
   }
 ];
 
@@ -231,6 +239,10 @@ function startSpikeDeath() {
 function resetLevelMotion() {
   levelMotionTime = 0;
   for (const platform of currentLevel().platforms) {
+    if (platform.pushable) {
+      platform.x = platform.baseX;
+      platform.y = platform.baseY;
+    }
     if (!platform.moving) continue;
     const offset = Math.sin(platform.phase) * platform.range;
     platform.x = platform.baseX + (platform.axis === "x" ? offset : 0);
@@ -945,11 +957,32 @@ function quitRun() {
   updatePauseButton();
 }
 
+function tryPushCrate(crate, distance) {
+  const candidate = { x: crate.x + distance, y: crate.y, w: crate.w, h: crate.h };
+  if (candidate.x < 0 || candidate.x + candidate.w > currentLevel().width) return false;
+  for (const solid of currentLevel().platforms) {
+    if (solid === crate) continue;
+    if (overlaps(candidate, solid)) return false;
+  }
+  crate.x = candidate.x;
+  return true;
+}
+
 function moveAndCollideX(dt) {
-  player.x += player.vx * dt;
+  const distance = player.vx * dt;
+  player.x += distance;
   const box = playerBox();
   for (const solid of currentLevel().platforms) {
     if (!overlaps(box, solid)) continue;
+    if (solid.pushable) {
+      if (distance > 0 && player.x < solid.x) {
+        const pushDistance = player.x + PLAYER_W - solid.x;
+        if (tryPushCrate(solid, pushDistance)) { box.x = player.x; continue; }
+      } else if (distance < 0 && player.x + PLAYER_W > solid.x + solid.w) {
+        const pushDistance = player.x - (solid.x + solid.w);
+        if (tryPushCrate(solid, pushDistance)) { box.x = player.x; continue; }
+      }
+    }
     if (player.vx > 0) player.x = solid.x - PLAYER_W;
     else if (player.vx < 0) player.x = solid.x + solid.w;
     player.vx = 0;
@@ -1168,9 +1201,12 @@ function drawPlatform(p) {
   const x = p.x - cameraX;
   if (x + p.w < -80 || x > VIEW_W + 80) return;
   if (p.kind === "crate") {
-    if (p.w <= 100 && drawSprite(2, x, p.y, p.w, p.h)) return;
-    ctx.fillStyle = "#a76728"; roundedRect(x, p.y, p.w, p.h, 6);
-    ctx.fillStyle = "#d7963c"; ctx.fillRect(x, p.y, p.w, Math.min(13, p.h));
+    const drewSprite = p.w <= 100 && drawSprite(2, x, p.y, p.w, p.h);
+    if (!drewSprite) {
+      ctx.fillStyle = "#a76728"; roundedRect(x, p.y, p.w, p.h, 6);
+      ctx.fillStyle = "#d7963c"; ctx.fillRect(x, p.y, p.w, Math.min(13, p.h));
+    }
+    if (p.pushable) drawPushableCrateMarker(p, x);
     return;
   }
 
@@ -1194,6 +1230,25 @@ function drawPlatform(p) {
   ctx.fillStyle = p.kind === "stone" ? "#aab3bb" : "#61bb3c";
   ctx.fillRect(x, p.y, p.w, Math.min(13, p.h));
   if (p.moving) drawMovingPlatformMarker(p, x);
+}
+
+function drawPushableCrateMarker(crate, x) {
+  const centerX = x + crate.w / 2;
+  const centerY = crate.y + crate.h / 2;
+  ctx.save();
+  ctx.fillStyle = "#0b3957d9";
+  ctx.strokeStyle = "#8de4ff";
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+  ctx.beginPath(); ctx.roundRect(centerX - 20, centerY - 8, 40, 16, 8); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(centerX - 13, centerY); ctx.lineTo(centerX + 13, centerY);
+  ctx.moveTo(centerX - 13, centerY); ctx.lineTo(centerX - 7, centerY - 5);
+  ctx.moveTo(centerX - 13, centerY); ctx.lineTo(centerX - 7, centerY + 5);
+  ctx.moveTo(centerX + 13, centerY); ctx.lineTo(centerX + 7, centerY - 5);
+  ctx.moveTo(centerX + 13, centerY); ctx.lineTo(centerX + 7, centerY + 5);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawMovingPlatformMarker(platform, x) {
