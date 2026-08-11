@@ -9,6 +9,7 @@ const message = document.querySelector("#message");
 const scoreSummary = document.querySelector("#scoreSummary");
 const gameShell = document.querySelector(".game-shell");
 const fullscreenButton = document.querySelector("#fullscreenButton");
+const pauseButton = document.querySelector("#pauseButton");
 const restartButton = document.querySelector("#restartButton");
 const restartRunButton = document.querySelector("#restartRunButton");
 const quitButton = document.querySelector("#quitButton");
@@ -21,6 +22,19 @@ const volumeInput = document.querySelector("#volumeInput");
 const volumeValue = document.querySelector("#volumeValue");
 const menuStage = document.querySelector(".menu-stage");
 const menuSlime = document.querySelector(".menu-slime");
+const mainLeaderboardButton = document.querySelector("#mainLeaderboardButton");
+const pauseMenu = document.querySelector("#pauseMenu");
+const resumeButton = document.querySelector("#resumeButton");
+const pauseRestartLevelButton = document.querySelector("#pauseRestartLevelButton");
+const pauseRestartRunButton = document.querySelector("#pauseRestartRunButton");
+const pauseLeaderboardButton = document.querySelector("#pauseLeaderboardButton");
+const pauseQuitButton = document.querySelector("#pauseQuitButton");
+const leaderboardMenu = document.querySelector("#leaderboardMenu");
+const leaderboardList = document.querySelector("#leaderboardList");
+const closeLeaderboardButton = document.querySelector("#closeLeaderboardButton");
+const runNameInput = document.querySelector("#runNameInput");
+const publishRunButton = document.querySelector("#publishRunButton");
+const publishStatus = document.querySelector("#publishStatus");
 
 const VIEW_W = canvas.width;
 const VIEW_H = canvas.height;
@@ -142,6 +156,13 @@ let gameStarted = false;
 let runStartedAt = 0;
 let runElapsed = 0;
 let timerRunning = false;
+let paused = false;
+let timerWasRunningBeforePause = false;
+let leaderboardReturn = "main";
+let finishedRun = null;
+let runPublished = false;
+const LEADERBOARD_STORAGE_KEY = "platforms-past-leaderboard-v1";
+let leaderboardEntries = loadLeaderboardEntries();
 let masterVolume = 1;
 let audioContext = null;
 let masterGain = null;
@@ -232,7 +253,7 @@ function updateTimerHud() {
 }
 
 function startRunTimer() {
-  if (timerRunning || won || !gameStarted) return;
+  if (timerRunning || paused || won || !gameStarted) return;
   runStartedAt = performance.now() - runElapsed * 1000;
   timerRunning = true;
 }
@@ -250,6 +271,142 @@ function resetRunTimer() {
   updateTimerHud();
 }
 
+function loadLeaderboardEntries() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LEADERBOARD_STORAGE_KEY) || "[]");
+    if (!Array.isArray(saved)) return [];
+    return saved.filter((entry) =>
+      entry && typeof entry.name === "string" &&
+      Number.isFinite(entry.score) && Number.isFinite(entry.seconds) && Number.isFinite(entry.stars)
+    );
+  } catch {
+    return [];
+  }
+}
+
+function saveLeaderboardEntries() {
+  try {
+    localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(leaderboardEntries));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function renderLeaderboard() {
+  leaderboardList.replaceChildren();
+  if (leaderboardEntries.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "leaderboard-empty";
+    empty.textContent = "No published runs yet.";
+    leaderboardList.append(empty);
+    return;
+  }
+
+  leaderboardEntries.forEach((entry, index) => {
+    const item = document.createElement("li");
+    item.className = "leaderboard-entry";
+    const rank = document.createElement("span");
+    rank.className = "leaderboard-rank";
+    rank.textContent = `#${index + 1}`;
+    const name = document.createElement("span");
+    name.className = "leaderboard-name";
+    name.textContent = entry.name;
+    const details = document.createElement("small");
+    details.className = "leaderboard-details";
+    details.textContent = `${formatRunTime(entry.seconds)} · ${entry.stars} ${entry.stars === 1 ? "star" : "stars"}`;
+    name.append(details);
+    const score = document.createElement("span");
+    score.className = "leaderboard-result";
+    score.textContent = String(entry.score);
+    item.append(rank, name, score);
+    leaderboardList.append(item);
+  });
+}
+
+function openLeaderboard(source) {
+  leaderboardReturn = source;
+  renderLeaderboard();
+  if (source === "pause") pauseMenu.hidden = true;
+  else {
+    settingsPanel.hidden = true;
+    settingsButton.setAttribute("aria-expanded", "false");
+    mainMenu.hidden = true;
+  }
+  leaderboardMenu.hidden = false;
+  closeLeaderboardButton.focus();
+}
+
+function closeLeaderboard() {
+  leaderboardMenu.hidden = true;
+  if (leaderboardReturn === "pause") {
+    pauseMenu.hidden = false;
+    pauseLeaderboardButton.focus();
+  } else {
+    mainMenu.hidden = false;
+    mainLeaderboardButton.focus();
+  }
+}
+
+function updatePauseButton() {
+  pauseButton.childNodes[0].textContent = paused ? "Resume " : "Pause ";
+  pauseButton.setAttribute("aria-label", paused ? "Resume the game" : "Pause the game");
+}
+
+function setPaused(shouldPause) {
+  if (!gameStarted || won || paused === shouldPause) return;
+  if (shouldPause) {
+    timerWasRunningBeforePause = timerRunning;
+    if (timerRunning) finishRunTimer();
+    paused = true;
+    Object.assign(input, { left: false, right: false, jump: false });
+    pressed.jump = false;
+    pauseMenu.hidden = false;
+    restartButton.disabled = true;
+    restartRunButton.disabled = true;
+    quitButton.disabled = true;
+    resumeButton.focus();
+  } else {
+    paused = false;
+    pauseMenu.hidden = true;
+    leaderboardMenu.hidden = true;
+    restartButton.disabled = false;
+    restartRunButton.disabled = false;
+    quitButton.disabled = false;
+    if (timerWasRunningBeforePause) startRunTimer();
+    timerWasRunningBeforePause = false;
+    canvas.focus();
+  }
+  updatePauseButton();
+}
+
+function publishFinishedRun() {
+  if (!finishedRun || runPublished) return;
+  const name = runNameInput.value.trim().slice(0, 24);
+  if (!name) {
+    publishStatus.textContent = "Enter a run name first.";
+    runNameInput.focus();
+    return;
+  }
+  leaderboardEntries.push({ name, ...finishedRun, publishedAt: Date.now() });
+  leaderboardEntries.sort((a, b) => b.score - a.score || a.seconds - b.seconds);
+  leaderboardEntries = leaderboardEntries.slice(0, 50);
+  const saved = saveLeaderboardEntries();
+  runPublished = true;
+  publishRunButton.disabled = true;
+  runNameInput.disabled = true;
+  publishStatus.textContent = saved ? "Run published to the local leaderboard." : "Run published for this session.";
+}
+
+function resetFinishedRun() {
+  finishedRun = null;
+  runPublished = false;
+  runNameInput.value = "";
+  runNameInput.disabled = false;
+  publishRunButton.disabled = false;
+  publishStatus.textContent = "";
+}
+
 function setKey(code, down) {
   if (down && ["ArrowLeft", "KeyA", "ArrowRight", "KeyD", "ArrowUp", "KeyW", "Space"].includes(code)) startRunTimer();
   if (["ArrowLeft", "KeyA"].includes(code)) input.left = down;
@@ -261,8 +418,15 @@ function setKey(code, down) {
 }
 
 addEventListener("keydown", (event) => {
+  if (event.target instanceof Element && event.target.matches("input, textarea, select")) return;
   if (!gameStarted) return;
-  if (["ArrowLeft", "ArrowRight", "ArrowUp", "Space"].includes(event.code)) event.preventDefault();
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "Space", "KeyP"].includes(event.code)) event.preventDefault();
+  if (event.code === "KeyP" && !won) {
+    if (!leaderboardMenu.hidden && leaderboardReturn === "pause") closeLeaderboard();
+    else setPaused(!paused);
+    return;
+  }
+  if (paused) return;
   if (event.code === "KeyR") restartLevel();
   if (event.code === "KeyT") startOver();
   if (event.code === "Enter" && won) startOver();
@@ -272,6 +436,21 @@ addEventListener("keyup", (event) => { if (gameStarted) setKey(event.code, false
 addEventListener("blur", () => Object.assign(input, { left: false, right: false, jump: false }));
 restartButton.addEventListener("click", restartLevel);
 restartRunButton.addEventListener("click", startOver);
+pauseButton.addEventListener("click", () => setPaused(!paused));
+resumeButton.addEventListener("click", () => setPaused(false));
+pauseRestartLevelButton.addEventListener("click", () => { restartLevel(); setPaused(false); });
+pauseRestartRunButton.addEventListener("click", startOver);
+pauseQuitButton.addEventListener("click", quitRun);
+mainLeaderboardButton.addEventListener("click", () => openLeaderboard("main"));
+pauseLeaderboardButton.addEventListener("click", () => openLeaderboard("pause"));
+closeLeaderboardButton.addEventListener("click", closeLeaderboard);
+publishRunButton.addEventListener("click", publishFinishedRun);
+runNameInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    publishFinishedRun();
+  }
+});
 document.querySelector("#playAgainButton").addEventListener("click", startOver);
 quitButton.addEventListener("click", quitRun);
 victoryQuitButton.addEventListener("click", quitRun);
@@ -426,10 +605,15 @@ setVolume(volumeInput.value);
 
 playButton.addEventListener("click", () => {
   gameStarted = true;
+  paused = false;
+  timerWasRunningBeforePause = false;
+  resetFinishedRun();
   startMusic("level1");
   ensureAudio();
   mainMenu.hidden = true;
+  leaderboardMenu.hidden = true;
   settingsPanel.hidden = true;
+  pauseButton.disabled = false;
   restartButton.disabled = false;
   restartRunButton.disabled = false;
   quitButton.disabled = false;
@@ -546,24 +730,42 @@ document.querySelectorAll("[data-control]").forEach((button) => {
 });
 
 function startOver() {
+  paused = false;
+  timerWasRunningBeforePause = false;
+  pauseMenu.hidden = true;
+  leaderboardMenu.hidden = true;
+  resetFinishedRun();
   resetRunTimer();
   loadLevel(0, false);
+  pauseButton.disabled = false;
+  restartButton.disabled = false;
+  restartRunButton.disabled = false;
+  quitButton.disabled = false;
+  updatePauseButton();
+  canvas.focus();
 }
 
 function quitRun() {
   gameStarted = false;
+  paused = false;
+  timerWasRunningBeforePause = false;
   Object.assign(input, { left: false, right: false, jump: false });
   pressed.jump = false;
+  pauseButton.disabled = true;
   restartButton.disabled = true;
   restartRunButton.disabled = true;
   quitButton.disabled = true;
   settingsPanel.hidden = true;
+  pauseMenu.hidden = true;
+  leaderboardMenu.hidden = true;
   settingsButton.setAttribute("aria-expanded", "false");
   resetRunTimer();
+  resetFinishedRun();
   loadLevel(0, false);
   mainMenu.hidden = false;
   startMusic("menu");
   playButton.focus();
+  updatePauseButton();
 }
 
 function moveAndCollideX(dt) {
@@ -599,6 +801,7 @@ function moveAndCollideY(dt) {
 
 function update(dt) {
   if (!gameStarted) return;
+  if (paused) return;
 
   if (deathTimer > 0) {
     deathTimer = Math.max(0, deathTimer - dt);
@@ -681,8 +884,15 @@ function update(dt) {
       const starBonus = totalStars * 2;
       const finalScore = Math.round((timeScore + starBonus) * 10) / 10;
       scoreSummary.textContent = `Time ${formatRunTime(seconds)} · ${totalStars} stars (+${starBonus}) · Final score ${finalScore}`;
+      finishedRun = { seconds, stars: totalStars, score: finalScore };
+      runPublished = false;
+      runNameInput.value = "";
+      runNameInput.disabled = false;
+      publishRunButton.disabled = false;
+      publishStatus.textContent = "";
+      pauseButton.disabled = true;
       message.hidden = false;
-      document.querySelector("#playAgainButton").focus();
+      runNameInput.focus();
     } else levelTransition = .65;
   }
 

@@ -15,6 +15,7 @@
         <h1>Platforms of the Past</h1>
       </div>
       <div class="header-actions">
+        <button id="pauseButton" class="restart" type="button" aria-label="Pause the game" disabled>Pause <kbd>P</kbd></button>
         <button id="restartButton" class="restart" type="button" aria-label="Restart the current level" disabled>Restart <kbd>R</kbd></button>
         <button id="restartRunButton" class="restart" type="button" aria-label="Restart the whole run and timer" disabled>Restart run <kbd>T</kbd></button>
         <button id="quitButton" class="quit-button" type="button" disabled>Quit</button>
@@ -37,7 +38,7 @@
       </button>
       <div id="mainMenu" class="main-menu">
         <div class="menu-panel">
-          <p class="menu-version">v0.2.4</p>
+          <p class="menu-version">v0.3.0</p>
           <h2>Platforms of the Past</h2>
           <div class="menu-stage" role="img" aria-label="A green slime endlessly jumping between two grassy platforms">
             <div class="menu-platform menu-platform-left" aria-hidden="true"></div>
@@ -47,6 +48,7 @@
           <div class="menu-actions">
             <button id="playButton" type="button">Play</button>
             <button id="settingsButton" type="button" aria-expanded="false" aria-controls="settingsPanel">Settings</button>
+            <button id="mainLeaderboardButton" type="button">Leaderboard</button>
           </div>
           <div id="settingsPanel" class="settings-panel" hidden>
             <label for="volumeInput">Volume <output id="volumeValue" for="volumeInput">100%</output></label>
@@ -54,11 +56,41 @@
           </div>
         </div>
       </div>
+      <div id="pauseMenu" class="overlay-menu" hidden>
+        <div class="overlay-panel">
+          <p class="eyebrow">Run paused</p>
+          <h2>Take a breather</h2>
+          <div class="pause-actions">
+            <button id="resumeButton" type="button">Resume <kbd>P</kbd></button>
+            <button id="pauseRestartLevelButton" type="button">Restart level</button>
+            <button id="pauseRestartRunButton" type="button">Restart run</button>
+            <button id="pauseLeaderboardButton" type="button">Leaderboard</button>
+            <button id="pauseQuitButton" class="secondary-button" type="button">Quit run</button>
+          </div>
+        </div>
+      </div>
+      <div id="leaderboardMenu" class="overlay-menu" hidden>
+        <div class="overlay-panel leaderboard-panel">
+          <p class="eyebrow">Local records</p>
+          <h2>Leaderboard</h2>
+          <p class="leaderboard-note">Published runs are saved in this browser until accounts are added.</p>
+          <ol id="leaderboardList" class="leaderboard-list"></ol>
+          <button id="closeLeaderboardButton" type="button">Back</button>
+        </div>
+      </div>
       <canvas id="game" width="960" height="540" tabindex="0" aria-label="Platform game. Move with A and D or the arrow keys. Jump with W, Up Arrow, or Space."></canvas>
       <div id="message" class="message" hidden>
         <p class="eyebrow">Adventure complete</p>
         <h2>You reached the summit!</h2>
         <p id="scoreSummary"></p>
+        <div class="publish-run">
+          <label for="runNameInput">Name this run</label>
+          <div class="publish-row">
+            <input id="runNameInput" type="text" maxlength="24" autocomplete="off" placeholder="Run name">
+            <button id="publishRunButton" type="button">Publish</button>
+          </div>
+          <p id="publishStatus" aria-live="polite"></p>
+        </div>
         <div class="message-actions">
           <button id="playAgainButton" type="button">Play again</button>
           <button id="victoryQuitButton" type="button">Quit</button>
@@ -72,8 +104,8 @@
       <button type="button" data-control="jump" class="jump" aria-label="Jump">Jump</button>
     </div>
 
-    <p class="instructions"><strong>Move</strong> A / D or arrows <span aria-hidden="true">&bull;</span> <strong>Jump</strong> W / Up / Space <span aria-hidden="true">&bull;</span> <strong>Restart level</strong> R <span aria-hidden="true">&bull;</span> <strong>Restart run</strong> T</p>
+    <p class="instructions"><strong>Move</strong> A / D or arrows <span aria-hidden="true">&bull;</span> <strong>Jump</strong> W / Up / Space <span aria-hidden="true">&bull;</span> <strong>Pause</strong> P <span aria-hidden="true">&bull;</span> <strong>Restart level</strong> R <span aria-hidden="true">&bull;</span> <strong>Restart run</strong> T</p>
   </main>
-  <script src="game.js?v=0.2.4"></script>
+  <script src="game.js?v=0.3.0"></script>
 </body>
 </html>
