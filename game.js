@@ -44,7 +44,8 @@ const changelogList = document.querySelector("#changelogList");
 const closeChangelogButton = document.querySelector("#closeChangelogButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.4.5", commit: "Pending commit", date: "2026-08-11", message: "Make connected terrain seamless", description: "Changed grass and stone platforms to use outer edge slices only at the ends of each obstacle. Their center texture now fills the space between those edges without repeating rounded block borders or leaving tiny gaps." },
+  { version: "v0.4.6", commit: "Pending commit", date: "2026-08-11", message: "Align terrain pillar edges", description: "Rebuilt the lower grass and stone layers as left-side, tiled-middle, and right-side columns. The pillar sides now line up with the top layer instead of allowing the center texture to extend past its edges." },
+  { version: "v0.4.5", commit: "cf4936d", date: "2026-08-11", message: "Connected obstacle textures", description: "Changed grass and stone platforms to use outer edge slices only at the ends of each obstacle. Their center texture now fills the space between those edges without repeating rounded block borders or leaving tiny gaps." },
   { version: "v0.4.4", commit: "753c74a", date: "2026-08-11", message: "Fixed pushable crates level", description: "Raised both walls in level 5 and moved their crates farther away. An untouched crate can no longer launch the player across either wall, while pushing each crate into place creates a reliable route upward." },
   { version: "v0.4.3", commit: "270a3f4", date: "2026-08-11", message: "Added pushable crates in 5th level", description: "Added a fifth compact level built around two pushable crates. Crates move when the slime presses into either side, stop against solid terrain or other crates, support the player's weight, and reset with the level; pulling is not available." },
   { version: "v0.4.2", commit: "0bfb27c", date: "2026-08-11", message: "Buffed jump pad strength", description: "Increased the level 3 jump pad's launch force and prevented manual short-hop gravity from cutting pad launches short. The first springboard now comfortably clears the elevated platform without a perfectly timed manual jump." },
@@ -1172,28 +1173,41 @@ function drawPillarTexture(spriteIndex, x, y, width, height) {
   if (!spritesReady || height <= 0) return false;
   const scale = spriteSheet.naturalWidth / 1254;
   const [cutX, cutY, cutW, cutH] = spriteCuts[spriteIndex];
-  const crop = spriteIndex === 1
+  const middleCrop = spriteIndex === 1
     ? [.18, .20, .64, .62]
     : [.22, .38, .56, .48];
-  const sourceX = (cutX + cutW * crop[0]) * scale;
-  const sourceY = (cutY + cutH * crop[1]) * scale;
-  const sourceW = cutW * crop[2] * scale;
-  const sourceH = cutH * crop[3] * scale;
+  const sourceEdge = cutW * (spriteIndex === 1 ? .16 : .14);
+  const destinationEdge = Math.min(18, width / 2);
+  const middleWidth = Math.max(0, width - destinationEdge * 2);
+  const sourceY = (cutY + cutH * middleCrop[1]) * scale;
+  const sourceH = cutH * middleCrop[3] * scale;
+  const middleSourceX = (cutX + cutW * middleCrop[0]) * scale;
+  const middleSourceW = cutW * middleCrop[2] * scale;
   const tileW = 58;
   const tileH = 58;
 
   ctx.save();
   ctx.beginPath(); ctx.rect(x, y, width, height); ctx.clip();
   for (let ty = 0; ty < height; ty += tileH) {
-    for (let tx = 0; tx < width; tx += tileW) {
-      const drawW = Math.min(tileW, width - tx);
-      const drawH = Math.min(tileH, height - ty);
+    const drawH = Math.min(tileH, height - ty);
+    for (let tx = 0; tx < middleWidth; tx += tileW) {
+      const drawW = Math.min(tileW, middleWidth - tx);
       ctx.drawImage(
         spriteSheet,
-        sourceX, sourceY, sourceW * drawW / tileW, sourceH * drawH / tileH,
-        x + tx, y + ty, drawW + .5, drawH + .5
+        middleSourceX, sourceY, middleSourceW * drawW / tileW, sourceH * drawH / tileH,
+        x + destinationEdge + tx, y + ty, drawW + .5, drawH + .5
       );
     }
+    ctx.drawImage(
+      spriteSheet,
+      cutX * scale, sourceY, sourceEdge * scale, sourceH * drawH / tileH,
+      x, y + ty, destinationEdge, drawH + .5
+    );
+    ctx.drawImage(
+      spriteSheet,
+      (cutX + cutW - sourceEdge) * scale, sourceY, sourceEdge * scale, sourceH * drawH / tileH,
+      x + width - destinationEdge, y + ty, destinationEdge, drawH + .5
+    );
   }
   ctx.restore();
   return true;
