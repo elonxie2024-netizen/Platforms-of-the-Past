@@ -16,6 +16,7 @@
       </div>
       <div class="header-actions">
         <button id="restartButton" class="restart" type="button" aria-label="Restart the current level" disabled>Restart <kbd>R</kbd></button>
+        <button id="restartRunButton" class="restart" type="button" aria-label="Restart the whole run and timer" disabled>Restart run <kbd>T</kbd></button>
         <button id="quitButton" class="quit-button" type="button" disabled>Quit</button>
       </div>
     </header>
@@ -36,7 +37,7 @@
       </button>
       <div id="mainMenu" class="main-menu">
         <div class="menu-panel">
-          <p class="menu-version">v0.2.3</p>
+          <p class="menu-version">v0.2.4</p>
           <h2>Platforms of the Past</h2>
           <div class="menu-stage" role="img" aria-label="A green slime endlessly jumping between two grassy platforms">
             <div class="menu-platform menu-platform-left" aria-hidden="true"></div>
@@ -71,8 +72,8 @@
       <button type="button" data-control="jump" class="jump" aria-label="Jump">Jump</button>
     </div>
 
-    <p class="instructions"><strong>Move</strong> A / D or arrows <span aria-hidden="true">&bull;</span> <strong>Jump</strong> W / Up / Space <span aria-hidden="true">&bull;</span> <strong>Restart</strong> R</p>
+    <p class="instructions"><strong>Move</strong> A / D or arrows <span aria-hidden="true">&bull;</span> <strong>Jump</strong> W / Up / Space <span aria-hidden="true">&bull;</span> <strong>Restart level</strong> R <span aria-hidden="true">&bull;</span> <strong>Restart run</strong> T</p>
   </main>
-  <script src="game.js?v=0.2.3"></script>
+  <script src="game.js?v=0.2.4"></script>
 </body>
 </html>

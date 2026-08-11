@@ -10,6 +10,7 @@ const scoreSummary = document.querySelector("#scoreSummary");
 const gameShell = document.querySelector(".game-shell");
 const fullscreenButton = document.querySelector("#fullscreenButton");
 const restartButton = document.querySelector("#restartButton");
+const restartRunButton = document.querySelector("#restartRunButton");
 const quitButton = document.querySelector("#quitButton");
 const victoryQuitButton = document.querySelector("#victoryQuitButton");
 const mainMenu = document.querySelector("#mainMenu");
@@ -263,12 +264,14 @@ addEventListener("keydown", (event) => {
   if (!gameStarted) return;
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "Space"].includes(event.code)) event.preventDefault();
   if (event.code === "KeyR") restartLevel();
+  if (event.code === "KeyT") startOver();
   if (event.code === "Enter" && won) startOver();
   setKey(event.code, true);
 });
 addEventListener("keyup", (event) => { if (gameStarted) setKey(event.code, false); });
 addEventListener("blur", () => Object.assign(input, { left: false, right: false, jump: false }));
 restartButton.addEventListener("click", restartLevel);
+restartRunButton.addEventListener("click", startOver);
 document.querySelector("#playAgainButton").addEventListener("click", startOver);
 quitButton.addEventListener("click", quitRun);
 victoryQuitButton.addEventListener("click", quitRun);
@@ -428,6 +431,7 @@ playButton.addEventListener("click", () => {
   mainMenu.hidden = true;
   settingsPanel.hidden = true;
   restartButton.disabled = false;
+  restartRunButton.disabled = false;
   quitButton.disabled = false;
   canvas.focus();
 });
@@ -551,6 +555,7 @@ function quitRun() {
   Object.assign(input, { left: false, right: false, jump: false });
   pressed.jump = false;
   restartButton.disabled = true;
+  restartRunButton.disabled = true;
   quitButton.disabled = true;
   settingsPanel.hidden = true;
   settingsButton.setAttribute("aria-expanded", "false");

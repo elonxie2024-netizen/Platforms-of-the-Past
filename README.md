@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. The time-travel mechanic is the next major feature and is not implemented yet.
 
-**Current version:** `v0.2.3`
+**Current version:** `v0.2.4`
 
 ## How it works
 
@@ -33,6 +33,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 | `A` / `D` or arrow keys | Move left and right |
 | `W`, Up Arrow, or Space | Jump |
 | `R` | Restart the current level |
+| `T` | Restart the whole run and reset the timer |
 | Touch buttons | Move and jump on mobile devices |
 
 ## Current game
