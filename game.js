@@ -673,76 +673,35 @@ function drawBackground() {
   ctx.lineTo(VIEW_W, VIEW_H); ctx.lineTo(0, VIEW_H); ctx.fill();
 }
 
-function seededNoise(seed) {
-  const value = Math.sin(seed * 12.9898) * 43758.5453;
-  return value - Math.floor(value);
-}
+function drawPillarTexture(spriteIndex, x, y, width, height) {
+  if (!spritesReady || height <= 0) return false;
+  const scale = spriteSheet.naturalWidth / 1254;
+  const [cutX, cutY, cutW, cutH] = spriteCuts[spriteIndex];
+  const crop = spriteIndex === 1
+    ? [.18, .20, .64, .62]
+    : [.22, .38, .56, .48];
+  const sourceX = (cutX + cutW * crop[0]) * scale;
+  const sourceY = (cutY + cutH * crop[1]) * scale;
+  const sourceW = cutW * crop[2] * scale;
+  const sourceH = cutH * crop[3] * scale;
+  const tileW = 58;
+  const tileH = 58;
 
-function drawPlatformBase(p, x, top) {
-  const height = p.y + p.h - top;
-  if (height <= 0) return;
-  const stone = p.kind === "stone";
   ctx.save();
-  ctx.beginPath(); ctx.rect(x, top, p.w, height); ctx.clip();
-
-  const baseGradient = ctx.createLinearGradient(0, top, 0, top + Math.max(120, height));
-  if (stone) {
-    baseGradient.addColorStop(0, "#77828d");
-    baseGradient.addColorStop(.22, "#66717d");
-    baseGradient.addColorStop(1, "#4c5662");
-  } else {
-    baseGradient.addColorStop(0, "#925b35");
-    baseGradient.addColorStop(.22, "#7c4b2e");
-    baseGradient.addColorStop(1, "#583522");
-  }
-  ctx.fillStyle = baseGradient;
-  ctx.fillRect(x, top, p.w, height);
-
-  if (stone) {
-    ctx.lineWidth = 2;
-    for (let row = 0, y = top + 25; y < top + height; row++, y += 34) {
-      ctx.strokeStyle = row % 2 ? "#3f495566" : "#414c586f";
-      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + p.w, y); ctx.stroke();
-      const offset = row % 2 ? 22 : 0;
-      for (let joint = offset; joint < p.w; joint += 46) {
-        ctx.beginPath(); ctx.moveTo(x + joint, y - 34); ctx.lineTo(x + joint, y); ctx.stroke();
-      }
-      ctx.strokeStyle = "#aab3bb28";
-      ctx.beginPath(); ctx.moveTo(x, y + 2); ctx.lineTo(x + p.w, y + 2); ctx.stroke();
-    }
-    for (let py = top + 12; py < top + height; py += 26) {
-      for (let px = 12; px < p.w; px += 31) {
-        const noise = seededNoise(p.x + px * 3 + py * 7);
-        ctx.fillStyle = noise > .5 ? "#aeb6bd24" : "#3039442d";
-        ctx.beginPath(); ctx.ellipse(x + px + noise * 8, py, 3 + noise * 3, 1.5 + noise * 2, noise, 0, Math.PI * 2); ctx.fill();
-      }
-    }
-  } else {
-    ctx.lineWidth = 2;
-    for (let y = top + 25; y < top + height; y += 30) {
-      ctx.strokeStyle = "#47291955";
-      ctx.beginPath();
-      for (let px = 0; px <= p.w; px += 14) {
-        const waveY = y + Math.sin((p.x + px) * .075 + y) * 2.5;
-        if (px === 0) ctx.moveTo(x + px, waveY); else ctx.lineTo(x + px, waveY);
-      }
-      ctx.stroke();
-    }
-    for (let py = top + 14; py < top + height; py += 27) {
-      for (let px = 15; px < p.w; px += 34) {
-        const noise = seededNoise(p.x * 5 + px * 11 + py * 3);
-        ctx.fillStyle = noise > .48 ? "#b982522d" : "#39221635";
-        ctx.beginPath(); ctx.ellipse(x + px + noise * 9, py, 2.5 + noise * 3, 1.5 + noise * 2, noise * 2, 0, Math.PI * 2); ctx.fill();
-      }
-    }
-    ctx.strokeStyle = "#4b2a1d70";
-    ctx.lineWidth = 2;
-    for (let root = 18; root < p.w; root += 52) {
-      const length = 18 + seededNoise(p.x + root) * 22;
-      ctx.beginPath(); ctx.moveTo(x + root, top); ctx.quadraticCurveTo(x + root + 8, top + length * .5, x + root - 2, top + length); ctx.stroke();
+  ctx.beginPath(); ctx.rect(x, y, width, height); ctx.clip();
+  for (let ty = 0; ty < height; ty += tileH) {
+    for (let tx = 0; tx < width; tx += tileW) {
+      const drawW = Math.min(tileW, width - tx);
+      const drawH = Math.min(tileH, height - ty);
+      ctx.drawImage(
+        spriteSheet,
+        sourceX, sourceY, sourceW * drawW / tileW, sourceH * drawH / tileH,
+        x + tx, y + ty, drawW + .5, drawH + .5
+      );
     }
   }
   ctx.restore();
+  return true;
 }
 
 function drawPlatform(p) {
@@ -756,15 +715,19 @@ function drawPlatform(p) {
   }
 
   const tile = p.kind === "stone" ? 1 : 0;
-  const topDepth = Math.min(82, p.h);
-  drawPlatformBase(p, x, p.y + Math.min(70, topDepth));
   if (spritesReady) {
+    const capDepth = Math.min(p.h, p.kind === "stone" ? 52 : 50);
+    drawPillarTexture(tile, x, p.y + capDepth - 2, p.w, p.h - capDepth + 2);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x, p.y, p.w, capDepth); ctx.clip();
     for (let tx = 0; tx < p.w; tx += 64) {
       const w = Math.min(64, p.w - tx);
-      drawSprite(tile, x + tx, p.y, w, topDepth);
+      drawSprite(tile, x + tx, p.y, w, 82);
     }
+    ctx.restore();
     return;
   }
+  const topDepth = Math.min(82, p.h);
   ctx.fillStyle = p.kind === "stone" ? "#77828d" : "#925b35";
   ctx.fillRect(x, p.y, p.w, topDepth);
   ctx.fillStyle = p.kind === "stone" ? "#aab3bb" : "#61bb3c";
