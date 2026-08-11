@@ -44,7 +44,8 @@ const changelogList = document.querySelector("#changelogList");
 const closeChangelogButton = document.querySelector("#closeChangelogButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.4.1", commit: "Pending commit", date: "2026-08-11", message: "Reset level timer on restart", description: "Changed Restart so it begins the current level timer again from zero while preserving the full run timer. Completed splits now represent only the successful attempt after the most recent level restart." },
+  { version: "v0.4.2", commit: "Pending commit", date: "2026-08-11", message: "Buff jump pad strength", description: "Increased the level 3 jump pad's launch force and prevented manual short-hop gravity from cutting pad launches short. The first springboard now comfortably clears the elevated platform without a perfectly timed manual jump." },
+  { version: "v0.4.1", commit: "e2c2041", date: "2026-08-11", message: "Modified restart level", description: "Changed Restart so it begins the current level timer again from zero while preserving the full run timer. Completed splits now represent only the successful attempt after the most recent level restart." },
   { version: "v0.4.0", commit: "fd83beb", date: "2026-08-11", message: "Added first mechanics", description: "Replaced the ten long stages with four compact levels that introduce grass, dirt, stone, crates, lava, and mechanical surfaces. Added a powerful jump pad in level 3 and automatically cycling horizontal and vertical moving platforms in level 4." },
   { version: "v0.3.2", commit: "6756a1a", date: "2026-08-10", message: "Added changelog", description: "Added a complete, scrollable development history based on every Git commit. The changelog can be opened from both the main menu and pause menu." },
   { version: "v0.3.1", commit: "ee5ba4d", date: "2026-08-10", message: "Added level splits", description: "Added separate run and level timers. Level times persist through level restarts, pause with the run, and appear as a ten-level split summary after victory." },
@@ -85,7 +86,7 @@ const GROUND_ACCEL = 2400;
 const AIR_ACCEL = 1450;
 const FRICTION = 2600;
 const JUMP_SPEED = 720;
-const JUMP_PAD_SPEED = 980;
+const JUMP_PAD_SPEED = 1120;
 const COYOTE_TIME = 0.1;
 const JUMP_BUFFER = 0.12;
 const DEATH_DURATION = 0.42;
@@ -147,7 +148,7 @@ const MUSIC_TRACKS = {
 
 const input = { left: false, right: false, jump: false };
 const pressed = { jump: false };
-const player = { x: 0, y: 0, vx: 0, vy: 0, grounded: false, facing: 1, coyote: 0, jumpBuffer: 0 };
+const player = { x: 0, y: 0, vx: 0, vy: 0, grounded: false, facing: 1, coyote: 0, jumpBuffer: 0, padLaunched: false };
 let levelIndex = 0;
 let collected = [];
 let totalStars = 0;
@@ -202,7 +203,7 @@ function resetPlayer(countDeath = false) {
   deathTimer = 0;
   deathParticles = [];
   const [x, y] = currentLevel().start;
-  Object.assign(player, { x, y, vx: 0, vy: 0, grounded: false, coyote: 0, jumpBuffer: 0 });
+  Object.assign(player, { x, y, vx: 0, vy: 0, grounded: false, coyote: 0, jumpBuffer: 0, padLaunched: false });
   cameraX = Math.max(0, x - VIEW_W * .3);
 }
 
@@ -984,6 +985,7 @@ function activateJumpPad() {
   player.grounded = false;
   player.coyote = 0;
   player.jumpBuffer = 0;
+  player.padLaunched = true;
   playSfx("jump-pad");
   return true;
 }
@@ -1036,13 +1038,14 @@ function update(dt) {
     player.coyote = 0;
     player.jumpBuffer = 0;
   }
-  if (!input.jump && player.vy < -220) player.vy += GRAVITY * 1.55 * dt;
+  if (!input.jump && player.vy < -220 && !player.padLaunched) player.vy += GRAVITY * 1.55 * dt;
   player.vy = Math.min(player.vy + GRAVITY * dt, 900);
 
   moveAndCollideX(dt);
   const landedOn = moveAndCollideY(dt);
   if (!wasGrounded && landedOn) playSfx(`land-${landedOn.kind}`, landedOn.intensity);
-  activateJumpPad();
+  const padActivated = activateJumpPad();
+  if (landedOn && !padActivated) player.padLaunched = false;
   player.x = Math.max(0, Math.min(currentLevel().width - PLAYER_W, player.x));
 
   const box = playerBox();
