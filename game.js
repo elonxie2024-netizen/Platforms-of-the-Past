@@ -44,7 +44,8 @@ const changelogList = document.querySelector("#changelogList");
 const closeChangelogButton = document.querySelector("#closeChangelogButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.4.3", commit: "Pending commit", date: "2026-08-11", message: "Add required crate puzzles", description: "Added a fifth compact level built around two required crate puzzles. Each raised wall is too tall for a normal jump, so its crate must be pushed into place and used as a step. Crates move from either side, stop against solid terrain, support the player, and reset with the level; pulling is not available." },
+  { version: "v0.4.4", commit: "Pending commit", date: "2026-08-11", message: "Make crate puzzles mandatory", description: "Raised both walls in level 5 and moved their crates farther away. An untouched crate can no longer launch the player across either wall, while pushing each crate into place creates a reliable route upward." },
+  { version: "v0.4.3", commit: "270a3f4", date: "2026-08-11", message: "Added pushable crates in 5th level", description: "Added a fifth compact level built around two pushable crates. Crates move when the slime presses into either side, stop against solid terrain or other crates, support the player's weight, and reset with the level; pulling is not available." },
   { version: "v0.4.2", commit: "0bfb27c", date: "2026-08-11", message: "Buffed jump pad strength", description: "Increased the level 3 jump pad's launch force and prevented manual short-hop gravity from cutting pad launches short. The first springboard now comfortably clears the elevated platform without a perfectly timed manual jump." },
   { version: "v0.4.1", commit: "e2c2041", date: "2026-08-11", message: "Modified restart level", description: "Changed Restart so it begins the current level timer again from zero while preserving the full run timer. Completed splits now represent only the successful attempt after the most recent level restart." },
   { version: "v0.4.0", commit: "fd83beb", date: "2026-08-11", message: "Added first mechanics", description: "Replaced the ten long stages with four compact levels that introduce grass, dirt, stone, crates, lava, and mechanical surfaces. Added a powerful jump pad in level 3 and automatically cycling horizontal and vertical moving platforms in level 4." },
@@ -125,9 +126,9 @@ const levels = [
   },
   {
     name: "Crateyard Climb", width: 1500, start: [55, 430], music: "level1",
-    platforms: [R(0,490,720,80), R(720,330,90,240,"stone"), R(880,430,190,140), R(1130,270,180,300,"stone"), R(1370,390,130,180), P(520,430), P(930,370)],
+    platforms: [R(0,490,720,80), R(720,310,90,260,"stone"), R(880,430,190,140), R(1130,250,180,320,"stone"), R(1370,390,130,180), P(450,430), P(900,370)],
     hazards: [R(810,472,70,18), R(1070,472,60,18), R(1310,472,60,18)],
-    stars: [[575,385],[765,285],[970,325],[1215,225],[1425,345]], finish: R(1415,300,34,90)
+    stars: [[505,385],[765,265],[970,325],[1215,205],[1425,345]], finish: R(1415,300,34,90)
   }
 ];
 
