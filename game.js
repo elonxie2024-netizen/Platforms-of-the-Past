@@ -44,7 +44,8 @@ const changelogList = document.querySelector("#changelogList");
 const closeChangelogButton = document.querySelector("#closeChangelogButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.3.2", commit: "Pending commit", date: "2026-08-10", message: "Add in-game changelog", description: "Added a complete, scrollable development history based on every Git commit. The changelog can be opened from both the main menu and pause menu." },
+  { version: "v0.4.0", commit: "Pending commit", date: "2026-08-11", message: "Rebuild campaign progression", description: "Replaced the ten long stages with four compact levels that introduce grass, dirt, stone, crates, lava, and mechanical surfaces. Added a powerful jump pad in level 3 and automatically cycling horizontal and vertical moving platforms in level 4." },
+  { version: "v0.3.2", commit: "6756a1a", date: "2026-08-10", message: "Added changelog", description: "Added a complete, scrollable development history based on every Git commit. The changelog can be opened from both the main menu and pause menu." },
   { version: "v0.3.1", commit: "ee5ba4d", date: "2026-08-10", message: "Added level splits", description: "Added separate run and level timers. Level times persist through level restarts, pause with the run, and appear as a ten-level split summary after victory." },
   { version: "v0.3.0", commit: "5854624", date: "2026-08-10", message: "Pause + leaderboard overhaul", description: "Added a pause menu with resume, restart, quit, and leaderboard actions while freezing the timer. Added named run publishing and a score-sorted local leaderboard stored in the browser." },
   { version: "v0.2.4", commit: "c53fa4b", date: "2026-08-10", message: "Added second restart button", description: "Added Restart run beside the level restart control. The new T shortcut returns to level 1 and resets the timer, stars, and deaths." },
@@ -83,71 +84,40 @@ const GROUND_ACCEL = 2400;
 const AIR_ACCEL = 1450;
 const FRICTION = 2600;
 const JUMP_SPEED = 720;
+const JUMP_PAD_SPEED = 980;
 const COYOTE_TIME = 0.1;
 const JUMP_BUFFER = 0.12;
 const DEATH_DURATION = 0.42;
 
 const R = (x, y, w, h, kind = "grass") => ({ x, y, w, h, kind });
+const M = (x, y, w, h, axis, range, speed, phase = 0, kind = "stone") => ({
+  x, y, w, h, kind, moving: true, axis, range, speed, phase, baseX: x, baseY: y
+});
 const levels = [
   {
-    name: "Meadow Run", width: 1680, start: [75, 430],
-    platforms: [R(0,490,390,80), R(470,445,190,125), R(730,390,165,180), R(980,455,210,115), R(1280,405,180,165), R(1530,480,150,90), R(245,390,95,30,"crate")],
-    hazards: [R(390,472,80,18), R(660,472,70,18), R(1190,472,90,18), R(1460,472,70,18)],
-    stars: [[290,345],[565,400],[810,345],[1085,410],[1365,360]], finish: R(1595,390,34,90)
+    name: "Dirtbound Trail", width: 1260, start: [70, 430], music: "level1",
+    platforms: [R(0,490,330,80), R(400,445,190,125), R(660,390,170,180), R(900,450,180,120), R(1150,480,110,90), R(185,410,70,40,"crate")],
+    hazards: [R(330,472,70,18), R(590,472,70,18), R(830,472,70,18), R(1080,472,70,18)],
+    stars: [[220,365],[495,400],[745,345],[990,405]], finish: R(1190,390,34,90)
   },
   {
-    name: "Canyon Climb", width: 1900, start: [55, 430],
-    platforms: [R(0,490,260,80,"stone"), R(330,430,160,140,"stone"), R(555,355,135,215,"stone"), R(760,455,170,115,"stone"), R(1010,375,155,195,"stone"), R(1235,300,145,270,"stone"), R(1460,410,170,160,"stone"), R(1700,475,200,95,"stone"), R(835,325,64,64,"crate")],
-    hazards: [R(260,472,70,18), R(490,472,65,18), R(690,472,70,18), R(930,472,80,18), R(1165,472,70,18), R(1380,472,80,18), R(1630,472,70,18)],
-    stars: [[410,385],[620,310],[845,280],[1085,330],[1305,255],[1545,365]], finish: R(1800,385,34,90)
+    name: "Stonework Steps", width: 1320, start: [55, 430], music: "level2",
+    platforms: [R(0,490,260,80,"stone"), R(330,430,180,140,"stone"), R(580,360,160,210,"stone"), R(820,440,190,130,"stone"), R(1090,390,230,180,"stone"), R(905,376,64,64,"crate")],
+    hazards: [R(260,472,70,18), R(510,472,70,18), R(740,472,80,18), R(1010,472,80,18)],
+    stars: [[420,385],[655,315],[910,330],[1180,345]], finish: R(1235,300,34,90)
   },
   {
-    name: "Cloudtop Keep", width: 2100, start: [45, 430],
-    platforms: [R(0,490,220,80), R(295,420,135,150), R(500,330,145,240), R(715,430,145,140), R(930,345,150,225), R(1160,445,140,125), R(1380,350,150,220), R(1610,275,145,295), R(1835,420,265,150), R(750,345,58,58,"crate"), R(1200,365,58,80,"crate")],
-    hazards: [R(220,472,75,18), R(430,472,70,18), R(645,472,70,18), R(860,472,70,18), R(1080,472,80,18), R(1300,472,80,18), R(1530,472,80,18), R(1755,472,80,18)],
-    stars: [[355,375],[570,285],[785,300],[1005,300],[1230,320],[1455,305],[1680,230]], finish: R(1990,330,34,90)
+    name: "Springboard Rise", width: 1380, start: [55, 430], music: "level3",
+    platforms: [R(0,490,450,80), R(525,300,180,270,"stone"), R(760,390,180,180), R(1020,330,180,240,"stone"), R(1260,460,120,110), R(610,242,62,58,"crate")],
+    jumpPads: [R(360,470,60,20,"jump-pad")],
+    hazards: [R(450,472,75,18), R(705,472,55,18), R(940,472,80,18), R(1200,472,60,18)],
+    stars: [[390,410],[610,235],[850,345],[1110,285],[1310,415]], finish: R(1300,370,34,90)
   },
   {
-    name: "Ruined Causeway", width: 2350, start: [45, 430], music: "level2",
-    platforms: [R(0,490,260,80,"stone"), R(330,430,200,140,"stone"), R(600,350,160,220,"stone"), R(830,420,200,150,"stone"), R(1100,310,160,260,"stone"), R(1330,390,180,180,"stone"), R(1590,285,160,285,"stone"), R(1830,400,220,170,"stone"), R(2140,475,210,95,"stone"), R(930,355,64,65,"crate"), R(1420,330,60,60,"crate")],
-    hazards: [R(260,472,70,18), R(530,472,70,18), R(760,472,70,18), R(1030,472,70,18), R(1260,472,70,18), R(1510,472,80,18), R(1750,472,80,18), R(2050,472,90,18)],
-    stars: [[430,375],[680,285],[955,305],[1180,245],[1420,285],[1670,220],[1940,335],[2205,420]], finish: R(2260,385,34,90)
-  },
-  {
-    name: "Magma Galleries", width: 2600, start: [45, 430], music: "level2", theme: "lava",
-    platforms: [R(0,490,240,80,"stone"), R(330,440,170,130,"stone"), R(580,360,160,210,"stone"), R(820,430,210,140,"stone"), R(1120,330,170,240,"stone"), R(1370,410,170,160,"stone"), R(1630,300,180,270,"stone"), R(1900,390,200,180,"stone"), R(2190,310,180,260,"stone"), R(2450,470,150,100,"stone"), R(900,370,60,60,"crate")],
-    hazards: [R(240,490,90,80,"lava"), R(500,490,80,80,"lava"), R(740,490,80,80,"lava"), R(1030,490,90,80,"lava"), R(1290,490,80,80,"lava"), R(1540,490,90,80,"lava"), R(1810,490,90,80,"lava"), R(2100,490,90,80,"lava"), R(2370,490,80,80,"lava")],
-    stars: [[415,385],[660,300],[925,325],[1205,265],[1455,345],[1720,235],[2000,325],[2280,245],[2505,415]], finish: R(2520,380,34,90)
-  },
-  {
-    name: "Ember Ascent", width: 2800, start: [45, 430], music: "level3", theme: "lava",
-    platforms: [R(0,490,220,80,"stone"), R(290,410,160,160,"stone"), R(530,320,140,250,"stone"), R(750,400,180,170,"stone"), R(1010,290,140,280,"stone"), R(1230,370,200,200,"stone"), R(1510,260,150,310,"stone"), R(1740,350,200,220,"stone"), R(2020,245,160,325,"stone"), R(2260,335,190,235,"stone"), R(2530,455,270,115,"stone"), R(835,340,60,60,"crate"), R(1825,290,60,60,"crate")],
-    hazards: [R(220,490,70,80,"lava"), R(450,490,80,80,"lava"), R(670,490,80,80,"lava"), R(930,490,80,80,"lava"), R(1150,490,80,80,"lava"), R(1430,490,80,80,"lava"), R(1660,490,80,80,"lava"), R(1940,490,80,80,"lava"), R(2180,490,80,80,"lava"), R(2450,490,80,80,"lava")],
-    stars: [[370,345],[600,250],[855,290],[1080,220],[1335,300],[1585,190],[1840,285],[2100,175],[2355,265],[2660,390]], finish: R(2690,365,34,90)
-  },
-  {
-    name: "Clockwork Cliffs", width: 3000, start: [45, 430], music: "level2",
-    platforms: [R(0,490,280,80,"stone"), R(360,420,190,150,"stone"), R(620,340,170,230,"stone"), R(870,440,200,130,"stone"), R(1150,335,170,235,"stone"), R(1400,415,200,155,"stone"), R(1680,315,160,255,"stone"), R(1920,390,220,180,"stone"), R(2220,285,180,285,"stone"), R(2490,380,180,190,"stone"), R(2750,470,250,100,"stone"), R(950,376,64,64,"crate"), R(2010,330,60,60,"crate")],
-    hazards: [R(280,472,80,18), R(550,472,70,18), R(790,472,80,18), R(1070,472,80,18), R(1320,472,80,18), R(1600,472,80,18), R(1840,472,80,18), R(2140,472,80,18), R(2400,472,90,18), R(2670,472,80,18)],
-    stars: [[455,355],[705,275],[980,330],[1235,270],[1500,350],[1760,250],[2030,325],[2310,215],[2580,315],[2840,415]], finish: R(2900,380,34,90)
-  },
-  {
-    name: "Ashen Crossing", width: 3200, start: [45, 430], music: "level2", theme: "lava",
-    platforms: [R(0,490,220,80,"stone"), R(300,390,180,180,"stone"), R(560,300,160,270,"stone"), R(800,400,220,170,"stone"), R(1100,290,170,280,"stone"), R(1350,370,210,200,"stone"), R(1640,265,160,305,"stone"), R(1880,350,220,220,"stone"), R(2180,245,180,325,"stone"), R(2440,335,200,235,"stone"), R(2720,235,170,335,"stone"), R(2970,455,230,115,"stone"), R(880,340,60,60,"crate"), R(2510,275,60,60,"crate")],
-    hazards: [R(220,490,80,80,"lava"), R(480,490,80,80,"lava"), R(720,490,80,80,"lava"), R(1020,490,80,80,"lava"), R(1270,490,80,80,"lava"), R(1560,490,80,80,"lava"), R(1800,490,80,80,"lava"), R(2100,490,80,80,"lava"), R(2360,490,80,80,"lava"), R(2640,490,80,80,"lava"), R(2890,490,80,80,"lava")],
-    stars: [[390,325],[640,230],[910,285],[1185,220],[1450,300],[1720,195],[1990,280],[2270,175],[2535,240],[2805,165],[3065,390]], finish: R(3100,365,34,90)
-  },
-  {
-    name: "Skyforge Gauntlet", width: 3400, start: [45, 430], music: "level3", theme: "lava",
-    platforms: [R(0,490,240,80,"stone"), R(310,430,160,140,"stone"), R(540,350,150,220,"stone"), R(760,450,190,120,"stone"), R(1020,340,150,230,"stone"), R(1240,260,180,310,"stone"), R(1490,370,200,200,"stone"), R(1760,270,140,300,"stone"), R(1970,390,220,180,"stone"), R(2260,285,160,285,"stone"), R(2490,365,200,205,"stone"), R(2760,255,160,315,"stone"), R(2990,345,180,225,"stone"), R(3240,455,160,115,"stone"), R(1300,200,60,60,"crate"), R(2050,330,60,60,"crate")],
-    hazards: [R(240,490,70,80,"lava"), R(470,472,70,18), R(690,490,70,80,"lava"), R(950,472,70,18), R(1170,490,70,80,"lava"), R(1420,472,70,18), R(1690,490,70,80,"lava"), R(1900,472,70,18), R(2190,490,70,80,"lava"), R(2420,472,70,18), R(2690,490,70,80,"lava"), R(2920,472,70,18), R(3170,490,70,80,"lava")],
-    stars: [[390,375],[615,285],[855,395],[1095,275],[1330,155],[1585,305],[1830,205],[2075,280],[2340,220],[2585,300],[2840,185],[3080,280],[3295,400]], finish: R(3310,365,34,90)
-  },
-  {
-    name: "Edge of Tomorrow", width: 3650, start: [45, 430], music: "level3", theme: "lava",
-    platforms: [R(0,490,220,80,"stone"), R(290,400,150,170,"stone"), R(510,300,150,270,"stone"), R(730,390,170,180,"stone"), R(970,280,150,290,"stone"), R(1190,380,200,190,"stone"), R(1460,270,150,300,"stone"), R(1680,360,200,210,"stone"), R(1950,250,160,320,"stone"), R(2180,350,200,220,"stone"), R(2450,240,160,330,"stone"), R(2680,340,190,230,"stone"), R(2940,230,170,340,"stone"), R(3180,330,190,240,"stone"), R(3440,450,210,120,"stone"), R(790,330,60,60,"crate"), R(2250,290,60,60,"crate"), R(3010,170,60,60,"crate")],
-    hazards: [R(220,490,70,80,"lava"), R(440,472,70,18), R(660,490,70,80,"lava"), R(900,472,70,18), R(1120,490,70,80,"lava"), R(1390,472,70,18), R(1610,490,70,80,"lava"), R(1880,472,70,18), R(2110,490,70,80,"lava"), R(2380,472,70,18), R(2610,490,70,80,"lava"), R(2870,472,70,18), R(3110,490,70,80,"lava"), R(3370,472,70,18)],
-    stars: [[365,335],[585,225],[815,275],[1045,210],[1290,315],[1535,200],[1780,295],[2030,180],[2280,235],[2530,170],[2775,275],[3035,125],[3275,265],[3525,395]], finish: R(3540,360,34,90)
+    name: "Clockwork Crossing", width: 1500, start: [55, 430], music: "level2", theme: "lava",
+    platforms: [R(0,490,300,80,"stone"), M(350,430,150,40,"x",65,1.15,0,"stone"), R(570,380,170,190,"stone"), M(790,420,150,40,"y",70,1.3,-Math.PI / 2,"stone"), R(1000,330,170,240,"stone"), M(1210,410,140,40,"x",45,1.45,Math.PI,"stone"), R(1380,450,120,120,"stone")],
+    hazards: [R(300,490,270,80,"lava"), R(740,490,260,80,"lava"), R(1170,490,210,80,"lava")],
+    stars: [[420,365],[655,325],[855,335],[1085,285],[1275,345]], finish: R(1415,360,34,90)
   }
 ];
 
@@ -186,6 +156,7 @@ let accumulator = 0;
 let lastTime = performance.now();
 let won = false;
 let levelTransition = 0;
+let levelMotionTime = 0;
 let deathTimer = 0;
 let deathParticles = [];
 let gameStarted = false;
@@ -255,6 +226,35 @@ function startSpikeDeath() {
   });
 }
 
+function resetLevelMotion() {
+  levelMotionTime = 0;
+  for (const platform of currentLevel().platforms) {
+    if (!platform.moving) continue;
+    const offset = Math.sin(platform.phase) * platform.range;
+    platform.x = platform.baseX + (platform.axis === "x" ? offset : 0);
+    platform.y = platform.baseY + (platform.axis === "y" ? offset : 0);
+  }
+}
+
+function updateMovingPlatforms(dt) {
+  levelMotionTime += dt;
+  for (const platform of currentLevel().platforms) {
+    if (!platform.moving) continue;
+    const oldX = platform.x;
+    const oldY = platform.y;
+    const wasStanding = player.grounded &&
+      Math.abs(player.y + PLAYER_H - oldY) < 3 &&
+      player.x + PLAYER_W > oldX && player.x < oldX + platform.w;
+    const offset = Math.sin(levelMotionTime * platform.speed + platform.phase) * platform.range;
+    platform.x = platform.baseX + (platform.axis === "x" ? offset : 0);
+    platform.y = platform.baseY + (platform.axis === "y" ? offset : 0);
+    if (wasStanding) {
+      player.x += platform.x - oldX;
+      player.y += platform.y - oldY;
+    }
+  }
+}
+
 function loadLevel(index, keepScore = true) {
   levelIndex = index;
   collected = currentLevel().stars.map(() => false);
@@ -262,6 +262,7 @@ function loadLevel(index, keepScore = true) {
   levelTransition = 0;
   won = false;
   message.hidden = true;
+  resetLevelMotion();
   resetPlayer(false);
   if (timerRunning && gameStarted) beginLevelTimer();
   else resetLevelTimer();
@@ -273,6 +274,7 @@ function restartLevel() {
   const gained = collected.filter(Boolean).length;
   totalStars = Math.max(0, totalStars - gained);
   collected.fill(false);
+  resetLevelMotion();
   resetPlayer(true);
   updateHud();
 }
@@ -728,6 +730,9 @@ function playSfx(name, intensity = 1) {
     playNoise(.06, .05 * intensity, 1400);
     scheduleTone(145, now, .065, "triangle", .075 * intensity, sfxGain);
     scheduleTone(105, now + .025, .055, "sine", .055 * intensity, sfxGain);
+  } else if (name === "jump-pad") {
+    [55, 62, 67].forEach((note, index) => scheduleTone(midiToFrequency(note), now + index * .035, .13, "square", .09, sfxGain));
+    playNoise(.07, .035, 1800);
   } else if (name === "death") {
     const oscillator = audioContext.createOscillator();
     const envelope = audioContext.createGain();
@@ -968,6 +973,19 @@ function moveAndCollideY(dt) {
   return landedOn;
 }
 
+function activateJumpPad() {
+  if (player.vy < 0) return false;
+  const pad = currentLevel().jumpPads?.find((candidate) => overlaps(playerBox(), candidate));
+  if (!pad) return false;
+  player.y = pad.y - PLAYER_H;
+  player.vy = -JUMP_PAD_SPEED;
+  player.grounded = false;
+  player.coyote = 0;
+  player.jumpBuffer = 0;
+  playSfx("jump-pad");
+  return true;
+}
+
 function update(dt) {
   if (!gameStarted) return;
   if (paused) return;
@@ -991,6 +1009,8 @@ function update(dt) {
     }
     return;
   }
+
+  updateMovingPlatforms(dt);
 
   const wasGrounded = player.grounded;
   const direction = Number(input.right) - Number(input.left);
@@ -1020,6 +1040,7 @@ function update(dt) {
   moveAndCollideX(dt);
   const landedOn = moveAndCollideY(dt);
   if (!wasGrounded && landedOn) playSfx(`land-${landedOn.kind}`, landedOn.intensity);
+  activateJumpPad();
   player.x = Math.max(0, Math.min(currentLevel().width - PLAYER_W, player.x));
 
   const box = playerBox();
@@ -1159,6 +1180,7 @@ function drawPlatform(p) {
       drawSprite(tile, x + tx, p.y, w, 82);
     }
     ctx.restore();
+    if (p.moving) drawMovingPlatformMarker(p, x);
     return;
   }
   const topDepth = Math.min(82, p.h);
@@ -1166,6 +1188,55 @@ function drawPlatform(p) {
   ctx.fillRect(x, p.y, p.w, topDepth);
   ctx.fillStyle = p.kind === "stone" ? "#aab3bb" : "#61bb3c";
   ctx.fillRect(x, p.y, p.w, Math.min(13, p.h));
+  if (p.moving) drawMovingPlatformMarker(p, x);
+}
+
+function drawMovingPlatformMarker(platform, x) {
+  const y = platform.y + 7;
+  ctx.save();
+  ctx.strokeStyle = "#8de4ff";
+  ctx.fillStyle = "#0b3957cc";
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+  ctx.beginPath(); ctx.roundRect(x + platform.w / 2 - 24, y - 5, 48, 15, 7); ctx.fill();
+  ctx.beginPath();
+  if (platform.axis === "x") {
+    ctx.moveTo(x + platform.w / 2 - 15, y + 2); ctx.lineTo(x + platform.w / 2 + 15, y + 2);
+    ctx.moveTo(x + platform.w / 2 - 15, y + 2); ctx.lineTo(x + platform.w / 2 - 9, y - 3);
+    ctx.moveTo(x + platform.w / 2 - 15, y + 2); ctx.lineTo(x + platform.w / 2 - 9, y + 7);
+    ctx.moveTo(x + platform.w / 2 + 15, y + 2); ctx.lineTo(x + platform.w / 2 + 9, y - 3);
+    ctx.moveTo(x + platform.w / 2 + 15, y + 2); ctx.lineTo(x + platform.w / 2 + 9, y + 7);
+  } else {
+    ctx.moveTo(x + platform.w / 2, y - 3); ctx.lineTo(x + platform.w / 2, y + 7);
+    ctx.moveTo(x + platform.w / 2, y - 3); ctx.lineTo(x + platform.w / 2 - 5, y + 1);
+    ctx.moveTo(x + platform.w / 2, y - 3); ctx.lineTo(x + platform.w / 2 + 5, y + 1);
+    ctx.moveTo(x + platform.w / 2, y + 7); ctx.lineTo(x + platform.w / 2 - 5, y + 3);
+    ctx.moveTo(x + platform.w / 2, y + 7); ctx.lineTo(x + platform.w / 2 + 5, y + 3);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawJumpPad(pad, time) {
+  const x = pad.x - cameraX;
+  if (x + pad.w < -20 || x > VIEW_W + 20) return;
+  const pulse = (Math.sin(time * .008) + 1) * .5;
+  ctx.save();
+  ctx.shadowColor = "#ffe05d";
+  ctx.shadowBlur = 6 + pulse * 7;
+  ctx.fillStyle = "#243958";
+  ctx.beginPath(); ctx.roundRect(x, pad.y + 7, pad.w, pad.h - 7, 5); ctx.fill();
+  ctx.fillStyle = "#ffe05d";
+  ctx.beginPath(); ctx.roundRect(x + 3, pad.y + 2 - pulse * 2, pad.w - 6, 10, 5); ctx.fill();
+  ctx.fillStyle = "#ef8f2f";
+  for (let offset = 10; offset < pad.w - 5; offset += 16) {
+    ctx.beginPath();
+    ctx.moveTo(x + offset - 5, pad.y + 9 - pulse * 2);
+    ctx.lineTo(x + offset, pad.y + 4 - pulse * 2);
+    ctx.lineTo(x + offset + 5, pad.y + 9 - pulse * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 function drawHazard(h, time) {
@@ -1283,6 +1354,7 @@ function render(time) {
   ctx.clearRect(0, 0, VIEW_W, VIEW_H);
   drawBackground();
   for (const p of currentLevel().platforms) drawPlatform(p);
+  for (const pad of currentLevel().jumpPads || []) drawJumpPad(pad, time);
   for (const h of currentLevel().hazards) drawHazard(h, time);
   currentLevel().stars.forEach(([x, y], i) => drawStar(x, y, i, time));
   drawFlag(currentLevel().finish);
