@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. The time-travel mechanic is the next major feature and is not implemented yet.
 
-**Current version:** `v0.4.0`
+**Current version:** `v0.4.1`
 
 ## How it works
 
@@ -24,7 +24,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Race the clock.** The speedrun timer starts with your first move or jump and continues between levels. Your final score is 300 minus your completion time in seconds, plus 2 points for every star.
 
-**Compare your splits.** A second timer tracks the current level without resetting when you restart that level. The results screen lists the completion time for every level.
+**Compare your splits.** A second timer tracks the current level and resets whenever you restart that level. The run timer keeps going, while the results screen records the successful attempt for each level.
 
 **Publish a run.** After completing the adventure, name the run and optionally publish it to the local leaderboard. Records are stored in your browser until accounts are implemented.
 
