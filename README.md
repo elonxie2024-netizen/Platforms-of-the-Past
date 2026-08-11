@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. The time-travel mechanic is the next major feature and is not implemented yet.
 
-**Current version:** `v0.3.1`
+**Current version:** `v0.3.2`
 
 ## How it works
 
@@ -27,6 +27,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 **Compare your splits.** A second timer tracks the current level without resetting when you restart that level. The results screen lists the completion time for every level.
 
 **Publish a run.** After completing the adventure, name the run and optionally publish it to the local leaderboard. Records are stored in your browser until accounts are implemented.
+
+**Follow development.** Open the changelog from the main menu or pause menu to read every version and Git commit in the game's history.
 
 **Change the past.** In the finished game, time travel will let you switch eras and reshape the level. A bridge that is broken in the present may still stand in the past, while a seed planted long ago could become a path through the future.
 
@@ -51,6 +53,7 @@ The playable prototype includes:
 - Per-level timing and a complete split summary
 - A pause menu that freezes the timer
 - A local leaderboard for named, published runs
+- A complete in-game changelog based on the Git history
 - Responsive running and jumping
 - Coyote time and jump buffering
 - Hazards, collectibles, and level exits

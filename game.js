@@ -37,6 +37,40 @@ const runNameInput = document.querySelector("#runNameInput");
 const publishRunButton = document.querySelector("#publishRunButton");
 const publishStatus = document.querySelector("#publishStatus");
 const splitList = document.querySelector("#splitList");
+const mainChangelogButton = document.querySelector("#mainChangelogButton");
+const pauseChangelogButton = document.querySelector("#pauseChangelogButton");
+const changelogMenu = document.querySelector("#changelogMenu");
+const changelogList = document.querySelector("#changelogList");
+const closeChangelogButton = document.querySelector("#closeChangelogButton");
+
+const CHANGELOG_ENTRIES = [
+  { version: "v0.3.2", commit: "Pending commit", date: "2026-08-10", message: "Add in-game changelog", description: "Added a complete, scrollable development history based on every Git commit. The changelog can be opened from both the main menu and pause menu." },
+  { version: "v0.3.1", commit: "ee5ba4d", date: "2026-08-10", message: "Added level splits", description: "Added separate run and level timers. Level times persist through level restarts, pause with the run, and appear as a ten-level split summary after victory." },
+  { version: "v0.3.0", commit: "5854624", date: "2026-08-10", message: "Pause + leaderboard overhaul", description: "Added a pause menu with resume, restart, quit, and leaderboard actions while freezing the timer. Added named run publishing and a score-sorted local leaderboard stored in the browser." },
+  { version: "v0.2.4", commit: "c53fa4b", date: "2026-08-10", message: "Added second restart button", description: "Added Restart run beside the level restart control. The new T shortcut returns to level 1 and resets the timer, stars, and deaths." },
+  { version: "v0.2.3", commit: "dbd5ffc", date: "2026-08-10", message: "Added timer+score", description: "Introduced a speedrun timer that starts on the first movement or jump and persists across all levels. Added the final score formula of 300 minus elapsed seconds plus two points per star." },
+  { version: "v0.2.2", commit: "6c9e210", date: "2026-08-10", message: "Updated t extures again", description: "Replaced mismatched generated pillar fills with center crops tiled directly from the original dirt and stone assets. This made pillar colors and texture style continuous with their tops." },
+  { version: "v0.2.1", commit: "86cd4dd", date: "2026-08-10", message: "Updated textures", description: "Added the first textured extensions beneath grass and stone platforms, including shaded dirt and masonry detail instead of completely flat pillar colors." },
+  { version: "v0.2.0", commit: "bd5df68", date: "2026-08-10", message: "Overhauled content", description: "Expanded the adventure from three levels to ten with seven longer and harder stages. Introduced animated lava, volcanic scenery, tougher elevation changes, and more demanding star routes." },
+  { version: "v0.1.4", commit: "ab1bee1", date: "2026-08-10", message: "Add quit button", description: "Added controls for abandoning an active run and returning to the main menu. The victory screen also gained a quit option alongside playing again." },
+  { version: "v0.1.3", commit: "5425772", date: "2026-08-10", message: "Revamped audio", description: "Reworked movement audio so landings, rather than jumps, produce feedback. Grass received a soft landing sound while stone uses a harder clack." },
+  { version: "v0.1.2", commit: "292ed94", date: "2026-08-10", message: "Added audio", description: "Added procedural music for the main menu and levels, plus sound effects for jumping, dying, collecting stars, and reaching flags. Connected the volume setting to the new audio system." },
+  { version: "v0.1.1", commit: "67286c2", date: "2026-08-10", message: "Updated animation", description: "Rebuilt the main-menu slime animation to follow a physics-like jumping arc between the two platforms, with landing squash and airborne stretch matching gameplay more closely." },
+  { version: "v0.1.0", commit: "38f5931", date: "2026-08-10", message: "Add main menu", description: "Introduced the main menu with horizontal Play and Settings controls, a volume setting, version display, and an endlessly bouncing slime scene between two platforms." },
+  { version: "v0.0.13", commit: "09d767c", date: "2026-08-10", message: "Added spike animation", description: "Added a brief, understated spike-death sequence that freezes the player and breaks the green slime into small pieces before restarting." },
+  { version: "v0.0.12", commit: "84da34a", date: "2026-08-10", message: "Changed fullscreen icon", description: "Replaced the fullscreen text control with the classic four-corner expand and collapse icons. Repositioned the level name so it no longer overlaps the corner control." },
+  { version: "v0.0.11", commit: "ef9755b", date: "2026-08-10", message: "Changed player asset", description: "Changed the player from a tall, ghost-like shape into a squat rounded-square slime while retaining its simple green face and squash animation." },
+  { version: "v0.0.10", commit: "8864938", date: "2026-08-10", message: "Added full screen mode", description: "Added a fullscreen control for expanding the game shell and responsive fullscreen layout styling for a larger play area." },
+  { version: "Early development", commit: "a5acbda", date: "2026-08-10", message: "Remove standalone version display", description: "Removed the temporary in-game v0.0.5 badge and returned the script cache key to a simple revision number while the versioning policy was being settled." },
+  { version: "Early development", commit: "66d7d3a", date: "2026-08-10", message: "Remove standalone version display", description: "Temporarily restored the v0.0.5 badge, README version, and matching script cache version during the back-and-forth over where versions should appear." },
+  { version: "Early development", commit: "9599d67", date: "2026-08-10", message: "Changed version number policy", description: "Removed the standalone v0.0.5 badge and README version entry, and changed the script cache key while the project adopted a commit-based versioning policy." },
+  { version: "v0.0.5", commit: "07afbba", date: "2026-08-10", message: "Update README with game link", description: "Added the public GitHub Pages play link to the README so the browser game could be launched directly from the project page." },
+  { version: "v0.0.5", commit: "4f30474", date: "2026-08-10", message: "Created version numbers starting at 0.0.5", description: "Established semantic-style vX.Y.Z numbering at v0.0.5 and displayed that version in the README, game interface, and cache-busted script URL." },
+  { version: "Prototype", commit: "6de6735", date: "2026-08-10", message: "Make opening jump easier and refresh slime player", description: "Adjusted the opening layout so the first jump was reachable and refined the green slime player presentation after the initial character pass." },
+  { version: "Prototype", commit: "6024a78", date: "2026-08-10", message: "Balanced jump height + changed player asset + renamed website name", description: "Raised jump strength slightly, changed the player into a cute generic green slime, and renamed the game heading from Skybound Steps to Platforms of the Past." },
+  { version: "Prototype", commit: "9b62c40", date: "2026-08-10", message: "Created README.md", description: "Created the project README with the game concept, controls, current prototype features, planned time-travel mechanic, and credits." },
+  { version: "Initial commit", commit: "d914b1e", date: "2026-08-09", message: "Made base platformer", description: "Created the original browser platformer, including HTML and styling, movement and jumping physics, platforms, hazards, stars, flags, three levels, and the first sprite atlas." }
+];
 
 const VIEW_W = canvas.width;
 const VIEW_H = canvas.height;
@@ -166,6 +200,7 @@ let paused = false;
 let timerWasRunningBeforePause = false;
 let levelTimerWasRunningBeforePause = false;
 let leaderboardReturn = "main";
+let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEADERBOARD_STORAGE_KEY = "platforms-past-leaderboard-v1";
@@ -404,6 +439,55 @@ function closeLeaderboard() {
   }
 }
 
+function renderChangelog() {
+  changelogList.replaceChildren();
+  CHANGELOG_ENTRIES.forEach((entry) => {
+    const article = document.createElement("article");
+    article.className = "changelog-entry";
+    const heading = document.createElement("div");
+    heading.className = "changelog-heading";
+    const version = document.createElement("span");
+    version.className = "changelog-version";
+    version.textContent = entry.version;
+    const commit = document.createElement("code");
+    commit.textContent = entry.commit;
+    heading.append(version, commit);
+    const title = document.createElement("h3");
+    title.textContent = entry.message;
+    const description = document.createElement("p");
+    description.textContent = entry.description;
+    const date = document.createElement("time");
+    date.dateTime = entry.date;
+    date.textContent = entry.date;
+    article.append(heading, title, description, date);
+    changelogList.append(article);
+  });
+}
+
+function openChangelog(source) {
+  changelogReturn = source;
+  renderChangelog();
+  if (source === "pause") pauseMenu.hidden = true;
+  else {
+    settingsPanel.hidden = true;
+    settingsButton.setAttribute("aria-expanded", "false");
+    mainMenu.hidden = true;
+  }
+  changelogMenu.hidden = false;
+  closeChangelogButton.focus();
+}
+
+function closeChangelog() {
+  changelogMenu.hidden = true;
+  if (changelogReturn === "pause") {
+    pauseMenu.hidden = false;
+    pauseChangelogButton.focus();
+  } else {
+    mainMenu.hidden = false;
+    mainChangelogButton.focus();
+  }
+}
+
 function updatePauseButton() {
   pauseButton.childNodes[0].textContent = paused ? "Resume " : "Pause ";
   pauseButton.setAttribute("aria-label", paused ? "Resume the game" : "Pause the game");
@@ -430,6 +514,7 @@ function setPaused(shouldPause) {
     paused = false;
     pauseMenu.hidden = true;
     leaderboardMenu.hidden = true;
+    changelogMenu.hidden = true;
     restartButton.disabled = false;
     restartRunButton.disabled = false;
     quitButton.disabled = false;
@@ -493,6 +578,7 @@ addEventListener("keydown", (event) => {
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "Space", "KeyP"].includes(event.code)) event.preventDefault();
   if (event.code === "KeyP" && !won) {
     if (!leaderboardMenu.hidden && leaderboardReturn === "pause") closeLeaderboard();
+    else if (!changelogMenu.hidden && changelogReturn === "pause") closeChangelog();
     else setPaused(!paused);
     return;
   }
@@ -514,6 +600,9 @@ pauseQuitButton.addEventListener("click", quitRun);
 mainLeaderboardButton.addEventListener("click", () => openLeaderboard("main"));
 pauseLeaderboardButton.addEventListener("click", () => openLeaderboard("pause"));
 closeLeaderboardButton.addEventListener("click", closeLeaderboard);
+mainChangelogButton.addEventListener("click", () => openChangelog("main"));
+pauseChangelogButton.addEventListener("click", () => openChangelog("pause"));
+closeChangelogButton.addEventListener("click", closeChangelog);
 publishRunButton.addEventListener("click", publishFinishedRun);
 runNameInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -685,6 +774,7 @@ playButton.addEventListener("click", () => {
   ensureAudio();
   mainMenu.hidden = true;
   leaderboardMenu.hidden = true;
+  changelogMenu.hidden = true;
   settingsPanel.hidden = true;
   pauseButton.disabled = false;
   restartButton.disabled = false;
@@ -808,6 +898,7 @@ function startOver() {
   levelTimerWasRunningBeforePause = false;
   pauseMenu.hidden = true;
   leaderboardMenu.hidden = true;
+  changelogMenu.hidden = true;
   levelSplits = [];
   resetFinishedRun();
   resetRunTimer();
@@ -834,6 +925,7 @@ function quitRun() {
   settingsPanel.hidden = true;
   pauseMenu.hidden = true;
   leaderboardMenu.hidden = true;
+  changelogMenu.hidden = true;
   settingsButton.setAttribute("aria-expanded", "false");
   levelSplits = [];
   resetRunTimer();
