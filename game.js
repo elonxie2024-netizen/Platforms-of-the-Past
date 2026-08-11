@@ -3,6 +3,7 @@
 const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
 const levelLabel = document.querySelector("#levelLabel");
+const timerLabel = document.querySelector("#timerLabel");
 const starLabel = document.querySelector("#starLabel");
 const message = document.querySelector("#message");
 const scoreSummary = document.querySelector("#scoreSummary");
@@ -137,6 +138,9 @@ let levelTransition = 0;
 let deathTimer = 0;
 let deathParticles = [];
 let gameStarted = false;
+let runStartedAt = 0;
+let runElapsed = 0;
+let timerRunning = false;
 let masterVolume = 1;
 let audioContext = null;
 let masterGain = null;
@@ -212,7 +216,41 @@ function updateHud() {
   starLabel.textContent = `Stars ${collected.filter(Boolean).length} / ${collected.length}`;
 }
 
+function currentRunTime() {
+  return timerRunning ? (performance.now() - runStartedAt) / 1000 : runElapsed;
+}
+
+function formatRunTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainder = (seconds % 60).toFixed(1).padStart(4, "0");
+  return `${minutes}:${remainder}`;
+}
+
+function updateTimerHud() {
+  timerLabel.textContent = `Time ${formatRunTime(currentRunTime())}`;
+}
+
+function startRunTimer() {
+  if (timerRunning || won || !gameStarted) return;
+  runStartedAt = performance.now() - runElapsed * 1000;
+  timerRunning = true;
+}
+
+function finishRunTimer() {
+  runElapsed = currentRunTime();
+  timerRunning = false;
+  updateTimerHud();
+}
+
+function resetRunTimer() {
+  runStartedAt = 0;
+  runElapsed = 0;
+  timerRunning = false;
+  updateTimerHud();
+}
+
 function setKey(code, down) {
+  if (down && ["ArrowLeft", "KeyA", "ArrowRight", "KeyD", "ArrowUp", "KeyW", "Space"].includes(code)) startRunTimer();
   if (["ArrowLeft", "KeyA"].includes(code)) input.left = down;
   if (["ArrowRight", "KeyD"].includes(code)) input.right = down;
   if (["ArrowUp", "KeyW", "Space"].includes(code)) {
@@ -493,6 +531,7 @@ if (requestFullscreen && exitFullscreen) {
 document.querySelectorAll("[data-control]").forEach((button) => {
   const control = button.dataset.control;
   const set = (down) => {
+    if (down) startRunTimer();
     if (control === "jump" && down && !input.jump) pressed.jump = true;
     input[control] = down;
   };
@@ -502,7 +541,10 @@ document.querySelectorAll("[data-control]").forEach((button) => {
   button.addEventListener("lostpointercapture", () => set(false));
 });
 
-function startOver() { totalStars = 0; deaths = 0; loadLevel(0, false); }
+function startOver() {
+  resetRunTimer();
+  loadLevel(0, false);
+}
 
 function quitRun() {
   gameStarted = false;
@@ -512,6 +554,7 @@ function quitRun() {
   quitButton.disabled = true;
   settingsPanel.hidden = true;
   settingsButton.setAttribute("aria-expanded", "false");
+  resetRunTimer();
   loadLevel(0, false);
   mainMenu.hidden = false;
   startMusic("menu");
@@ -627,7 +670,12 @@ function update(dt) {
     playSfx("flag");
     if (levelIndex === levels.length - 1) {
       won = true;
-      scoreSummary.textContent = `${totalStars} stars collected · ${deaths} ${deaths === 1 ? "restart" : "restarts"}`;
+      finishRunTimer();
+      const seconds = Math.round(runElapsed * 10) / 10;
+      const timeScore = Math.round((300 - seconds) * 10) / 10;
+      const starBonus = totalStars * 2;
+      const finalScore = Math.round((timeScore + starBonus) * 10) / 10;
+      scoreSummary.textContent = `Time ${formatRunTime(seconds)} · ${totalStars} stars (+${starBonus}) · Final score ${finalScore}`;
       message.hidden = false;
       document.querySelector("#playAgainButton").focus();
     } else levelTransition = .65;
@@ -865,6 +913,7 @@ function frame(time) {
   lastTime = time;
   while (accumulator >= STEP) { update(STEP); accumulator -= STEP; }
   updateMenuAnimation(time);
+  updateTimerHud();
   render(time);
   requestAnimationFrame(frame);
 }
