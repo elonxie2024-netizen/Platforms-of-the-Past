@@ -44,7 +44,8 @@ const changelogList = document.querySelector("#changelogList");
 const closeChangelogButton = document.querySelector("#closeChangelogButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.5.0", commit: "Pending commit", date: "2026-08-11", message: "Add breakable blocks", description: "Added a sixth level introducing three floating block types: delayed crumble blocks that break after being stood on, impact blocks that break after a jump landing, and permanent floating blocks that never break. Breakable blocks warn the player before disappearing and reset after death or restart." },
+  { version: "v0.5.1", commit: "Pending commit", date: "2026-08-11", message: "Rebuild floating and breakable block visuals", description: "Replaced the colored symbol blocks with nine-sliced rectangles made from the original grass, stone, and crate assets. Breakable variants now share an unmistakable cracked appearance and burst into material-specific dirt, pebble, or woodchip debris." },
+  { version: "v0.5.0", commit: "ce40cef", date: "2026-08-11", message: "Breakable blocks added in 6th level", description: "Added a sixth level introducing three floating block types: delayed crumble blocks that break after being stood on, impact blocks that break after a jump landing, and permanent floating blocks that never break. Breakable blocks warn the player before disappearing and reset after death or restart." },
   { version: "v0.4.6", commit: "ccf56e7", date: "2026-08-11", message: "Fixed terrain 2", description: "Rebuilt the lower grass and stone layers as left-side, tiled-middle, and right-side columns. The pillar sides now line up with the top layer instead of allowing the center texture to extend past its edges." },
   { version: "v0.4.5", commit: "cf4936d", date: "2026-08-11", message: "Connected obstacle textures", description: "Changed grass and stone platforms to use outer edge slices only at the ends of each obstacle. Their center texture now fills the space between those edges without repeating rounded block borders or leaving tiny gaps." },
   { version: "v0.4.4", commit: "753c74a", date: "2026-08-11", message: "Fixed pushable crates level", description: "Raised both walls in level 5 and moved their crates farther away. An untouched crate can no longer launch the player across either wall, while pushing each crate into place creates a reliable route upward." },
@@ -98,11 +99,11 @@ const DEATH_DURATION = 0.42;
 
 const R = (x, y, w, h, kind = "grass") => ({ x, y, w, h, kind });
 const P = (x, y, w = 60, h = 60) => ({ x, y, w, h, kind: "crate", pushable: true, baseX: x, baseY: y });
-const B = (x, y, trigger, w = 110, h = 34) => ({
-  x, y, w, h, kind: trigger === "impact" ? "impact-block" : "crumble-block",
+const B = (x, y, trigger, material = "stone", w = 110, h = 54) => ({
+  x, y, w, h, kind: "breakable-block", material,
   breakable: true, breakTrigger: trigger, broken: false, breakTimer: null
 });
-const F = (x, y, w = 110, h = 34) => ({ x, y, w, h, kind: "floating-block" });
+const F = (x, y, material = "stone", w = 110, h = 54) => ({ x, y, w, h, kind: "floating-block", material });
 const M = (x, y, w, h, axis, range, speed, phase = 0, kind = "stone") => ({
   x, y, w, h, kind, moving: true, axis, range, speed, phase, baseX: x, baseY: y
 });
@@ -140,7 +141,7 @@ const levels = [
   },
   {
     name: "Fracture Falls", width: 1500, start: [55, 430], music: "level3", theme: "lava",
-    platforms: [R(0,490,260,80,"stone"), F(320,430), B(500,390,"stand"), F(680,350), B(860,420,"impact"), F(1040,360), B(1220,420,"stand"), R(1380,450,120,120,"stone")],
+    platforms: [R(0,490,260,80,"stone"), F(320,430,"grass"), B(500,390,"stand","grass"), F(680,350,"stone"), B(860,420,"impact","stone"), F(1040,360,"crate"), B(1220,420,"stand","crate"), R(1380,450,120,120,"stone")],
     hazards: [R(260,490,1120,80,"lava")],
     stars: [[375,385],[555,345],[735,305],[915,375],[1095,315],[1275,375],[1435,405]], finish: R(1415,360,34,90)
   }
@@ -184,6 +185,7 @@ let levelTransition = 0;
 let levelMotionTime = 0;
 let deathTimer = 0;
 let deathParticles = [];
+let blockDebris = [];
 let gameStarted = false;
 let runStartedAt = 0;
 let runElapsed = 0;
@@ -232,6 +234,7 @@ function resetPlayer(countDeath = false) {
 }
 
 function resetBreakablePlatforms() {
+  blockDebris = [];
   for (const platform of currentLevel().platforms) {
     if (!platform.breakable) continue;
     platform.broken = false;
@@ -1030,7 +1033,8 @@ function moveAndCollideY(dt) {
     if (!overlaps(box, solid)) continue;
     if (player.vy > 0) {
       const impactSpeed = player.vy;
-      const landingKind = solid.kind === "crate" ? "crate" : solid.kind === "grass" ? "grass" : "stone";
+      const surface = solid.material || solid.kind;
+      const landingKind = surface === "crate" ? "crate" : surface === "grass" ? "grass" : "stone";
       landedOn = { platform: solid, kind: landingKind, impactSpeed, intensity: Math.max(.45, Math.min(1, impactSpeed / 700)) };
       player.y = solid.y - PLAYER_H;
       player.grounded = true;
@@ -1040,6 +1044,42 @@ function moveAndCollideY(dt) {
     box.y = player.y;
   }
   return landedOn;
+}
+
+function createBlockDebris(platform) {
+  const material = platform.material || "stone";
+  const colors = material === "grass"
+    ? ["#6f3f24", "#92552b", "#bd7133"]
+    : material === "crate"
+      ? ["#7b421f", "#b86b2b", "#e0a04a"]
+      : ["#59616a", "#7d8790", "#aeb5bb"];
+  for (let index = 0; index < 13; index++) {
+    const angle = Math.PI * (1.08 + Math.random() * .84);
+    const speed = 95 + Math.random() * 155;
+    blockDebris.push({
+      material,
+      x: platform.x + platform.w * (.12 + Math.random() * .76),
+      y: platform.y + platform.h * (.25 + Math.random() * .5),
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 75,
+      size: 4 + Math.random() * 6,
+      rotation: Math.random() * Math.PI,
+      spin: (Math.random() - .5) * 12,
+      color: colors[index % colors.length],
+      life: .72 + Math.random() * .28
+    });
+  }
+}
+
+function updateBlockDebris(dt) {
+  for (const piece of blockDebris) {
+    piece.x += piece.vx * dt;
+    piece.y += piece.vy * dt;
+    piece.vy += 620 * dt;
+    piece.rotation += piece.spin * dt;
+    piece.life -= dt;
+  }
+  blockDebris = blockDebris.filter((piece) => piece.life > 0);
 }
 
 function updateBreakablePlatforms(dt, landedOn) {
@@ -1058,6 +1098,7 @@ function updateBreakablePlatforms(dt, landedOn) {
     const standingOnBlock = player.x + PLAYER_W > candidate.x && player.x < candidate.x + candidate.w &&
       Math.abs(player.y + PLAYER_H - candidate.y) < 2;
     if (standingOnBlock) player.grounded = false;
+    createBlockDebris(candidate);
     playSfx("block-break");
   }
 }
@@ -1079,6 +1120,8 @@ function activateJumpPad() {
 function update(dt) {
   if (!gameStarted) return;
   if (paused) return;
+
+  updateBlockDebris(dt);
 
   if (deathTimer > 0) {
     deathTimer = Math.max(0, deathTimer - dt);
@@ -1297,67 +1340,105 @@ function drawConnectedPlatformCap(spriteIndex, x, y, width, height) {
   );
 }
 
+function drawAssetRectangle(material, x, y, width, height) {
+  const spriteIndex = material === "grass" ? 0 : material === "crate" ? 2 : 1;
+  if (!spritesReady) {
+    ctx.fillStyle = material === "grass" ? "#925b35" : material === "crate" ? "#a76728" : "#77828d";
+    ctx.fillRect(x, y, width, height);
+    return;
+  }
+
+  const scale = spriteSheet.naturalWidth / 1254;
+  const [cutX, cutY, cutW, cutH] = spriteCuts[spriteIndex];
+  const inset = material === "grass"
+    ? { left: .14, right: .14, top: .36, bottom: .10, dx: 15, dyTop: 20, dyBottom: 10 }
+    : material === "crate"
+      ? { left: .17, right: .17, top: .17, bottom: .17, dx: 16, dyTop: 14, dyBottom: 14 }
+      : { left: .15, right: .15, top: .15, bottom: .15, dx: 15, dyTop: 14, dyBottom: 14 };
+  const sourceLeft = cutW * inset.left;
+  const sourceRight = cutW * inset.right;
+  const sourceTop = cutH * inset.top;
+  const sourceBottom = cutH * inset.bottom;
+  const destinationLeft = Math.min(inset.dx, width / 2);
+  const destinationRight = Math.min(inset.dx, width - destinationLeft);
+  const destinationTop = Math.min(inset.dyTop, height / 2);
+  const destinationBottom = Math.min(inset.dyBottom, height - destinationTop);
+  const sourceColumns = [0, sourceLeft, cutW - sourceRight, cutW];
+  const sourceRows = [0, sourceTop, cutH - sourceBottom, cutH];
+  const destinationColumns = [0, destinationLeft, width - destinationRight, width];
+  const destinationRows = [0, destinationTop, height - destinationBottom, height];
+
+  for (let row = 0; row < 3; row++) {
+    for (let column = 0; column < 3; column++) {
+      const sourceW = sourceColumns[column + 1] - sourceColumns[column];
+      const sourceH = sourceRows[row + 1] - sourceRows[row];
+      const destinationW = destinationColumns[column + 1] - destinationColumns[column];
+      const destinationH = destinationRows[row + 1] - destinationRows[row];
+      if (sourceW <= 0 || sourceH <= 0 || destinationW <= 0 || destinationH <= 0) continue;
+      ctx.drawImage(
+        spriteSheet,
+        (cutX + sourceColumns[column]) * scale, (cutY + sourceRows[row]) * scale,
+        sourceW * scale, sourceH * scale,
+        x + destinationColumns[column], y + destinationRows[row], destinationW + .25, destinationH + .25
+      );
+    }
+  }
+}
+
+function traceBlockCracks(x, y, width, height) {
+  ctx.beginPath();
+  ctx.moveTo(x + width * .48, y + 1);
+  ctx.lineTo(x + width * .43, y + height * .24);
+  ctx.lineTo(x + width * .55, y + height * .43);
+  ctx.lineTo(x + width * .46, y + height * .68);
+  ctx.lineTo(x + width * .53, y + height - 1);
+  ctx.moveTo(x + width * .43, y + height * .24);
+  ctx.lineTo(x + width * .27, y + height * .34);
+  ctx.lineTo(x + width * .19, y + height * .58);
+  ctx.moveTo(x + width * .55, y + height * .43);
+  ctx.lineTo(x + width * .72, y + height * .31);
+  ctx.lineTo(x + width * .84, y + height * .46);
+  ctx.moveTo(x + width * .46, y + height * .68);
+  ctx.lineTo(x + width * .31, y + height * .82);
+  ctx.moveTo(x + width * .53, y + height * .79);
+  ctx.lineTo(x + width * .71, y + height * .9);
+}
+
 function drawMechanicBlock(block, x, time) {
-  const isCrumble = block.kind === "crumble-block";
-  const isImpact = block.kind === "impact-block";
-  const activeDuration = isCrumble ? .75 : .24;
+  const activeDuration = block.breakTrigger === "stand" ? .75 : .24;
   const breakProgress = block.breakTimer === null ? 0 : Math.min(1, 1 - block.breakTimer / activeDuration);
   const shake = breakProgress > .35 ? Math.sin(time * .09) * breakProgress * 2.2 : 0;
   const drawX = x + shake;
-  const fill = isCrumble ? "#c88a3e" : isImpact ? "#a95062" : "#367c99";
-  const top = isCrumble ? "#f2c35c" : isImpact ? "#f18478" : "#65c5dc";
-  const stroke = isCrumble ? "#70431f" : isImpact ? "#612b42" : "#173e57";
 
   ctx.save();
-  ctx.globalAlpha = 1 - breakProgress * .22;
-  ctx.shadowColor = "#10182580";
+  ctx.globalAlpha = 1 - breakProgress * .2;
+  ctx.shadowColor = "#10182590";
   ctx.shadowBlur = 5;
   ctx.shadowOffsetY = 4;
-  ctx.fillStyle = fill;
-  ctx.strokeStyle = stroke;
-  ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.roundRect(drawX, block.y, block.w, block.h, 7); ctx.fill(); ctx.stroke();
+  drawAssetRectangle(block.material, drawX, block.y, block.w, block.h);
   ctx.shadowColor = "transparent";
-  ctx.fillStyle = top;
-  ctx.beginPath(); ctx.roundRect(drawX + 3, block.y + 3, block.w - 6, 9, 4); ctx.fill();
 
-  ctx.strokeStyle = "#f7f2d9dd";
-  ctx.fillStyle = "#f7f2d9dd";
-  ctx.lineWidth = 2.2;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  const centerX = drawX + block.w / 2;
-  const centerY = block.y + block.h / 2 + 3;
-  if (isCrumble) {
-    ctx.beginPath();
-    ctx.moveTo(centerX - 7, centerY - 7); ctx.lineTo(centerX, centerY); ctx.lineTo(centerX - 5, centerY + 7);
-    ctx.moveTo(centerX + 7, centerY - 7); ctx.lineTo(centerX, centerY); ctx.lineTo(centerX + 5, centerY + 7);
+  if (block.breakable) {
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#241b18e8";
+    ctx.lineWidth = 5;
+    traceBlockCracks(drawX, block.y, block.w, block.h);
     ctx.stroke();
-  } else if (isImpact) {
-    ctx.beginPath();
-    ctx.moveTo(centerX, centerY - 8); ctx.lineTo(centerX, centerY + 5);
-    ctx.moveTo(centerX - 6, centerY); ctx.lineTo(centerX, centerY + 7); ctx.lineTo(centerX + 6, centerY);
+    ctx.strokeStyle = "#f4ddbd99";
+    ctx.lineWidth = 1.25;
+    traceBlockCracks(drawX - 1, block.y, block.w, block.h);
     ctx.stroke();
-  } else {
-    ctx.beginPath();
-    ctx.moveTo(centerX - 10, centerY); ctx.lineTo(centerX + 10, centerY);
-    ctx.stroke();
-    for (const boltX of [drawX + 11, drawX + block.w - 11]) {
-      ctx.beginPath(); ctx.arc(boltX, centerY, 2.8, 0, Math.PI * 2); ctx.fill();
+    if (breakProgress > .3) {
+      ctx.strokeStyle = "#241b18c9";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(drawX + block.w * .08, block.y + block.h * .22);
+      ctx.lineTo(drawX + block.w * .2, block.y + block.h * .43);
+      ctx.moveTo(drawX + block.w * .91, block.y + block.h * .66);
+      ctx.lineTo(drawX + block.w * .78, block.y + block.h * .78);
+      ctx.stroke();
     }
-  }
-
-  if (breakProgress > 0) {
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(drawX + block.w * .28, block.y + 11);
-    ctx.lineTo(drawX + block.w * (.39 + breakProgress * .05), block.y + 20);
-    ctx.lineTo(drawX + block.w * .34, block.y + block.h - 2);
-    ctx.moveTo(drawX + block.w * .72, block.y + 11);
-    ctx.lineTo(drawX + block.w * (.61 - breakProgress * .05), block.y + 21);
-    ctx.lineTo(drawX + block.w * .67, block.y + block.h - 2);
-    ctx.stroke();
   }
   ctx.restore();
 }
@@ -1366,7 +1447,7 @@ function drawPlatform(p, time) {
   if (p.broken) return;
   const x = p.x - cameraX;
   if (x + p.w < -80 || x > VIEW_W + 80) return;
-  if (p.kind === "crumble-block" || p.kind === "impact-block" || p.kind === "floating-block") {
+  if (p.kind === "breakable-block" || p.kind === "floating-block") {
     drawMechanicBlock(p, x, time);
     return;
   }
@@ -1577,6 +1658,30 @@ function drawDeathParticles() {
   }
 }
 
+function drawBlockDebris() {
+  for (const piece of blockDebris) {
+    const opacity = Math.min(1, piece.life * 2.5);
+    ctx.save();
+    ctx.translate(piece.x - cameraX, piece.y);
+    ctx.rotate(piece.rotation);
+    ctx.globalAlpha = opacity;
+    ctx.fillStyle = piece.color;
+    ctx.strokeStyle = "#34251da8";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    if (piece.material === "stone") {
+      ctx.roundRect(-piece.size / 2, -piece.size * .4, piece.size, piece.size * .8, piece.size * .25);
+    } else if (piece.material === "crate") {
+      ctx.roundRect(-piece.size, -piece.size * .22, piece.size * 2, piece.size * .44, 1.5);
+    } else {
+      ctx.roundRect(-piece.size * .55, -piece.size * .45, piece.size * 1.1, piece.size * .9, 2);
+    }
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
 function render(time) {
   ctx.clearRect(0, 0, VIEW_W, VIEW_H);
   drawBackground();
@@ -1585,6 +1690,7 @@ function render(time) {
   for (const h of currentLevel().hazards) drawHazard(h, time);
   currentLevel().stars.forEach(([x, y], i) => drawStar(x, y, i, time));
   drawFlag(currentLevel().finish);
+  drawBlockDebris();
   if (deathTimer > 0) drawDeathParticles();
   else drawPlayer(time);
   if (levelTransition > 0) {
