@@ -95,6 +95,10 @@ canvas {
   backdrop-filter: blur(8px);
 }
 
+.game-shell.cutscene-playing .hud {
+  display: none;
+}
+
 .fullscreen-toggle {
   position: absolute;
   z-index: 4;
