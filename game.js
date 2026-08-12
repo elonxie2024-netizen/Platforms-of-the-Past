@@ -47,7 +47,8 @@ const levelRoadmap = document.querySelector("#levelRoadmap");
 const closeRoadmapButton = document.querySelector("#closeRoadmapButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.6.2", commit: "Pending commit", date: "2026-08-12", message: "Make switch prompts clickable", description: "Turned the nearby E - FLIP prompt into a clickable in-game control while retaining keyboard interaction. The prompt's visible bounds and pointer hit area now stay aligned as it gently bobs above the switch." },
+  { version: "v0.7.0", commit: "Pending commit", date: "2026-08-12", message: "Add rewind origin cutscene", description: "Added a cinematic after completing all seven introductory levels. The slime automatically crosses a short platforming route, enters a time machine instead of a flag, is struck by temporal static, and awakens the power of rewind before the existing results screen appears." },
+  { version: "v0.6.2", commit: "094b908", date: "2026-08-12", message: "Added clickable switches", description: "Turned the nearby E - FLIP prompt into a clickable in-game control while retaining keyboard interaction. The prompt's visible bounds and pointer hit area now stay aligned as it gently bobs above the switch." },
   { version: "v0.6.1", commit: "acfadd2", date: "2026-08-12", message: "Added 2 way switches", description: "Changed switches into two-way controls. A nearby lever can be flipped in either direction, causing its linked platform to move smoothly between its raised destination and submerged starting position." },
   { version: "v0.6.0", commit: "8f4c9a0", date: "2026-08-12", message: "Added 7th level with switches", description: "Added the seventh and final introductory level. Nearby levers display an E interaction prompt and move their linked platforms into place when flipped, creating a route that must be assembled before it can be crossed." },
   { version: "v0.5.2", commit: "0ab1735", date: "2026-08-12", message: "Added roadmap for levels", description: "Changed Play to open a connected level roadmap instead of immediately starting level 1. Completed levels and the next challenge are blue and selectable, future levels are gray and locked, and progression persists in the browser." },
@@ -103,6 +104,7 @@ const JUMP_PAD_SPEED = 1120;
 const COYOTE_TIME = 0.1;
 const JUMP_BUFFER = 0.12;
 const DEATH_DURATION = 0.42;
+const CUTSCENE_DURATION = 10.4;
 
 const R = (x, y, w, h, kind = "grass") => ({ x, y, w, h, kind });
 const P = (x, y, w = 60, h = 60) => ({ x, y, w, h, kind: "crate", pushable: true, baseX: x, baseY: y });
@@ -205,6 +207,10 @@ let deathTimer = 0;
 let deathParticles = [];
 let blockDebris = [];
 let gameStarted = false;
+let cutsceneActive = false;
+let cutsceneTime = 0;
+let cutsceneZapPlayed = false;
+let cutscenePowerPlayed = false;
 let runStartedAt = 0;
 let runElapsed = 0;
 let timerRunning = false;
