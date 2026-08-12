@@ -47,7 +47,8 @@ const levelRoadmap = document.querySelector("#levelRoadmap");
 const closeRoadmapButton = document.querySelector("#closeRoadmapButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.5.2", commit: "Pending commit", date: "2026-08-12", message: "Add level roadmap", description: "Changed Play to open a connected level roadmap instead of immediately starting level 1. Completed levels and the next challenge are blue and selectable, future levels are gray and locked, and progression persists in the browser." },
+  { version: "v0.6.0", commit: "Pending commit", date: "2026-08-12", message: "Add switch-controlled platform level", description: "Added the seventh and final introductory level. Nearby levers display an E interaction prompt and move their linked platforms into place when flipped, creating a route that must be assembled before it can be crossed." },
+  { version: "v0.5.2", commit: "0ab1735", date: "2026-08-12", message: "Added roadmap for levels", description: "Changed Play to open a connected level roadmap instead of immediately starting level 1. Completed levels and the next challenge are blue and selectable, future levels are gray and locked, and progression persists in the browser." },
   { version: "v0.5.1", commit: "d5edda3", date: "2026-08-11", message: "Revamped cracked block texture", description: "Replaced the colored symbol blocks with nine-sliced rectangles made from the original grass, stone, and crate assets. Breakable variants now share an unmistakable cracked appearance and burst into material-specific dirt, pebble, or woodchip debris." },
   { version: "v0.5.0", commit: "ce40cef", date: "2026-08-11", message: "Breakable blocks added in 6th level", description: "Added a sixth level introducing three floating block types: delayed crumble blocks that break after being stood on, impact blocks that break after a jump landing, and permanent floating blocks that never break. Breakable blocks warn the player before disappearing and reset after death or restart." },
   { version: "v0.4.6", commit: "ccf56e7", date: "2026-08-11", message: "Fixed terrain 2", description: "Rebuilt the lower grass and stone layers as left-side, tiled-middle, and right-side columns. The pillar sides now line up with the top layer instead of allowing the center texture to extend past its edges." },
@@ -111,6 +112,10 @@ const F = (x, y, material = "stone", w = 110, h = 54) => ({ x, y, w, h, kind: "f
 const M = (x, y, w, h, axis, range, speed, phase = 0, kind = "stone") => ({
   x, y, w, h, kind, moving: true, axis, range, speed, phase, baseX: x, baseY: y
 });
+const C = (x, y, targetX, targetY, switchId, w = 140, h = 40, kind = "stone") => ({
+  x, y, w, h, kind, controlled: true, switchId, targetX, targetY, baseX: x, baseY: y, moveProgress: 0
+});
+const S = (x, y, id) => ({ x, y, w: 42, h: 44, id, flipped: false });
 const levels = [
   {
     name: "Dirtbound Trail", width: 1260, start: [70, 430], music: "level1",
@@ -148,6 +153,13 @@ const levels = [
     platforms: [R(0,490,260,80,"stone"), F(320,430,"grass"), B(500,390,"stand","grass"), F(680,350,"stone"), B(860,420,"impact","stone"), F(1040,360,"crate"), B(1220,420,"stand","crate"), R(1380,450,120,120,"stone")],
     hazards: [R(260,490,1120,80,"lava")],
     stars: [[375,385],[555,345],[735,305],[915,375],[1095,315],[1275,375],[1435,405]], finish: R(1415,360,34,90)
+  },
+  {
+    name: "Switchback Summit", width: 1500, start: [55,430], music: "level2",
+    platforms: [R(0,490,320,80,"stone"), C(410,520,440,380,"bridge-a",140,40,"stone"), R(640,420,180,150,"stone"), C(900,520,920,345,"bridge-b",145,40,"grass"), R(1160,390,170,180,"stone"), R(1380,450,120,120,"stone")],
+    switches: [S(250,446,"bridge-a"), S(740,376,"bridge-b")],
+    hazards: [R(320,490,320,80,"lava"), R(820,490,340,80,"lava"), R(1330,490,50,80,"lava")],
+    stars: [[285,400],[510,330],[735,330],[1035,285],[1245,345],[1435,405]], finish: R(1415,360,34,90)
   }
 ];
 
@@ -219,6 +231,7 @@ let musicTimer = null;
 let currentTrack = "menu";
 let musicStep = 0;
 let nextMusicNoteTime = 0;
+let developmentSequencePosition = 0;
 const activeMusicVoices = new Set();
 
 const spriteSheet = new Image();
@@ -272,10 +285,16 @@ function startSpikeDeath() {
 
 function resetLevelMotion() {
   levelMotionTime = 0;
+  for (const levelSwitch of currentLevel().switches || []) levelSwitch.flipped = false;
   for (const platform of currentLevel().platforms) {
     if (platform.pushable) {
       platform.x = platform.baseX;
       platform.y = platform.baseY;
+    }
+    if (platform.controlled) {
+      platform.x = platform.baseX;
+      platform.y = platform.baseY;
+      platform.moveProgress = 0;
     }
     if (!platform.moving) continue;
     const offset = Math.sin(platform.phase) * platform.range;
@@ -284,22 +303,42 @@ function resetLevelMotion() {
   }
 }
 
+function movePlatformWithPlayer(platform, nextX, nextY) {
+  const oldX = platform.x;
+  const oldY = platform.y;
+  const wasStanding = player.grounded &&
+    Math.abs(player.y + PLAYER_H - oldY) < 3 &&
+    player.x + PLAYER_W > oldX && player.x < oldX + platform.w;
+  platform.x = nextX;
+  platform.y = nextY;
+  if (wasStanding) {
+    player.x += platform.x - oldX;
+    player.y += platform.y - oldY;
+  }
+}
+
 function updateMovingPlatforms(dt) {
   levelMotionTime += dt;
   for (const platform of currentLevel().platforms) {
-    if (!platform.moving) continue;
-    const oldX = platform.x;
-    const oldY = platform.y;
-    const wasStanding = player.grounded &&
-      Math.abs(player.y + PLAYER_H - oldY) < 3 &&
-      player.x + PLAYER_W > oldX && player.x < oldX + platform.w;
-    const offset = Math.sin(levelMotionTime * platform.speed + platform.phase) * platform.range;
-    platform.x = platform.baseX + (platform.axis === "x" ? offset : 0);
-    platform.y = platform.baseY + (platform.axis === "y" ? offset : 0);
-    if (wasStanding) {
-      player.x += platform.x - oldX;
-      player.y += platform.y - oldY;
+    if (platform.controlled) {
+      const linkedSwitch = currentLevel().switches?.find((candidate) => candidate.id === platform.switchId);
+      if (!linkedSwitch?.flipped || platform.moveProgress >= 1) continue;
+      platform.moveProgress = Math.min(1, platform.moveProgress + dt / 1.15);
+      const eased = platform.moveProgress * platform.moveProgress * (3 - 2 * platform.moveProgress);
+      movePlatformWithPlayer(
+        platform,
+        platform.baseX + (platform.targetX - platform.baseX) * eased,
+        platform.baseY + (platform.targetY - platform.baseY) * eased
+      );
+      continue;
     }
+    if (!platform.moving) continue;
+    const offset = Math.sin(levelMotionTime * platform.speed + platform.phase) * platform.range;
+    movePlatformWithPlayer(
+      platform,
+      platform.baseX + (platform.axis === "x" ? offset : 0),
+      platform.baseY + (platform.axis === "y" ? offset : 0)
+    );
   }
 }
 
@@ -457,7 +496,7 @@ function unlockThrough(index) {
 }
 
 const ROADMAP_POINTS = [
-  [10, 72], [27, 39], [43, 68], [59, 31], [75, 63], [91, 28]
+  [8, 70], [22, 35], [36, 68], [50, 30], [64, 66], [78, 34], [92, 65]
 ];
 
 function renderRoadmap() {
@@ -724,10 +763,43 @@ function setKey(code, down) {
   }
 }
 
+function nearbySwitch() {
+  if (!player.grounded) return null;
+  const playerCenter = player.x + PLAYER_W / 2;
+  const playerFeet = player.y + PLAYER_H;
+  return (currentLevel().switches || []).find((levelSwitch) =>
+    !levelSwitch.flipped &&
+    Math.abs(playerCenter - (levelSwitch.x + levelSwitch.w / 2)) <= 72 &&
+    Math.abs(playerFeet - (levelSwitch.y + levelSwitch.h)) <= 8
+  ) || null;
+}
+
+function activateNearbySwitch() {
+  const levelSwitch = nearbySwitch();
+  if (!levelSwitch) return false;
+  levelSwitch.flipped = true;
+  playSfx("switch");
+  return true;
+}
+
+function trackDevelopmentSequence(event) {
+  if (event.repeat || event.key.length !== 1) return;
+  const sequence = [99, 104, 101, 101, 115, 101, 98, 117, 114, 103, 101, 114];
+  const key = event.key.toLowerCase().charCodeAt(0);
+  developmentSequencePosition = key === sequence[developmentSequencePosition]
+    ? developmentSequencePosition + 1
+    : key === sequence[0] ? 1 : 0;
+  if (developmentSequencePosition !== sequence.length) return;
+  developmentSequencePosition = 0;
+  unlockThrough(levels.length - 1);
+  if (!roadmapMenu.hidden) renderRoadmap();
+}
+
 addEventListener("keydown", (event) => {
   if (event.target instanceof Element && event.target.matches("input, textarea, select")) return;
+  trackDevelopmentSequence(event);
   if (!gameStarted) return;
-  if (["ArrowLeft", "ArrowRight", "ArrowUp", "Space", "KeyP"].includes(event.code)) event.preventDefault();
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "Space", "KeyP", "KeyE"].includes(event.code)) event.preventDefault();
   if (event.code === "KeyP" && !won) {
     if (!leaderboardMenu.hidden && leaderboardReturn === "pause") closeLeaderboard();
     else if (!changelogMenu.hidden && changelogReturn === "pause") closeChangelog();
@@ -735,6 +807,7 @@ addEventListener("keydown", (event) => {
     return;
   }
   if (paused) return;
+  if (event.code === "KeyE") activateNearbySwitch();
   if (event.code === "KeyR") restartLevel();
   if (event.code === "KeyT") startOver();
   if (event.code === "Enter" && won) startOver();
@@ -883,6 +956,9 @@ function playSfx(name, intensity = 1) {
   } else if (name === "jump-pad") {
     [55, 62, 67].forEach((note, index) => scheduleTone(midiToFrequency(note), now + index * .035, .13, "square", .09, sfxGain));
     playNoise(.07, .035, 1800);
+  } else if (name === "switch") {
+    scheduleTone(160, now, .08, "square", .07, sfxGain);
+    scheduleTone(245, now + .06, .13, "triangle", .09, sfxGain);
   } else if (name === "block-break") {
     playNoise(.12, .075, 1250);
     scheduleTone(125, now, .09, "square", .07, sfxGain);
@@ -1618,6 +1694,55 @@ function drawMovingPlatformMarker(platform, x) {
   ctx.restore();
 }
 
+function drawSwitch(levelSwitch, time) {
+  const x = levelSwitch.x - cameraX;
+  if (x + levelSwitch.w < -30 || x > VIEW_W + 30) return;
+  const centerX = x + levelSwitch.w / 2;
+  const baseY = levelSwitch.y + levelSwitch.h;
+  const leverDirection = levelSwitch.flipped ? 1 : -1;
+
+  ctx.save();
+  ctx.shadowColor = "#0a102288";
+  ctx.shadowBlur = 5;
+  ctx.shadowOffsetY = 3;
+  ctx.fillStyle = "#38485a";
+  ctx.strokeStyle = "#172434";
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.roundRect(x + 3, baseY - 14, levelSwitch.w - 6, 14, 5); ctx.fill(); ctx.stroke();
+  ctx.shadowColor = "transparent";
+  ctx.strokeStyle = "#d4dbe1";
+  ctx.lineWidth = 6;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(centerX, baseY - 13);
+  ctx.lineTo(centerX + leverDirection * 13, levelSwitch.y + 7);
+  ctx.stroke();
+  ctx.fillStyle = levelSwitch.flipped ? "#74dc88" : "#efb746";
+  ctx.strokeStyle = "#183a2a";
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(centerX + leverDirection * 13, levelSwitch.y + 7, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+  if (nearbySwitch() === levelSwitch) {
+    const bob = Math.sin(time * .006) * 2;
+    const promptY = levelSwitch.y - 38 + bob;
+    ctx.fillStyle = "#07162de8";
+    ctx.strokeStyle = "#8de4ff";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(centerX - 39, promptY, 78, 29, 9); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#ffe05d";
+    ctx.beginPath(); ctx.roundRect(centerX - 31, promptY + 5, 20, 19, 5); ctx.fill();
+    ctx.fillStyle = "#152039";
+    ctx.font = "900 13px Inter, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("E", centerX - 21, promptY + 15);
+    ctx.fillStyle = "#e9f7ff";
+    ctx.font = "800 11px Inter, sans-serif";
+    ctx.fillText("FLIP", centerX + 11, promptY + 15);
+  }
+  ctx.restore();
+}
+
 function drawJumpPad(pad, time) {
   const x = pad.x - cameraX;
   if (x + pad.w < -20 || x > VIEW_W + 20) return;
@@ -1779,6 +1904,7 @@ function render(time) {
   ctx.clearRect(0, 0, VIEW_W, VIEW_H);
   drawBackground();
   for (const p of currentLevel().platforms) drawPlatform(p, time);
+  for (const levelSwitch of currentLevel().switches || []) drawSwitch(levelSwitch, time);
   for (const pad of currentLevel().jumpPads || []) drawJumpPad(pad, time);
   for (const h of currentLevel().hazards) drawHazard(h, time);
   currentLevel().stars.forEach(([x, y], i) => drawStar(x, y, i, time));
