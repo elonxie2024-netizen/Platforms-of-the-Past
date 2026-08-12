@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Rewind is introduced in the ending cinematic, while its gameplay mechanic will be implemented later.
 
-**Current version:** `v0.7.2`
+**Current version:** `v0.7.4`
 
 ## How it works
 
@@ -32,7 +32,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Follow development.** Open the changelog from the main menu or pause menu to read every version and Git commit in the game's history.
 
-**Choose your route.** Play opens a persistent level roadmap. Completed levels and the next challenge can be replayed, while future levels remain locked until reached.
+**Choose your route.** Play opens a level roadmap for the current session. Completed levels and the next challenge can be replayed, while future levels remain locked until reached. Refreshing or selecting Restart session begins again from Dirtbound Trail.
 
 **Change the past.** In the finished game, time travel will let you switch eras and reshape the level. A bridge that is broken in the present may still stand in the past, while a seed planted long ago could become a path through the future.
 
@@ -56,10 +56,10 @@ The playable prototype includes:
 - A jump pad in level 3 and automatically cycling moving platforms in level 4
 - Required crate-pushing puzzles in level 5; crates act as movable steps
 - Asset-textured floating blocks and visibly cracked breakable variants that burst into material-specific debris in level 6
-- A persistent level roadmap with connected numbered stages and progression locks
+- A session-based level roadmap with connected numbered stages and progression locks
 - Reversible nearby switches with clickable `E - FLIP` prompts that raise or submerge linked platforms in level 7
 - A story cutscene after level 7 that reveals the time machine and the slime's rewind power
-- An evolved post-cutscene main menu where the slime climbs endlessly through rising platforms and drifting clouds
+- An evolved post-cutscene main menu where two looping platforms trade places as the slime climbs through drifting clouds
 - Animated lava, spikes, steeper elevation changes, and more demanding star routes
 - A persistent speedrun timer and completion score
 - Per-level timing and a complete split summary

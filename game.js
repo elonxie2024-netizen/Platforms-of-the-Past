@@ -23,7 +23,7 @@ const volumeInput = document.querySelector("#volumeInput");
 const volumeValue = document.querySelector("#volumeValue");
 const menuStage = document.querySelector(".menu-stage");
 const menuSlime = document.querySelector(".menu-slime");
-const menuClimbPlatforms = [...document.querySelectorAll(".menu-climb-platform")];
+const menuPlatforms = [...document.querySelectorAll(".menu-platform")];
 const menuClouds = [...document.querySelectorAll(".menu-cloud")];
 const mainLeaderboardButton = document.querySelector("#mainLeaderboardButton");
 const pauseMenu = document.querySelector("#pauseMenu");
@@ -40,6 +40,7 @@ const publishRunButton = document.querySelector("#publishRunButton");
 const publishStatus = document.querySelector("#publishStatus");
 const splitList = document.querySelector("#splitList");
 const mainChangelogButton = document.querySelector("#mainChangelogButton");
+const restartSessionButton = document.querySelector("#restartSessionButton");
 const pauseChangelogButton = document.querySelector("#pauseChangelogButton");
 const changelogMenu = document.querySelector("#changelogMenu");
 const changelogList = document.querySelector("#changelogList");
@@ -49,7 +50,9 @@ const levelRoadmap = document.querySelector("#levelRoadmap");
 const closeRoadmapButton = document.querySelector("#closeRoadmapButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.7.2", commit: "Pending commit", date: "2026-08-12", message: "Evolve the main menu after rewind", description: "Added a persistent post-cutscene main-menu animation. After awakening rewind and returning to the menu, the slime endlessly climbs a looping staircase of rising platforms while layered clouds drift past." },
+  { version: "v0.7.4", commit: "Pending commit", date: "2026-08-12", message: "Add session-based progression", description: "Changed roadmap unlocks and the post-cutscene menu transformation to last only for the current browser session. Refreshing now restores Dirtbound Trail as the sole unlocked level and returns the menu to its original animation, while a new Restart session button performs the same complete reset immediately." },
+  { version: "v0.7.3", commit: "Pending commit", date: "2026-08-12", message: "Refine the post-cutscene climb loop", description: "Reworked the awakened main-menu animation around the original two platforms. One remains central while the other drops below the stage, reappears at the top as a new destination, and trades places with it after the slime jumps upward." },
+  { version: "v0.7.2", commit: "8bcce68", date: "2026-08-12", message: "Added post-cutscene menu animation", description: "Added a persistent post-cutscene main-menu animation. After awakening rewind and returning to the menu, the slime endlessly climbs a looping staircase of rising platforms while layered clouds drift past." },
   { version: "v0.7.1", commit: "1aaa466", date: "2026-08-12", message: "Finished cutscene", description: "Completed the cinematic after all seven introductory levels. The slime automatically crosses a short platforming route, enters a time machine instead of a flag, is struck by temporal static, and awakens the power of rewind before the existing results screen appears." },
   { version: "v0.7.0", commit: "232ee51", date: "2026-08-12", message: "Added rewind cutscene", description: "Established the rewind-origin update and its initial ending-cutscene structure." },
   { version: "v0.6.2", commit: "094b908", date: "2026-08-12", message: "Added clickable switches", description: "Turned the nearby E - FLIP prompt into a clickable in-game control while retaining keyboard interaction. The prompt's visible bounds and pointer hit area now stay aligned as it gently bobs above the switch." },
@@ -231,10 +234,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEADERBOARD_STORAGE_KEY = "platforms-past-leaderboard-v1";
-const PROGRESS_STORAGE_KEY = "platforms-past-progress-v1";
-const REWIND_MENU_STORAGE_KEY = "platforms-past-rewind-awakened-v1";
-let rewindMenuAwakened = loadRewindMenuState();
-let highestUnlockedLevel = loadUnlockedLevel();
+const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
+let rewindMenuAwakened = false;
+let awakenedMenuAnimationStart = null;
+let highestUnlockedLevel = 0;
 let leaderboardEntries = loadLeaderboardEntries();
 let masterVolume = 1;
 let audioContext = null;
@@ -247,6 +250,13 @@ let musicStep = 0;
 let nextMusicNoteTime = 0;
 let developmentSequencePosition = 0;
 const activeMusicVoices = new Set();
+
+function clearLegacySessionState() {
+  try { LEGACY_SESSION_STORAGE_KEYS.forEach(key => localStorage.removeItem(key)); }
+  catch { /* Session state is already kept in memory only. */ }
+}
+
+clearLegacySessionState();
 
 const spriteSheet = new Image();
 let spritesReady = false;
@@ -491,29 +501,18 @@ function saveLeaderboardEntries() {
   }
 }
 
-function loadUnlockedLevel() {
-  try {
-    const rawProgress = localStorage.getItem(PROGRESS_STORAGE_KEY);
-    if (rawProgress === null) {
-      const oldRuns = JSON.parse(localStorage.getItem(LEADERBOARD_STORAGE_KEY) || "[]");
-      if (Array.isArray(oldRuns) && oldRuns.length > 0) return levels.length - 1;
-    }
-    const saved = Number(rawProgress);
-    return Number.isInteger(saved) ? Math.max(0, Math.min(levels.length - 1, saved)) : 0;
-  } catch {
-    return 0;
-  }
-}
-
-function loadRewindMenuState() {
-  try { return localStorage.getItem(REWIND_MENU_STORAGE_KEY) === "true"; }
-  catch { return false; }
-}
-
 function applyRewindMenuState() {
   menuStage.classList.toggle("rewind-awakened", rewindMenuAwakened);
+  awakenedMenuAnimationStart = null;
+  if (!rewindMenuAwakened) {
+    menuPlatforms.forEach(platform => {
+      platform.style.removeProperty("left");
+      platform.style.removeProperty("right");
+      platform.style.removeProperty("bottom");
+    });
+  }
   menuStage.setAttribute("aria-label", rewindMenuAwakened
-    ? "The rewind-powered green slime endlessly climbing through clouds on rising platforms"
+    ? "The rewind-powered green slime endlessly climbing between two looping platforms through clouds"
     : "A green slime endlessly jumping between two grassy platforms");
 }
 
@@ -521,7 +520,6 @@ function unlockThrough(index) {
   const unlocked = Math.max(0, Math.min(levels.length - 1, index));
   if (unlocked <= highestUnlockedLevel) return;
   highestUnlockedLevel = unlocked;
-  try { localStorage.setItem(PROGRESS_STORAGE_KEY, String(highestUnlockedLevel)); } catch { /* Progress remains available for this session. */ }
 }
 
 const ROADMAP_POINTS = [
@@ -810,7 +808,6 @@ function showAdventureComplete() {
   gameShell.classList.remove("cutscene-playing");
   cutsceneActive = false;
   rewindMenuAwakened = true;
-  try { localStorage.setItem(REWIND_MENU_STORAGE_KEY, "true"); } catch { /* The evolved menu remains active for this session. */ }
   applyRewindMenuState();
   won = true;
   message.hidden = false;
@@ -944,6 +941,7 @@ closeLeaderboardButton.addEventListener("click", closeLeaderboard);
 mainChangelogButton.addEventListener("click", () => openChangelog("main"));
 pauseChangelogButton.addEventListener("click", () => openChangelog("pause"));
 closeChangelogButton.addEventListener("click", closeChangelog);
+restartSessionButton.addEventListener("click", restartSession);
 publishRunButton.addEventListener("click", publishFinishedRun);
 runNameInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -1136,7 +1134,10 @@ document.addEventListener("pointerdown", () => ensureAudio(), { once: true });
 document.addEventListener("keydown", () => ensureAudio(), { once: true });
 
 function updateMenuAnimation(time) {
-  if (mainMenu.hidden) return;
+  if (mainMenu.hidden) {
+    awakenedMenuAnimationStart = null;
+    return;
+  }
 
   const stageWidth = menuStage.clientWidth;
   const stageHeight = menuStage.clientHeight;
@@ -1144,34 +1145,73 @@ function updateMenuAnimation(time) {
 
   if (rewindMenuAwakened) {
     const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const scroll = reducedMotion ? 0 : time * .014;
-    const verticalCycle = stageHeight + 58;
-    const platformX = [.08, .57, .19, .64, .3];
-    menuClimbPlatforms.forEach((platform, index) => {
-      const bottom = -34 + ((index * verticalCycle / menuClimbPlatforms.length + scroll) % verticalCycle);
-      platform.style.left = `${platformX[index] * stageWidth}px`;
-      platform.style.bottom = `${bottom}px`;
-    });
+    if (awakenedMenuAnimationStart === null) awakenedMenuAnimationStart = time;
+    const animationTime = time - awakenedMenuAnimationStart;
+    const cycleDuration = 2400;
+    const cycle = Math.floor(animationTime / cycleDuration);
+    const progress = reducedMotion ? .68 : (animationTime % cycleDuration) / cycleDuration;
+    const sourceIndex = cycle % 2;
+    const destinationIndex = (sourceIndex + 1) % 2;
+    const source = menuPlatforms[sourceIndex];
+    const destination = menuPlatforms[destinationIndex];
+    const leftX = stageWidth * .08;
+    const rightX = stageWidth * .60;
+    const sourceX = sourceIndex === 0 ? leftX : rightX;
+    const destinationX = destinationIndex === 0 ? leftX : rightX;
+    const middleBottom = Math.max(28, stageHeight * .22);
+    const upperBottom = Math.min(stageHeight - 82, middleBottom + stageHeight * .33);
+    const belowBottom = -48;
+    const jumpStart = .08;
+    const jumpEnd = .68;
+    const smoothstep = value => value * value * (3 - 2 * value);
+
+    let sourceBottom = middleBottom;
+    let destinationBottom = upperBottom;
+    if (progress > jumpEnd) {
+      const shift = smoothstep((progress - jumpEnd) / (1 - jumpEnd));
+      sourceBottom = middleBottom + (belowBottom - middleBottom) * shift;
+      destinationBottom = upperBottom + (middleBottom - upperBottom) * shift;
+    }
+
+    source.style.left = `${sourceX}px`;
+    source.style.right = "auto";
+    source.style.bottom = `${sourceBottom}px`;
+    destination.style.left = `${destinationX}px`;
+    destination.style.right = "auto";
+    destination.style.bottom = `${destinationBottom}px`;
+
     menuClouds.forEach((cloud, index) => {
       const cloudCycle = stageHeight + 70;
-      const top = -48 + ((index * 79 + (reducedMotion ? 0 : time * (.006 + index * .0015))) % cloudCycle);
+      const top = -48 + ((index * 79 + (reducedMotion ? 0 : animationTime * (.006 + index * .0015))) % cloudCycle);
       const scale = [1, .72, .55][index];
       cloud.style.top = `${top}px`;
       cloud.style.transform = `scale(${scale})`;
     });
 
-    const jumpDuration = 1050;
-    const jump = Math.floor(time / jumpDuration);
-    const progress = (time % jumpDuration) / jumpDuration;
-    const climbX = [.2, .62, .31, .69];
-    const from = climbX[jump % climbX.length] * stageWidth;
-    const to = climbX[(jump + 1) % climbX.length] * stageWidth;
-    const arc = reducedMotion ? 0 : Math.sin(progress * Math.PI);
-    const x = reducedMotion ? stageWidth * .34 : from + (to - from) * progress;
-    const baseBottom = stageHeight * .28;
-    menuSlime.style.left = `${x - slimeWidth / 2}px`;
-    menuSlime.style.bottom = `${baseBottom + arc * Math.min(74, stageHeight * .43)}px`;
-    menuSlime.style.transform = `rotate(${(to > from ? 1 : -1) * arc * 4}deg) scale(${1 - arc * .04}, ${1 + arc * .06})`;
+    const sourceCenter = sourceX + source.offsetWidth / 2;
+    const destinationCenter = destinationX + destination.offsetWidth / 2;
+    const platformHeight = source.offsetHeight || 34;
+    let slimeX = sourceCenter;
+    let slimeBottom = sourceBottom + platformHeight;
+    let arc = 0;
+
+    if (progress >= jumpStart && progress <= jumpEnd) {
+      const jumpProgress = (progress - jumpStart) / (jumpEnd - jumpStart);
+      const travel = smoothstep(jumpProgress);
+      arc = Math.sin(jumpProgress * Math.PI);
+      slimeX = sourceCenter + (destinationCenter - sourceCenter) * travel;
+      slimeBottom = sourceBottom + platformHeight
+        + (destinationBottom - sourceBottom) * travel
+        + arc * Math.min(34, stageHeight * .19);
+    } else if (progress > jumpEnd) {
+      slimeX = destinationCenter;
+      slimeBottom = destinationBottom + platformHeight;
+    }
+
+    const direction = destinationCenter > sourceCenter ? 1 : -1;
+    menuSlime.style.left = `${slimeX - slimeWidth / 2}px`;
+    menuSlime.style.bottom = `${slimeBottom}px`;
+    menuSlime.style.transform = `rotate(${direction * arc * 4}deg) scale(${1 - arc * .04}, ${1 + arc * .06})`;
     return;
   }
 
@@ -1314,6 +1354,16 @@ function quitRun() {
   startMusic("menu");
   playButton.focus();
   updatePauseButton();
+}
+
+function restartSession() {
+  highestUnlockedLevel = 0;
+  rewindMenuAwakened = false;
+  runStartLevel = 0;
+  developmentSequencePosition = 0;
+  clearLegacySessionState();
+  applyRewindMenuState();
+  quitRun();
 }
 
 function tryPushCrate(crate, distance) {
