@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. The time-travel mechanic is the next major feature and is not implemented yet.
 
-**Current version:** `v0.6.0`
+**Current version:** `v0.6.1`
 
 ## How it works
 
@@ -55,7 +55,7 @@ The playable prototype includes:
 - Required crate-pushing puzzles in level 5; crates act as movable steps
 - Asset-textured floating blocks and visibly cracked breakable variants that burst into material-specific debris in level 6
 - A persistent level roadmap with connected numbered stages and progression locks
-- Nearby switches that move linked platforms into place in level 7
+- Reversible nearby switches that raise or submerge linked platforms in level 7
 - Animated lava, spikes, steeper elevation changes, and more demanding star routes
 - A persistent speedrun timer and completion score
 - Per-level timing and a complete split summary

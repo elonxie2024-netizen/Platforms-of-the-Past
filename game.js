@@ -47,7 +47,8 @@ const levelRoadmap = document.querySelector("#levelRoadmap");
 const closeRoadmapButton = document.querySelector("#closeRoadmapButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.6.0", commit: "Pending commit", date: "2026-08-12", message: "Add switch-controlled platform level", description: "Added the seventh and final introductory level. Nearby levers display an E interaction prompt and move their linked platforms into place when flipped, creating a route that must be assembled before it can be crossed." },
+  { version: "v0.6.1", commit: "Pending commit", date: "2026-08-12", message: "Make platform switches reversible", description: "Changed switches into two-way controls. A nearby lever can be flipped in either direction, causing its linked platform to move smoothly between its raised destination and submerged starting position." },
+  { version: "v0.6.0", commit: "8f4c9a0", date: "2026-08-12", message: "Added 7th level with switches", description: "Added the seventh and final introductory level. Nearby levers display an E interaction prompt and move their linked platforms into place when flipped, creating a route that must be assembled before it can be crossed." },
   { version: "v0.5.2", commit: "0ab1735", date: "2026-08-12", message: "Added roadmap for levels", description: "Changed Play to open a connected level roadmap instead of immediately starting level 1. Completed levels and the next challenge are blue and selectable, future levels are gray and locked, and progression persists in the browser." },
   { version: "v0.5.1", commit: "d5edda3", date: "2026-08-11", message: "Revamped cracked block texture", description: "Replaced the colored symbol blocks with nine-sliced rectangles made from the original grass, stone, and crate assets. Breakable variants now share an unmistakable cracked appearance and burst into material-specific dirt, pebble, or woodchip debris." },
   { version: "v0.5.0", commit: "ce40cef", date: "2026-08-11", message: "Breakable blocks added in 6th level", description: "Added a sixth level introducing three floating block types: delayed crumble blocks that break after being stood on, impact blocks that break after a jump landing, and permanent floating blocks that never break. Breakable blocks warn the player before disappearing and reset after death or restart." },
@@ -322,8 +323,11 @@ function updateMovingPlatforms(dt) {
   for (const platform of currentLevel().platforms) {
     if (platform.controlled) {
       const linkedSwitch = currentLevel().switches?.find((candidate) => candidate.id === platform.switchId);
-      if (!linkedSwitch?.flipped || platform.moveProgress >= 1) continue;
-      platform.moveProgress = Math.min(1, platform.moveProgress + dt / 1.15);
+      const targetProgress = linkedSwitch?.flipped ? 1 : 0;
+      if (platform.moveProgress === targetProgress) continue;
+      platform.moveProgress = Math.max(0, Math.min(1,
+        platform.moveProgress + Math.sign(targetProgress - platform.moveProgress) * dt / 1.15
+      ));
       const eased = platform.moveProgress * platform.moveProgress * (3 - 2 * platform.moveProgress);
       movePlatformWithPlayer(
         platform,
@@ -768,7 +772,6 @@ function nearbySwitch() {
   const playerCenter = player.x + PLAYER_W / 2;
   const playerFeet = player.y + PLAYER_H;
   return (currentLevel().switches || []).find((levelSwitch) =>
-    !levelSwitch.flipped &&
     Math.abs(playerCenter - (levelSwitch.x + levelSwitch.w / 2)) <= 72 &&
     Math.abs(playerFeet - (levelSwitch.y + levelSwitch.h)) <= 8
   ) || null;
@@ -777,7 +780,7 @@ function nearbySwitch() {
 function activateNearbySwitch() {
   const levelSwitch = nearbySwitch();
   if (!levelSwitch) return false;
-  levelSwitch.flipped = true;
+  levelSwitch.flipped = !levelSwitch.flipped;
   playSfx("switch");
   return true;
 }
