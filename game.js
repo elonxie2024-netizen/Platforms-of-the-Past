@@ -47,7 +47,8 @@ const levelRoadmap = document.querySelector("#levelRoadmap");
 const closeRoadmapButton = document.querySelector("#closeRoadmapButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.6.1", commit: "Pending commit", date: "2026-08-12", message: "Make platform switches reversible", description: "Changed switches into two-way controls. A nearby lever can be flipped in either direction, causing its linked platform to move smoothly between its raised destination and submerged starting position." },
+  { version: "v0.6.2", commit: "Pending commit", date: "2026-08-12", message: "Make switch prompts clickable", description: "Turned the nearby E - FLIP prompt into a clickable in-game control while retaining keyboard interaction. The prompt's visible bounds and pointer hit area now stay aligned as it gently bobs above the switch." },
+  { version: "v0.6.1", commit: "acfadd2", date: "2026-08-12", message: "Added 2 way switches", description: "Changed switches into two-way controls. A nearby lever can be flipped in either direction, causing its linked platform to move smoothly between its raised destination and submerged starting position." },
   { version: "v0.6.0", commit: "8f4c9a0", date: "2026-08-12", message: "Added 7th level with switches", description: "Added the seventh and final introductory level. Nearby levers display an E interaction prompt and move their linked platforms into place when flipped, creating a route that must be assembled before it can be crossed." },
   { version: "v0.5.2", commit: "0ab1735", date: "2026-08-12", message: "Added roadmap for levels", description: "Changed Play to open a connected level roadmap instead of immediately starting level 1. Completed levels and the next challenge are blue and selectable, future levels are gray and locked, and progression persists in the browser." },
   { version: "v0.5.1", commit: "d5edda3", date: "2026-08-11", message: "Revamped cracked block texture", description: "Replaced the colored symbol blocks with nine-sliced rectangles made from the original grass, stone, and crate assets. Breakable variants now share an unmistakable cracked appearance and burst into material-specific dirt, pebble, or woodchip debris." },
@@ -784,6 +785,30 @@ function activateNearbySwitch() {
   playSfx("switch");
   return true;
 }
+
+function switchPromptBounds(levelSwitch, time) {
+  const centerX = levelSwitch.x - cameraX + levelSwitch.w / 2;
+  return {
+    x: centerX - 44,
+    y: levelSwitch.y - 38 + Math.sin(time * .006) * 2,
+    w: 88,
+    h: 29
+  };
+}
+
+canvas.addEventListener("pointerdown", (event) => {
+  if (!gameStarted || paused || won) return;
+  const levelSwitch = nearbySwitch();
+  if (!levelSwitch) return;
+  const canvasRect = canvas.getBoundingClientRect();
+  const pointerX = (event.clientX - canvasRect.left) * VIEW_W / canvasRect.width;
+  const pointerY = (event.clientY - canvasRect.top) * VIEW_H / canvasRect.height;
+  const prompt = switchPromptBounds(levelSwitch, performance.now());
+  if (pointerX < prompt.x || pointerX > prompt.x + prompt.w || pointerY < prompt.y || pointerY > prompt.y + prompt.h) return;
+  event.preventDefault();
+  activateNearbySwitch();
+  canvas.focus();
+});
 
 function trackDevelopmentSequence(event) {
   if (event.repeat || event.key.length !== 1) return;
@@ -1726,22 +1751,21 @@ function drawSwitch(levelSwitch, time) {
   ctx.beginPath(); ctx.arc(centerX + leverDirection * 13, levelSwitch.y + 7, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
   if (nearbySwitch() === levelSwitch) {
-    const bob = Math.sin(time * .006) * 2;
-    const promptY = levelSwitch.y - 38 + bob;
+    const prompt = switchPromptBounds(levelSwitch, time);
     ctx.fillStyle = "#07162de8";
     ctx.strokeStyle = "#8de4ff";
     ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect(centerX - 39, promptY, 78, 29, 9); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(prompt.x, prompt.y, prompt.w, prompt.h, 9); ctx.fill(); ctx.stroke();
     ctx.fillStyle = "#ffe05d";
-    ctx.beginPath(); ctx.roundRect(centerX - 31, promptY + 5, 20, 19, 5); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(prompt.x + 7, prompt.y + 5, 20, 19, 5); ctx.fill();
     ctx.fillStyle = "#152039";
     ctx.font = "900 13px Inter, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("E", centerX - 21, promptY + 15);
+    ctx.fillText("E", prompt.x + 17, prompt.y + 15);
     ctx.fillStyle = "#e9f7ff";
     ctx.font = "800 11px Inter, sans-serif";
-    ctx.fillText("FLIP", centerX + 11, promptY + 15);
+    ctx.fillText("- FLIP", prompt.x + 57, prompt.y + 15);
   }
   ctx.restore();
 }
