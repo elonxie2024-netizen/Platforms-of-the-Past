@@ -23,6 +23,8 @@ const volumeInput = document.querySelector("#volumeInput");
 const volumeValue = document.querySelector("#volumeValue");
 const menuStage = document.querySelector(".menu-stage");
 const menuSlime = document.querySelector(".menu-slime");
+const menuClimbPlatforms = [...document.querySelectorAll(".menu-climb-platform")];
+const menuClouds = [...document.querySelectorAll(".menu-cloud")];
 const mainLeaderboardButton = document.querySelector("#mainLeaderboardButton");
 const pauseMenu = document.querySelector("#pauseMenu");
 const resumeButton = document.querySelector("#resumeButton");
@@ -47,7 +49,8 @@ const levelRoadmap = document.querySelector("#levelRoadmap");
 const closeRoadmapButton = document.querySelector("#closeRoadmapButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.7.1", commit: "Pending commit", date: "2026-08-12", message: "Complete rewind origin cutscene", description: "Completed the cinematic after all seven introductory levels. The slime automatically crosses a short platforming route, enters a time machine instead of a flag, is struck by temporal static, and awakens the power of rewind before the existing results screen appears." },
+  { version: "v0.7.2", commit: "Pending commit", date: "2026-08-12", message: "Evolve the main menu after rewind", description: "Added a persistent post-cutscene main-menu animation. After awakening rewind and returning to the menu, the slime endlessly climbs a looping staircase of rising platforms while layered clouds drift past." },
+  { version: "v0.7.1", commit: "1aaa466", date: "2026-08-12", message: "Finished cutscene", description: "Completed the cinematic after all seven introductory levels. The slime automatically crosses a short platforming route, enters a time machine instead of a flag, is struck by temporal static, and awakens the power of rewind before the existing results screen appears." },
   { version: "v0.7.0", commit: "232ee51", date: "2026-08-12", message: "Added rewind cutscene", description: "Established the rewind-origin update and its initial ending-cutscene structure." },
   { version: "v0.6.2", commit: "094b908", date: "2026-08-12", message: "Added clickable switches", description: "Turned the nearby E - FLIP prompt into a clickable in-game control while retaining keyboard interaction. The prompt's visible bounds and pointer hit area now stay aligned as it gently bobs above the switch." },
   { version: "v0.6.1", commit: "acfadd2", date: "2026-08-12", message: "Added 2 way switches", description: "Changed switches into two-way controls. A nearby lever can be flipped in either direction, causing its linked platform to move smoothly between its raised destination and submerged starting position." },
@@ -229,6 +232,8 @@ let finishedRun = null;
 let runPublished = false;
 const LEADERBOARD_STORAGE_KEY = "platforms-past-leaderboard-v1";
 const PROGRESS_STORAGE_KEY = "platforms-past-progress-v1";
+const REWIND_MENU_STORAGE_KEY = "platforms-past-rewind-awakened-v1";
+let rewindMenuAwakened = loadRewindMenuState();
 let highestUnlockedLevel = loadUnlockedLevel();
 let leaderboardEntries = loadLeaderboardEntries();
 let masterVolume = 1;
@@ -498,6 +503,18 @@ function loadUnlockedLevel() {
   } catch {
     return 0;
   }
+}
+
+function loadRewindMenuState() {
+  try { return localStorage.getItem(REWIND_MENU_STORAGE_KEY) === "true"; }
+  catch { return false; }
+}
+
+function applyRewindMenuState() {
+  menuStage.classList.toggle("rewind-awakened", rewindMenuAwakened);
+  menuStage.setAttribute("aria-label", rewindMenuAwakened
+    ? "The rewind-powered green slime endlessly climbing through clouds on rising platforms"
+    : "A green slime endlessly jumping between two grassy platforms");
 }
 
 function unlockThrough(index) {
@@ -792,6 +809,9 @@ function prepareAdventureResults() {
 function showAdventureComplete() {
   gameShell.classList.remove("cutscene-playing");
   cutsceneActive = false;
+  rewindMenuAwakened = true;
+  try { localStorage.setItem(REWIND_MENU_STORAGE_KEY, "true"); } catch { /* The evolved menu remains active for this session. */ }
+  applyRewindMenuState();
   won = true;
   message.hidden = false;
   runNameInput.focus();
@@ -1121,6 +1141,40 @@ function updateMenuAnimation(time) {
   const stageWidth = menuStage.clientWidth;
   const stageHeight = menuStage.clientHeight;
   const slimeWidth = menuSlime.offsetWidth || 44;
+
+  if (rewindMenuAwakened) {
+    const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const scroll = reducedMotion ? 0 : time * .014;
+    const verticalCycle = stageHeight + 58;
+    const platformX = [.08, .57, .19, .64, .3];
+    menuClimbPlatforms.forEach((platform, index) => {
+      const bottom = -34 + ((index * verticalCycle / menuClimbPlatforms.length + scroll) % verticalCycle);
+      platform.style.left = `${platformX[index] * stageWidth}px`;
+      platform.style.bottom = `${bottom}px`;
+    });
+    menuClouds.forEach((cloud, index) => {
+      const cloudCycle = stageHeight + 70;
+      const top = -48 + ((index * 79 + (reducedMotion ? 0 : time * (.006 + index * .0015))) % cloudCycle);
+      const scale = [1, .72, .55][index];
+      cloud.style.top = `${top}px`;
+      cloud.style.transform = `scale(${scale})`;
+    });
+
+    const jumpDuration = 1050;
+    const jump = Math.floor(time / jumpDuration);
+    const progress = (time % jumpDuration) / jumpDuration;
+    const climbX = [.2, .62, .31, .69];
+    const from = climbX[jump % climbX.length] * stageWidth;
+    const to = climbX[(jump + 1) % climbX.length] * stageWidth;
+    const arc = reducedMotion ? 0 : Math.sin(progress * Math.PI);
+    const x = reducedMotion ? stageWidth * .34 : from + (to - from) * progress;
+    const baseBottom = stageHeight * .28;
+    menuSlime.style.left = `${x - slimeWidth / 2}px`;
+    menuSlime.style.bottom = `${baseBottom + arc * Math.min(74, stageHeight * .43)}px`;
+    menuSlime.style.transform = `rotate(${(to > from ? 1 : -1) * arc * 4}deg) scale(${1 - arc * .04}, ${1 + arc * .06})`;
+    return;
+  }
+
   const leftPlatform = stageWidth * .23;
   const rightPlatform = stageWidth * .77;
   const baseBottom = 48;
@@ -2268,5 +2322,6 @@ function frame(time) {
   requestAnimationFrame(frame);
 }
 
+applyRewindMenuState();
 loadLevel(0, false);
 requestAnimationFrame(frame);

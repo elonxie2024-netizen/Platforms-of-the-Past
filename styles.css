@@ -199,6 +199,49 @@ canvas {
 .menu-platform-left { left: 7%; }
 .menu-platform-right { right: 7%; }
 
+.menu-cloud,
+.menu-climb-platform { display: none; }
+
+.menu-stage.rewind-awakened {
+  background:
+    linear-gradient(#3aaee9 0%, #86dafa 48%, #dff7ff 100%);
+}
+
+.menu-stage.rewind-awakened .menu-platform { display: none; }
+
+.menu-stage.rewind-awakened .menu-cloud {
+  position: absolute;
+  display: block;
+  width: 92px;
+  height: 25px;
+  border-radius: 50%;
+  background: #ffffffa8;
+  box-shadow: 27px -9px 0 4px #ffffffa8, 52px 1px 0 -3px #ffffffa8;
+  will-change: transform;
+}
+
+.menu-cloud-one { left: 5%; top: 12%; }
+.menu-cloud-two { left: 58%; top: 38%; transform: scale(.72); }
+.menu-cloud-three { left: 24%; top: 74%; transform: scale(.55); }
+
+.menu-stage.rewind-awakened .menu-climb-platform {
+  position: absolute;
+  display: block;
+  width: 31%;
+  height: 30px;
+  border: 2px solid #57351f;
+  border-radius: 8px 8px 4px 4px;
+  background:
+    linear-gradient(#65c83e 0 8px, #3f962d 8px 12px, transparent 12px),
+    repeating-linear-gradient(90deg, #8d552e 0 20px, #744225 20px 22px);
+  box-shadow: 0 5px 0 #4b2c1b;
+  will-change: left, bottom;
+}
+
+.menu-stage.rewind-awakened .menu-slime {
+  box-shadow: inset 7px 7px #9af0a255, 0 0 15px #65f0e599, 0 6px 10px #17482b45;
+}
+
 .menu-slime {
   position: absolute;
   z-index: 2;
