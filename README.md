@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. The time-travel mechanic is the next major feature and is not implemented yet.
 
-**Current version:** `v0.5.1`
+**Current version:** `v0.5.2`
 
 ## How it works
 
@@ -29,6 +29,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 **Publish a run.** After completing the adventure, name the run and optionally publish it to the local leaderboard. Records are stored in your browser until accounts are implemented.
 
 **Follow development.** Open the changelog from the main menu or pause menu to read every version and Git commit in the game's history.
+
+**Choose your route.** Play opens a persistent level roadmap. Completed levels and the next challenge can be replayed, while future levels remain locked until reached.
 
 **Change the past.** In the finished game, time travel will let you switch eras and reshape the level. A bridge that is broken in the present may still stand in the past, while a seed planted long ago could become a path through the future.
 
@@ -51,6 +53,7 @@ The playable prototype includes:
 - A jump pad in level 3 and automatically cycling moving platforms in level 4
 - Required crate-pushing puzzles in level 5; crates act as movable steps
 - Asset-textured floating blocks and visibly cracked breakable variants that burst into material-specific debris in level 6
+- A persistent level roadmap with connected numbered stages and progression locks
 - Animated lava, spikes, steeper elevation changes, and more demanding star routes
 - A persistent speedrun timer and completion score
 - Per-level timing and a complete split summary

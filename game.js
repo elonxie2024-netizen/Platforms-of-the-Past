@@ -42,9 +42,13 @@ const pauseChangelogButton = document.querySelector("#pauseChangelogButton");
 const changelogMenu = document.querySelector("#changelogMenu");
 const changelogList = document.querySelector("#changelogList");
 const closeChangelogButton = document.querySelector("#closeChangelogButton");
+const roadmapMenu = document.querySelector("#roadmapMenu");
+const levelRoadmap = document.querySelector("#levelRoadmap");
+const closeRoadmapButton = document.querySelector("#closeRoadmapButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.5.1", commit: "Pending commit", date: "2026-08-11", message: "Rebuild floating and breakable block visuals", description: "Replaced the colored symbol blocks with nine-sliced rectangles made from the original grass, stone, and crate assets. Breakable variants now share an unmistakable cracked appearance and burst into material-specific dirt, pebble, or woodchip debris." },
+  { version: "v0.5.2", commit: "Pending commit", date: "2026-08-12", message: "Add level roadmap", description: "Changed Play to open a connected level roadmap instead of immediately starting level 1. Completed levels and the next challenge are blue and selectable, future levels are gray and locked, and progression persists in the browser." },
+  { version: "v0.5.1", commit: "d5edda3", date: "2026-08-11", message: "Revamped cracked block texture", description: "Replaced the colored symbol blocks with nine-sliced rectangles made from the original grass, stone, and crate assets. Breakable variants now share an unmistakable cracked appearance and burst into material-specific dirt, pebble, or woodchip debris." },
   { version: "v0.5.0", commit: "ce40cef", date: "2026-08-11", message: "Breakable blocks added in 6th level", description: "Added a sixth level introducing three floating block types: delayed crumble blocks that break after being stood on, impact blocks that break after a jump landing, and permanent floating blocks that never break. Breakable blocks warn the player before disappearing and reset after death or restart." },
   { version: "v0.4.6", commit: "ccf56e7", date: "2026-08-11", message: "Fixed terrain 2", description: "Rebuilt the lower grass and stone layers as left-side, tiled-middle, and right-side columns. The pillar sides now line up with the top layer instead of allowing the center texture to extend past its edges." },
   { version: "v0.4.5", commit: "cf4936d", date: "2026-08-11", message: "Connected obstacle textures", description: "Changed grass and stone platforms to use outer edge slices only at the ends of each obstacle. Their center texture now fills the space between those edges without repeating rounded block borders or leaving tiny gaps." },
@@ -194,6 +198,7 @@ let levelStartedAt = 0;
 let levelElapsed = 0;
 let levelTimerRunning = false;
 let levelSplits = [];
+let runStartLevel = 0;
 let paused = false;
 let timerWasRunningBeforePause = false;
 let levelTimerWasRunningBeforePause = false;
@@ -202,6 +207,8 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEADERBOARD_STORAGE_KEY = "platforms-past-leaderboard-v1";
+const PROGRESS_STORAGE_KEY = "platforms-past-progress-v1";
+let highestUnlockedLevel = loadUnlockedLevel();
 let leaderboardEntries = loadLeaderboardEntries();
 let masterVolume = 1;
 let audioContext = null;
@@ -426,6 +433,107 @@ function saveLeaderboardEntries() {
   } catch {
     return false;
   }
+}
+
+function loadUnlockedLevel() {
+  try {
+    const rawProgress = localStorage.getItem(PROGRESS_STORAGE_KEY);
+    if (rawProgress === null) {
+      const oldRuns = JSON.parse(localStorage.getItem(LEADERBOARD_STORAGE_KEY) || "[]");
+      if (Array.isArray(oldRuns) && oldRuns.length > 0) return levels.length - 1;
+    }
+    const saved = Number(rawProgress);
+    return Number.isInteger(saved) ? Math.max(0, Math.min(levels.length - 1, saved)) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function unlockThrough(index) {
+  const unlocked = Math.max(0, Math.min(levels.length - 1, index));
+  if (unlocked <= highestUnlockedLevel) return;
+  highestUnlockedLevel = unlocked;
+  try { localStorage.setItem(PROGRESS_STORAGE_KEY, String(highestUnlockedLevel)); } catch { /* Progress remains available for this session. */ }
+}
+
+const ROADMAP_POINTS = [
+  [10, 72], [27, 39], [43, 68], [59, 31], [75, 63], [91, 28]
+];
+
+function renderRoadmap() {
+  levelRoadmap.replaceChildren();
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.classList.add("roadmap-lines");
+  svg.setAttribute("viewBox", "0 0 100 100");
+  svg.setAttribute("preserveAspectRatio", "none");
+  svg.setAttribute("aria-hidden", "true");
+  for (let index = 0; index < levels.length - 1; index++) {
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    line.setAttribute("points", `${ROADMAP_POINTS[index].join(",")} ${ROADMAP_POINTS[index + 1].join(",")}`);
+    if (index < highestUnlockedLevel) line.classList.add("unlocked");
+    svg.append(line);
+  }
+  levelRoadmap.append(svg);
+
+  levels.forEach((level, index) => {
+    const node = document.createElement("div");
+    const locked = index > highestUnlockedLevel;
+    node.className = `roadmap-level${locked ? " locked" : ""}`;
+    node.style.left = `${ROADMAP_POINTS[index][0]}%`;
+    node.style.top = `${ROADMAP_POINTS[index][1]}%`;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.disabled = locked;
+    button.setAttribute("aria-label", locked ? `Level ${index + 1}, locked` : `Play level ${index + 1}: ${level.name}`);
+    if (locked) {
+      button.innerHTML = '<svg class="roadmap-lock" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1.5A1.5 1.5 0 0 1 20 11.5v8A1.5 1.5 0 0 1 18.5 21h-13A1.5 1.5 0 0 1 4 19.5v-8A1.5 1.5 0 0 1 5.5 10H7Zm3 0h4V7a2 2 0 1 0-4 0v3Z"/></svg>';
+    } else {
+      button.textContent = String(index + 1);
+      button.addEventListener("click", () => startRoadmapRun(index));
+    }
+    const name = document.createElement("span");
+    name.className = "level-name";
+    name.textContent = locked ? `Level ${index + 1}` : level.name;
+    node.append(button, name);
+    levelRoadmap.append(node);
+  });
+}
+
+function openRoadmap() {
+  gameStarted = false;
+  settingsPanel.hidden = true;
+  settingsButton.setAttribute("aria-expanded", "false");
+  mainMenu.hidden = true;
+  renderRoadmap();
+  roadmapMenu.hidden = false;
+  levelRoadmap.querySelector("button:not(:disabled)")?.focus();
+}
+
+function closeRoadmap() {
+  roadmapMenu.hidden = true;
+  mainMenu.hidden = false;
+  playButton.focus();
+}
+
+function startRoadmapRun(index) {
+  runStartLevel = index;
+  gameStarted = true;
+  paused = false;
+  timerWasRunningBeforePause = false;
+  levelTimerWasRunningBeforePause = false;
+  levelSplits = [];
+  resetRunTimer();
+  resetFinishedRun();
+  loadLevel(index, false);
+  ensureAudio();
+  roadmapMenu.hidden = true;
+  leaderboardMenu.hidden = true;
+  changelogMenu.hidden = true;
+  pauseButton.disabled = false;
+  restartButton.disabled = false;
+  restartRunButton.disabled = false;
+  quitButton.disabled = false;
+  canvas.focus();
 }
 
 function renderLeaderboard() {
@@ -813,26 +921,8 @@ try {
 } catch { /* Use the default volume. */ }
 setVolume(volumeInput.value);
 
-playButton.addEventListener("click", () => {
-  gameStarted = true;
-  paused = false;
-  timerWasRunningBeforePause = false;
-  levelTimerWasRunningBeforePause = false;
-  levelSplits = [];
-  resetRunTimer();
-  resetFinishedRun();
-  startMusic("level1");
-  ensureAudio();
-  mainMenu.hidden = true;
-  leaderboardMenu.hidden = true;
-  changelogMenu.hidden = true;
-  settingsPanel.hidden = true;
-  pauseButton.disabled = false;
-  restartButton.disabled = false;
-  restartRunButton.disabled = false;
-  quitButton.disabled = false;
-  canvas.focus();
-});
+playButton.addEventListener("click", openRoadmap);
+closeRoadmapButton.addEventListener("click", closeRoadmap);
 
 settingsButton.addEventListener("click", () => {
   const opening = settingsPanel.hidden;
@@ -948,12 +1038,13 @@ function startOver() {
   timerWasRunningBeforePause = false;
   levelTimerWasRunningBeforePause = false;
   pauseMenu.hidden = true;
+  roadmapMenu.hidden = true;
   leaderboardMenu.hidden = true;
   changelogMenu.hidden = true;
   levelSplits = [];
   resetFinishedRun();
   resetRunTimer();
-  loadLevel(0, false);
+  loadLevel(runStartLevel, false);
   pauseButton.disabled = false;
   restartButton.disabled = false;
   restartRunButton.disabled = false;
@@ -975,6 +1066,7 @@ function quitRun() {
   quitButton.disabled = true;
   settingsPanel.hidden = true;
   pauseMenu.hidden = true;
+  roadmapMenu.hidden = true;
   leaderboardMenu.hidden = true;
   changelogMenu.hidden = true;
   settingsButton.setAttribute("aria-expanded", "false");
@@ -1202,6 +1294,7 @@ function update(dt) {
   if (overlaps(box, currentLevel().finish)) {
     playSfx("flag");
     completeLevelSplit();
+    unlockThrough(levelIndex + 1);
     if (levelIndex === levels.length - 1) {
       won = true;
       finishRunTimer();
