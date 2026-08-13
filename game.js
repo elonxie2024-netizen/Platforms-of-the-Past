@@ -50,9 +50,10 @@ const levelRoadmap = document.querySelector("#levelRoadmap");
 const closeRoadmapButton = document.querySelector("#closeRoadmapButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.7.5", commit: "Pending commit", date: "2026-08-12", message: "Add cutscene skipping", description: "Made the final rewind cutscene skippable by clicking anywhere on the game canvas. Skipping immediately completes the cinematic and opens the existing adventure results screen without changing the finished run's recorded time, score, stars, or level splits." },
-  { version: "v0.7.4", commit: "Pending commit", date: "2026-08-12", message: "Add session-based progression", description: "Changed roadmap unlocks and the post-cutscene menu transformation to last only for the current browser session. Refreshing now restores Dirtbound Trail as the sole unlocked level and returns the menu to its original animation, while a new Restart session button performs the same complete reset immediately." },
-  { version: "v0.7.3", commit: "Pending commit", date: "2026-08-12", message: "Refine the post-cutscene climb loop", description: "Reworked the awakened main-menu animation around the original two platforms. One remains central while the other drops below the stage, reappears at the top as a new destination, and trades places with it after the slime jumps upward." },
+  { version: "v0.7.6", commit: "Pending commit", date: "2026-08-13", message: "Smooth the post-cutscene climb", description: "Rebuilt the awakened main-menu climb as one continuous loop without separate move-and-wait phases. Both platforms now descend at a constant speed and recycle seamlessly, while the slime's trajectory uses the game's real gravity and jump-speed calculations scaled uniformly to the smaller menu scene." },
+  { version: "v0.7.5", commit: "6447b71", date: "2026-08-12", message: "Add cutscene skipping", description: "Made the final rewind cutscene skippable by clicking anywhere on the game canvas. Skipping immediately completes the cinematic and opens the existing adventure results screen without changing the finished run's recorded time, score, stars, or level splits." },
+  { version: "v0.7.4", commit: "4a8de6e", date: "2026-08-12", message: "Add session-based progression", description: "Changed roadmap unlocks and the post-cutscene menu transformation to last only for the current browser session. Refreshing now restores Dirtbound Trail as the sole unlocked level and returns the menu to its original animation, while a new Restart session button performs the same complete reset immediately." },
+  { version: "v0.7.3", commit: "4a8de6e", date: "2026-08-12", message: "Refine the post-cutscene climb loop", description: "Reworked the awakened main-menu animation around the original two platforms. One remains central while the other drops below the stage, reappears at the top as a new destination, and trades places with it after the slime jumps upward." },
   { version: "v0.7.2", commit: "8bcce68", date: "2026-08-12", message: "Added post-cutscene menu animation", description: "Added a persistent post-cutscene main-menu animation. After awakening rewind and returning to the menu, the slime endlessly climbs a looping staircase of rising platforms while layered clouds drift past." },
   { version: "v0.7.1", commit: "1aaa466", date: "2026-08-12", message: "Finished cutscene", description: "Completed the cinematic after all seven introductory levels. The slime automatically crosses a short platforming route, enters a time machine instead of a flag, is struck by temporal static, and awakens the power of rewind before the existing results screen appears." },
   { version: "v0.7.0", commit: "232ee51", date: "2026-08-12", message: "Added rewind cutscene", description: "Established the rewind-origin update and its initial ending-cutscene structure." },
@@ -1153,9 +1154,15 @@ function updateMenuAnimation(time) {
     const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (awakenedMenuAnimationStart === null) awakenedMenuAnimationStart = time;
     const animationTime = time - awakenedMenuAnimationStart;
-    const cycleDuration = 2400;
-    const cycle = Math.floor(animationTime / cycleDuration);
-    const progress = reducedMotion ? .68 : (animationTime % cycleDuration) / cycleDuration;
+    const physicsScale = .75;
+    const middleBottom = Math.max(28, stageHeight * .22);
+    const climbHeight = Math.min(75, stageHeight * .43);
+    const worldClimbHeight = climbHeight / physicsScale;
+    const discriminant = Math.max(0, JUMP_SPEED ** 2 - 2 * GRAVITY * worldClimbHeight);
+    const flightSeconds = (JUMP_SPEED + Math.sqrt(discriminant)) / GRAVITY;
+    const cycleDuration = flightSeconds * 1000;
+    const cycle = reducedMotion ? 0 : Math.floor(animationTime / cycleDuration);
+    const flightTime = reducedMotion ? 0 : (animationTime % cycleDuration) / 1000;
     const sourceIndex = cycle % 2;
     const destinationIndex = (sourceIndex + 1) % 2;
     const source = menuPlatforms[sourceIndex];
@@ -1164,20 +1171,10 @@ function updateMenuAnimation(time) {
     const rightX = stageWidth * .60;
     const sourceX = sourceIndex === 0 ? leftX : rightX;
     const destinationX = destinationIndex === 0 ? leftX : rightX;
-    const middleBottom = Math.max(28, stageHeight * .22);
-    const upperBottom = Math.min(stageHeight - 82, middleBottom + stageHeight * .33);
-    const belowBottom = -48;
-    const jumpStart = .08;
-    const jumpEnd = .68;
-    const smoothstep = value => value * value * (3 - 2 * value);
-
-    let sourceBottom = middleBottom;
-    let destinationBottom = upperBottom;
-    if (progress > jumpEnd) {
-      const shift = smoothstep((progress - jumpEnd) / (1 - jumpEnd));
-      sourceBottom = middleBottom + (belowBottom - middleBottom) * shift;
-      destinationBottom = upperBottom + (middleBottom - upperBottom) * shift;
-    }
+    const scrollSpeed = climbHeight / flightSeconds;
+    const scrollDistance = scrollSpeed * flightTime;
+    const sourceBottom = middleBottom - scrollDistance;
+    const destinationBottom = middleBottom + climbHeight - scrollDistance;
 
     source.style.left = `${sourceX}px`;
     source.style.right = "auto";
@@ -1197,27 +1194,22 @@ function updateMenuAnimation(time) {
     const sourceCenter = sourceX + source.offsetWidth / 2;
     const destinationCenter = destinationX + destination.offsetWidth / 2;
     const platformHeight = source.offsetHeight || 34;
-    let slimeX = sourceCenter;
-    let slimeBottom = sourceBottom + platformHeight;
-    let arc = 0;
-
-    if (progress >= jumpStart && progress <= jumpEnd) {
-      const jumpProgress = (progress - jumpStart) / (jumpEnd - jumpStart);
-      const travel = smoothstep(jumpProgress);
-      arc = Math.sin(jumpProgress * Math.PI);
-      slimeX = sourceCenter + (destinationCenter - sourceCenter) * travel;
-      slimeBottom = sourceBottom + platformHeight
-        + (destinationBottom - sourceBottom) * travel
-        + arc * Math.min(34, stageHeight * .19);
-    } else if (progress > jumpEnd) {
-      slimeX = destinationCenter;
-      slimeBottom = destinationBottom + platformHeight;
-    }
-
     const direction = destinationCenter > sourceCenter ? 1 : -1;
+    const platformWidth = source.offsetWidth;
+    const edgeInset = slimeWidth / 2 + 10;
+    const startX = sourceX + (direction > 0 ? platformWidth - edgeInset : edgeInset);
+    const endX = destinationX + (direction > 0 ? edgeInset : platformWidth - edgeInset);
+    const horizontalSpeed = (endX - startX) / flightSeconds;
+    const slimeX = startX + horizontalSpeed * flightTime;
+    const physicsHeight = (JUMP_SPEED * flightTime - .5 * GRAVITY * flightTime ** 2) * physicsScale;
+    const slimeBottom = middleBottom + platformHeight + physicsHeight - scrollDistance;
+    const verticalVelocity = (JUMP_SPEED - GRAVITY * flightTime) * physicsScale - scrollSpeed;
+    const scaledJumpSpeed = JUMP_SPEED * physicsScale;
+    const airborneStretch = reducedMotion ? 0 : Math.min(1, Math.abs(verticalVelocity) / scaledJumpSpeed);
+    const rotation = reducedMotion ? 0 : direction * verticalVelocity / scaledJumpSpeed * 3;
     menuSlime.style.left = `${slimeX - slimeWidth / 2}px`;
     menuSlime.style.bottom = `${slimeBottom}px`;
-    menuSlime.style.transform = `rotate(${direction * arc * 4}deg) scale(${1 - arc * .04}, ${1 + arc * .06})`;
+    menuSlime.style.transform = `rotate(${rotation}deg) scale(${1 - airborneStretch * .035}, ${1 + airborneStretch * .05})`;
     return;
   }
 
