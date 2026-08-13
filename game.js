@@ -50,6 +50,7 @@ const levelRoadmap = document.querySelector("#levelRoadmap");
 const closeRoadmapButton = document.querySelector("#closeRoadmapButton");
 
 const CHANGELOG_ENTRIES = [
+  { version: "v0.7.5", commit: "Pending commit", date: "2026-08-12", message: "Add cutscene skipping", description: "Made the final rewind cutscene skippable by clicking anywhere on the game canvas. Skipping immediately completes the cinematic and opens the existing adventure results screen without changing the finished run's recorded time, score, stars, or level splits." },
   { version: "v0.7.4", commit: "Pending commit", date: "2026-08-12", message: "Add session-based progression", description: "Changed roadmap unlocks and the post-cutscene menu transformation to last only for the current browser session. Refreshing now restores Dirtbound Trail as the sole unlocked level and returns the menu to its original animation, while a new Restart session button performs the same complete reset immediately." },
   { version: "v0.7.3", commit: "Pending commit", date: "2026-08-12", message: "Refine the post-cutscene climb loop", description: "Reworked the awakened main-menu animation around the original two platforms. One remains central while the other drops below the stage, reappears at the top as a new destination, and trades places with it after the slime jumps upward." },
   { version: "v0.7.2", commit: "8bcce68", date: "2026-08-12", message: "Added post-cutscene menu animation", description: "Added a persistent post-cutscene main-menu animation. After awakening rewind and returning to the menu, the slime endlessly climbs a looping staircase of rising platforms while layered clouds drift past." },
@@ -881,7 +882,12 @@ function switchPromptBounds(levelSwitch, time) {
 }
 
 canvas.addEventListener("pointerdown", (event) => {
-  if (!gameStarted || paused || won || cutsceneActive) return;
+  if (cutsceneActive) {
+    event.preventDefault();
+    showAdventureComplete();
+    return;
+  }
+  if (!gameStarted || paused || won) return;
   const levelSwitch = nearbySwitch();
   if (!levelSwitch) return;
   const canvasRect = canvas.getBoundingClientRect();

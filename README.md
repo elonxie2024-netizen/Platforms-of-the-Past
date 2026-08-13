@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Rewind is introduced in the ending cinematic, while its gameplay mechanic will be implemented later.
 
-**Current version:** `v0.7.4`
+**Current version:** `v0.7.5`
 
 ## How it works
 
@@ -22,7 +22,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Reach the flag.** Finish all seven levels to complete the current adventure and see your final results.
 
-**Awaken rewind.** Completing the introductory adventure triggers a cinematic in which the slime discovers a time machine and gains its first time-travel power.
+**Awaken rewind.** Completing the introductory adventure triggers a cinematic in which the slime discovers a time machine and gains its first time-travel power. Click the game screen to skip directly to the results.
 
 **Race the clock.** The speedrun timer starts with your first move or jump and continues between levels. Your final score is 300 minus your completion time in seconds, plus 2 points for every star.
 
