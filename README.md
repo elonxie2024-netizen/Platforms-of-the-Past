@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Rewind is introduced in the ending cinematic, while its gameplay mechanic will be implemented later.
 
-**Current version:** `v0.8.3`
+**Current version:** `v0.9.0`
 
 ## How it works
 
@@ -31,6 +31,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 **Publish a run.** Complete the full adventure from Dirtbound Trail, name the run, and optionally publish it to the global leaderboard. Records are shared across devices, gameplay-changing releases use separate boards, and rankings can be viewed by fastest time, most stars, or highest total score.
 
 **Play past versions.** Open Versions from the main menu to launch any archived release build in a new tab.
+
+**Customize the menu.** After completing the final cutscene, switch between the original and awakened animations, choose grass, stone, or crate platforms from the game assets, and swap the sunny backdrop for the lava-dark sky.
 
 **Follow development.** Open the changelog from the main menu or pause menu to read every version and Git commit in the game's history.
 
@@ -62,6 +64,7 @@ The playable prototype includes:
 - Reversible nearby switches with clickable `E - FLIP` prompts that raise or submerge linked platforms in level 7
 - A story cutscene after level 7 that reveals the time machine and the slime's rewind power
 - An evolved post-cutscene main menu where two continuously moving platforms trade places while the slime climbs with its real in-game jump physics
+- Post-cutscene menu controls for animation style, asset-based platform texture, and backdrop
 - Animated lava, spikes, steeper elevation changes, and more demanding star routes
 - A persistent speedrun timer and completion score
 - Per-level timing and a complete split summary

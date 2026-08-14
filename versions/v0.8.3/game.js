@@ -24,12 +24,7 @@ const volumeValue = document.querySelector("#volumeValue");
 const menuStage = document.querySelector(".menu-stage");
 const menuSlime = document.querySelector(".menu-slime");
 const menuPlatforms = [...document.querySelectorAll(".menu-platform")];
-const menuPlatformCanvases = menuPlatforms.map(platform => platform.querySelector("canvas"));
 const menuClouds = [...document.querySelectorAll(".menu-cloud")];
-const menuCustomization = document.querySelector("#menuCustomization");
-const menuAnimationButtons = [...document.querySelectorAll("[data-menu-animation]")];
-const menuTextureButtons = [...document.querySelectorAll("[data-menu-texture]")];
-const menuBackdropButtons = [...document.querySelectorAll("[data-menu-backdrop]")];
 const mainLeaderboardButton = document.querySelector("#mainLeaderboardButton");
 const pauseMenu = document.querySelector("#pauseMenu");
 const resumeButton = document.querySelector("#resumeButton");
@@ -62,8 +57,7 @@ const versionsList = document.querySelector("#versionsList");
 const closeVersionsButton = document.querySelector("#closeVersionsButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.9.0", commit: "Pending commit", date: "2026-08-14", message: "Add post-cutscene menu customization", description: "Unlocked main-menu customization after the final cutscene. Players can switch between the previous bounce and current climb animations, render platforms with the game's grass, stone, or crate assets, and swap between the sunny and lava-dark backdrops for the rest of the session." },
-  { version: "v0.8.3", commit: "40cf24c", date: "2026-08-13", message: "Added leaderboard metrics", description: "Added Time, Stars, and Score tabs to the global leaderboard. Time is selected by default, while each tab reorders the same version-compatible runs using its chosen metric and appropriate tie breakers." },
+  { version: "v0.8.3", commit: "Pending commit", date: "2026-08-13", message: "Add leaderboard ranking metrics", description: "Added Time, Stars, and Score tabs to the global leaderboard. Time is selected by default, while each tab reorders the same version-compatible runs using its chosen metric and appropriate tie breakers." },
   { version: "v0.8.2", commit: "ee37d36", date: "2026-08-13", message: "Changed global leaderboard version ranges pt 2", description: "Added the missing playable v0.8.0 archive to complete the version-range update." },
   { version: "v0.8.1", commit: "edc97dd", date: "2026-08-13", message: "Changed global leaderboard version ranges", description: "Renamed leaderboard choices as explicit version ranges so players can see which releases share identical gameplay and compete on the same board." },
   { version: "v0.8.0", commit: "fdaba75", date: "2026-08-13", message: "Make supabase and global leaderboard", description: "Replaced browser-only records with a shared online leaderboard available across devices and tabs. Added independent gameplay ruleset IDs so balance-changing releases receive separate boards, restricted ranked submissions to complete level-one starts, and added a menu of playable release archives built from the original Git commits." },
@@ -253,24 +247,21 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.9.0";
+const GAME_VERSION = "v0.8.3";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "intro-seven-v1", label: "Version 0.6.2 to 0.9.0" }
+  { id: "intro-seven-v1", label: "Version 0.6.2 to 0.8.3" }
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
+  "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
   "v0.2.4", "v0.2.3", "v0.2.2", "v0.2.1", "v0.2.0", "v0.1.4", "v0.1.3", "v0.1.2",
   "v0.1.1", "v0.1.0", "v0.0.13", "v0.0.12", "v0.0.11", "v0.0.10", "v0.0.5"
 ];
 let rewindMenuAwakened = false;
-let menuCustomizationUnlocked = false;
-let menuPlatformTexture = "grass";
-let menuBackdrop = "sun";
 let awakenedMenuAnimationStart = null;
 let highestUnlockedLevel = 0;
 let leaderboardEntries = [];
@@ -297,11 +288,8 @@ clearLegacySessionState();
 
 const spriteSheet = new Image();
 let spritesReady = false;
-spriteSheet.addEventListener("load", () => {
-  spritesReady = true;
-  renderMenuPlatformAssets();
-});
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.addEventListener("load", () => { spritesReady = true; });
+spriteSheet.src = "../../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -547,8 +535,6 @@ async function loadGlobalLeaderboard(rulesetId, metric) {
 
 function applyRewindMenuState() {
   menuStage.classList.toggle("rewind-awakened", rewindMenuAwakened);
-  menuStage.classList.toggle("backdrop-lava", menuBackdrop === "lava");
-  menuCustomization.hidden = !menuCustomizationUnlocked;
   awakenedMenuAnimationStart = null;
   if (!rewindMenuAwakened) {
     menuPlatforms.forEach(platform => {
@@ -557,56 +543,9 @@ function applyRewindMenuState() {
       platform.style.removeProperty("bottom");
     });
   }
-  menuAnimationButtons.forEach(button => {
-    const active = button.dataset.menuAnimation === (rewindMenuAwakened ? "awakened" : "classic");
-    button.classList.toggle("active", active);
-    button.setAttribute("aria-pressed", String(active));
-  });
-  menuTextureButtons.forEach(button => {
-    const active = button.dataset.menuTexture === menuPlatformTexture;
-    button.classList.toggle("active", active);
-    button.setAttribute("aria-pressed", String(active));
-  });
-  menuBackdropButtons.forEach(button => {
-    const active = button.dataset.menuBackdrop === menuBackdrop;
-    button.classList.toggle("active", active);
-    button.setAttribute("aria-pressed", String(active));
-  });
-  renderMenuPlatformAssets();
-  const animationLabel = rewindMenuAwakened ? "climbing between two looping platforms" : "jumping between two platforms";
-  const backdropLabel = menuBackdrop === "lava" ? "a lava-dark sky" : "a sunny sky";
-  menuStage.setAttribute("aria-label", `A green slime ${animationLabel} on ${menuPlatformTexture} textures beneath ${backdropLabel}`);
-}
-
-function renderMenuPlatformAssets() {
-  if (!spritesReady) {
-    menuPlatforms.forEach(platform => platform.classList.remove("asset-texture"));
-    return;
-  }
-  menuPlatformCanvases.forEach((canvas, index) => {
-    const platformContext = canvas.getContext("2d");
-    platformContext.clearRect(0, 0, canvas.width, canvas.height);
-    drawAssetRectangle(menuPlatformTexture, 0, 0, canvas.width, canvas.height, platformContext);
-    menuPlatforms[index].classList.add("asset-texture");
-  });
-}
-
-function selectMenuAnimation(mode) {
-  if (!menuCustomizationUnlocked) return;
-  rewindMenuAwakened = mode === "awakened";
-  applyRewindMenuState();
-}
-
-function selectMenuTexture(texture) {
-  if (!menuCustomizationUnlocked || !["grass", "stone", "crate"].includes(texture)) return;
-  menuPlatformTexture = texture;
-  applyRewindMenuState();
-}
-
-function selectMenuBackdrop(backdrop) {
-  if (!menuCustomizationUnlocked || !["sun", "lava"].includes(backdrop)) return;
-  menuBackdrop = backdrop;
-  applyRewindMenuState();
+  menuStage.setAttribute("aria-label", rewindMenuAwakened
+    ? "The rewind-powered green slime endlessly climbing between two looping platforms through clouds"
+    : "A green slime endlessly jumping between two grassy platforms");
 }
 
 function unlockThrough(index) {
@@ -1002,7 +941,6 @@ function prepareAdventureResults() {
 function showAdventureComplete() {
   gameShell.classList.remove("cutscene-playing");
   cutsceneActive = false;
-  menuCustomizationUnlocked = true;
   rewindMenuAwakened = true;
   applyRewindMenuState();
   won = true;
@@ -1150,9 +1088,6 @@ leaderboardMetricButtons.forEach(button => {
 });
 addEventListener("focus", () => { if (!leaderboardMenu.hidden) refreshLeaderboard(); });
 restartSessionButton.addEventListener("click", restartSession);
-menuAnimationButtons.forEach(button => button.addEventListener("click", () => selectMenuAnimation(button.dataset.menuAnimation)));
-menuTextureButtons.forEach(button => button.addEventListener("click", () => selectMenuTexture(button.dataset.menuTexture)));
-menuBackdropButtons.forEach(button => button.addEventListener("click", () => selectMenuBackdrop(button.dataset.menuBackdrop)));
 publishRunButton.addEventListener("click", publishFinishedRun);
 runNameInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -1562,10 +1497,7 @@ function quitRun() {
 
 function restartSession() {
   highestUnlockedLevel = 0;
-  menuCustomizationUnlocked = false;
   rewindMenuAwakened = false;
-  menuPlatformTexture = "grass";
-  menuBackdrop = "sun";
   runStartLevel = 0;
   developmentSequencePosition = 0;
   clearLegacySessionState();
@@ -1914,11 +1846,11 @@ function drawConnectedPlatformCap(spriteIndex, x, y, width, height) {
   );
 }
 
-function drawAssetRectangle(material, x, y, width, height, targetContext = ctx) {
+function drawAssetRectangle(material, x, y, width, height) {
   const spriteIndex = material === "grass" ? 0 : material === "crate" ? 2 : 1;
   if (!spritesReady) {
-    targetContext.fillStyle = material === "grass" ? "#925b35" : material === "crate" ? "#a76728" : "#77828d";
-    targetContext.fillRect(x, y, width, height);
+    ctx.fillStyle = material === "grass" ? "#925b35" : material === "crate" ? "#a76728" : "#77828d";
+    ctx.fillRect(x, y, width, height);
     return;
   }
 
@@ -1949,7 +1881,7 @@ function drawAssetRectangle(material, x, y, width, height, targetContext = ctx) 
       const destinationW = destinationColumns[column + 1] - destinationColumns[column];
       const destinationH = destinationRows[row + 1] - destinationRows[row];
       if (sourceW <= 0 || sourceH <= 0 || destinationW <= 0 || destinationH <= 0) continue;
-      targetContext.drawImage(
+      ctx.drawImage(
         spriteSheet,
         (cutX + sourceColumns[column]) * scale, (cutY + sourceRows[row]) * scale,
         sourceW * scale, sourceH * scale,
