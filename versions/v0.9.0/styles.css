@@ -569,17 +569,12 @@ canvas {
 .pause-actions .secondary-button { color: #fff; background: #ffffff14; }
 .pause-actions .secondary-button:last-child { grid-column: 1 / -1; }
 
-.leaderboard-panel {
-  height: 100%;
-  max-height: 500px;
-  grid-template-rows: auto auto auto auto auto minmax(0, 1fr) auto;
-  align-content: stretch;
-}
+.leaderboard-panel { align-content: center; }
 .leaderboard-note { color: #b8cbe2; font-size: .82rem; }
 
 .leaderboard-list {
   width: 100%;
-  min-height: 0;
+  max-height: min(300px, 48vh);
   overflow-y: auto;
   display: grid;
   gap: 7px;
