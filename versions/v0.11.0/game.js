@@ -62,8 +62,7 @@ const versionsList = document.querySelector("#versionsList");
 const closeVersionsButton = document.querySelector("#closeVersionsButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.11.1", commit: "Pending commit", date: "2026-08-14", message: "Add enemy defeat particles", description: "Added a brief red slime-piece burst when an enemy is stomped, matching the player's understated green death effect without changing enemy behavior, physics, timing, or scoring." },
-  { version: "v0.11.0", commit: "686139c", date: "2026-08-14", message: "Complete the introductory levels", description: "Added patrolling red slime enemies to level 9. They reverse at patrol boundaries or obstacles, defeat the player on side contact, and can be defeated from above. Added a longer final test in level 10 that combines floating platforms, a jump pad, automatic movers, a required crate climb, switches, timed pressure-plate shuttles, and a crate-held final bridge. Expanded the roadmap, full-run splits, star limit, and ending trigger from eight levels to ten." },
+  { version: "v0.11.0", commit: "Pending commit", date: "2026-08-14", message: "Complete the introductory levels", description: "Added patrolling red slime enemies to level 9. They reverse at patrol boundaries or obstacles, defeat the player on side contact, and can be defeated from above. Added a longer final test in level 10 that combines floating platforms, a jump pad, automatic movers, a required crate climb, switches, timed pressure-plate shuttles, and a crate-held final bridge. Expanded the roadmap, full-run splits, star limit, and ending trigger from eight levels to ten." },
   { version: "v0.10.4", commit: "70f5c5e", date: "2026-08-14", message: "Require the first pressure plate", description: "Moved Pressure Passage's first shuttle beyond normal jump range so the opening lava gap cannot be cleared without activating the plate. Added a short activation hold that carries the shuttle inward long enough for runners to cross the plate and jump immediately instead of waiting beside the ledge." },
   { version: "v0.10.3", commit: "538a1af", date: "2026-08-14", message: "Refine pressure plate routes", description: "Shifted the later Pressure Passage geometry left as a single unit so runners can cross the first plate at full speed and intercept its shuttle without waiting. Preserved every distance in the second pressure-plate puzzle and made its bridge support the slime only while the crate keeps the plate depressed." },
   { version: "v0.10.2", commit: "893aa50", date: "2026-08-14", message: "Moved cutscene to after level 8", description: "Moved the rewind-awakening cutscene from the end of level 7 to the end of Pressure Passage. All eight levels now form the complete introductory run before the future rewind-focused levels begin." },
@@ -271,7 +270,6 @@ let levelTransition = 0;
 let levelMotionTime = 0;
 let deathTimer = 0;
 let deathParticles = [];
-let enemyDeathParticles = [];
 let blockDebris = [];
 let landingParticles = [];
 let gameStarted = false;
@@ -295,11 +293,11 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.11.1";
+const GAME_VERSION = "v0.11.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "intro-ten-v1", label: "Version 0.11.0 to 0.11.1" },
+  { id: "intro-ten-v1", label: "Version 0.11.0 to 0.11.0" },
   { id: "pressure-gate-v1", label: "Version 0.10.4 to 0.10.4" },
   { id: "pressure-route-v2", label: "Version 0.10.3 to 0.10.3" },
   { id: "eight-intro-v1", label: "Version 0.10.2 to 0.10.2" },
@@ -309,7 +307,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
+  "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
   "v0.2.4", "v0.2.3", "v0.2.2", "v0.2.1", "v0.2.0", "v0.1.4", "v0.1.3", "v0.1.2",
@@ -349,7 +347,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -366,7 +364,6 @@ function platformHasCollision(platform) {
 }
 
 function resetEnemies() {
-  enemyDeathParticles = [];
   for (const enemy of currentLevel().enemies || []) {
     enemy.x = enemy.baseX;
     enemy.direction = enemy.baseDirection;
@@ -524,7 +521,6 @@ function updateEnemies(dt, previousPlayerBottom) {
     const stomped = player.vy >= 0 && previousPlayerBottom <= enemy.y + 9;
     if (stomped) {
       enemy.alive = false;
-      createEnemyDeathParticles(enemy);
       player.y = enemy.y - PLAYER_H;
       player.vy = -JUMP_SPEED * .48;
       player.grounded = false;
@@ -536,35 +532,6 @@ function updateEnemies(dt, previousPlayerBottom) {
     return true;
   }
   return false;
-}
-
-function createEnemyDeathParticles(enemy) {
-  const centerX = enemy.x + enemy.w / 2;
-  const centerY = enemy.y + enemy.h / 2;
-  for (let index = 0; index < 7; index++) {
-    const angle = index / 7 * Math.PI * 2;
-    const speed = 65 + index % 3 * 18;
-    enemyDeathParticles.push({
-      x: centerX, y: centerY,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 75,
-      size: 4 + index % 2 * 2,
-      rotation: index * .7,
-      spin: (index % 2 ? -1 : 1) * (3 + index * .3),
-      life: DEATH_DURATION
-    });
-  }
-}
-
-function updateEnemyDeathParticles(dt) {
-  for (const particle of enemyDeathParticles) {
-    particle.x += particle.vx * dt;
-    particle.y += particle.vy * dt;
-    particle.vy += 500 * dt;
-    particle.rotation += particle.spin * dt;
-    particle.life -= dt;
-  }
-  enemyDeathParticles = enemyDeathParticles.filter((particle) => particle.life > 0);
 }
 
 function loadLevel(index, keepScore = true) {
@@ -1924,7 +1891,6 @@ function update(dt) {
 
   updateBlockDebris(dt);
   updateLandingParticles(dt);
-  updateEnemyDeathParticles(dt);
 
   if (deathTimer > 0) {
     deathTimer = Math.max(0, deathTimer - dt);
@@ -2550,23 +2516,6 @@ function drawDeathParticles() {
   }
 }
 
-function drawEnemyDeathParticles() {
-  ctx.fillStyle = "#e85b61";
-  ctx.strokeStyle = "#8f2735";
-  ctx.lineWidth = 1;
-  for (const particle of enemyDeathParticles) {
-    ctx.save();
-    ctx.globalAlpha = Math.min(1, particle.life / .14);
-    ctx.translate(particle.x - cameraX, particle.y);
-    ctx.rotate(particle.rotation);
-    ctx.beginPath();
-    ctx.roundRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size, 1.5);
-    ctx.fill();
-    ctx.stroke();
-    ctx.restore();
-  }
-}
-
 function drawBlockDebris() {
   for (const piece of blockDebris) {
     const opacity = Math.min(1, piece.life * 2.5);
@@ -2871,7 +2820,6 @@ function render(time) {
   drawFlag(currentLevel().finish);
   drawBlockDebris();
   drawLandingParticles();
-  drawEnemyDeathParticles();
   if (deathTimer > 0) drawDeathParticles();
   else drawPlayer(time);
   if (levelTransition > 0) {
