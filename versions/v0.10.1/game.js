@@ -62,8 +62,7 @@ const versionsList = document.querySelector("#versionsList");
 const closeVersionsButton = document.querySelector("#closeVersionsButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.10.2", commit: "Pending commit", date: "2026-08-14", message: "Move cutscene after level 8", description: "Moved the rewind-awakening cutscene from the end of level 7 to the end of Pressure Passage. All eight levels now form the complete introductory run before the future rewind-focused levels begin." },
-  { version: "v0.10.1", commit: "843c4d1", date: "2026-08-14", message: "Fixed platform edge overlap", description: "Stopped shallow top-corner overlaps from being treated as wall impacts before the landing pass. Fast platform and crate-edge landings now preserve horizontal momentum, while true side collisions and intentional crate pushing remain unchanged." },
+  { version: "v0.10.1", commit: "Pending commit", date: "2026-08-14", message: "Fix platform edge collisions", description: "Stopped shallow top-corner overlaps from being treated as wall impacts before the landing pass. Fast platform and crate-edge landings now preserve horizontal momentum, while true side collisions and intentional crate pushing remain unchanged." },
   { version: "v0.10.0", commit: "b03ea23", date: "2026-08-14", message: "Added 8th level with pressure plates", description: "Added Pressure Passage as level 8, unlocked after the seven-level introduction and rewind cutscene. Thin illuminated pressure plates activate linked platforms automatically while held, and a pushable crate can keep a plate depressed while the slime crosses its route." },
   { version: "v0.9.2", commit: "5ce8f93", date: "2026-08-14", message: "Added particles", description: "Added subtle landing bursts matched to each surface: dirt flecks from grass, pebbles from stone, and wood chips from crates. Particle strength follows landing impact and pauses with the rest of gameplay." },
   { version: "v0.9.1", commit: "4a7e227", date: "2026-08-14", message: "Fixed leaderboard size", description: "Constrained the leaderboard to the game viewport so long ranking lists scroll independently while the Back button remains visible and accessible." },
@@ -137,7 +136,7 @@ const JUMP_BUFFER = 0.12;
 const PLATFORM_TOP_GRACE = 10;
 const DEATH_DURATION = 0.42;
 const CUTSCENE_DURATION = 10.4;
-const INTRO_LEVEL_COUNT = 8;
+const INTRO_LEVEL_COUNT = 7;
 
 const R = (x, y, w, h, kind = "grass") => ({ x, y, w, h, kind });
 const P = (x, y, w = 60, h = 60) => ({ x, y, w, h, kind: "crate", pushable: true, baseX: x, baseY: y });
@@ -269,18 +268,17 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.10.2";
+const GAME_VERSION = "v0.10.1";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "eight-intro-v1", label: "Version 0.10.2 to 0.10.2" },
   { id: "edge-collision-v1", label: "Version 0.10.1 to 0.10.1" },
   { id: "pressure-plates-v1", label: "Version 0.10.0 to 0.10.0" },
   { id: "intro-seven-v1", label: "Version 0.6.2 to 0.9.2" }
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
+  "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
   "v0.2.4", "v0.2.3", "v0.2.2", "v0.2.1", "v0.2.0", "v0.1.4", "v0.1.3", "v0.1.2",
@@ -320,7 +318,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -1072,6 +1070,16 @@ function startRewindCutscene() {
   quitButton.disabled = true;
   Object.assign(input, { left: false, right: false, jump: false });
   pressed.jump = false;
+}
+
+function finishAdventureWithoutCutscene() {
+  finishRunTimer();
+  prepareAdventureResults();
+  pauseButton.disabled = true;
+  restartButton.disabled = true;
+  restartRunButton.disabled = true;
+  quitButton.disabled = true;
+  showAdventureComplete();
 }
 
 function updateCutscene(dt) {
@@ -1894,6 +1902,7 @@ function update(dt) {
     completeLevelSplit();
     unlockThrough(levelIndex + 1);
     if (levelIndex === INTRO_LEVEL_COUNT - 1) startRewindCutscene();
+    else if (levelIndex === levels.length - 1) finishAdventureWithoutCutscene();
     else levelTransition = .65;
   }
 
