@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Rewind is introduced in the ending cinematic, while its gameplay mechanic will be implemented later.
 
-**Current version:** `v0.9.2`
+**Current version:** `v0.10.0`
 
 ## How it works
 
@@ -23,6 +23,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 **Reach the flag.** Finish all seven levels to complete the current adventure and see your final results.
 
 **Awaken rewind.** Completing the introductory adventure triggers a cinematic in which the slime discovers a time machine and gains its first time-travel power. Click the game screen to skip directly to the results.
+
+**Continue beyond the introduction.** After the rewind cutscene, level 8 unlocks on the roadmap with pressure plates that operate linked platforms while held down.
 
 **Race the clock.** The speedrun timer starts with your first move or jump and continues between levels. Your final score is 300 minus your completion time in seconds, plus 2 points for every star.
 
@@ -56,13 +58,14 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 The playable prototype includes:
 
-- Seven compact side-scrolling levels that introduce the terrain textures and mechanics in stages
+- Seven compact introductory levels followed by a post-cutscene eighth level
 - A jump pad in level 3 and automatically cycling moving platforms in level 4
 - Required crate-pushing puzzles in level 5; crates act as movable steps
 - Asset-textured floating blocks and visibly cracked breakable variants that burst into material-specific debris in level 6
 - A session-based level roadmap with connected numbered stages and progression locks
 - Reversible nearby switches with clickable `E - FLIP` prompts that raise or submerge linked platforms in level 7
 - A story cutscene after level 7 that reveals the time machine and the slime's rewind power
+- Thin automatic pressure plates and plate-controlled platforms in level 8, including a crate-held plate puzzle
 - An evolved post-cutscene main menu where two continuously moving platforms trade places while the slime climbs with its real in-game jump physics
 - Post-cutscene menu controls for animation style, asset-based platform texture, and backdrop
 - Animated lava, spikes, steeper elevation changes, and more demanding star routes

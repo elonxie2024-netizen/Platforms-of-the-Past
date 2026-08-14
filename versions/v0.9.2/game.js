@@ -62,8 +62,7 @@ const versionsList = document.querySelector("#versionsList");
 const closeVersionsButton = document.querySelector("#closeVersionsButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.10.0", commit: "Pending commit", date: "2026-08-14", message: "Add pressure plate level", description: "Added Pressure Passage as level 8, unlocked after the seven-level introduction and rewind cutscene. Thin illuminated pressure plates activate linked platforms automatically while held, and a pushable crate can keep a plate depressed while the slime crosses its route." },
-  { version: "v0.9.2", commit: "5ce8f93", date: "2026-08-14", message: "Added particles", description: "Added subtle landing bursts matched to each surface: dirt flecks from grass, pebbles from stone, and wood chips from crates. Particle strength follows landing impact and pauses with the rest of gameplay." },
+  { version: "v0.9.2", commit: "Pending commit", date: "2026-08-14", message: "Add material landing particles", description: "Added subtle landing bursts matched to each surface: dirt flecks from grass, pebbles from stone, and wood chips from crates. Particle strength follows landing impact and pauses with the rest of gameplay." },
   { version: "v0.9.1", commit: "4a7e227", date: "2026-08-14", message: "Fixed leaderboard size", description: "Constrained the leaderboard to the game viewport so long ranking lists scroll independently while the Back button remains visible and accessible." },
   { version: "v0.9.0", commit: "a8c2f76", date: "2026-08-14", message: "Added customization panel for animation", description: "Unlocked main-menu customization after the final cutscene. Players can switch between the previous bounce and current climb animations, render platforms with the game's grass, stone, or crate assets, and swap between the sunny and lava-dark backdrops for the rest of the session." },
   { version: "v0.8.3", commit: "40cf24c", date: "2026-08-13", message: "Added leaderboard metrics", description: "Added Time, Stars, and Score tabs to the global leaderboard. Time is selected by default, while each tab reorders the same version-compatible runs using its chosen metric and appropriate tie breakers." },
@@ -134,7 +133,6 @@ const COYOTE_TIME = 0.1;
 const JUMP_BUFFER = 0.12;
 const DEATH_DURATION = 0.42;
 const CUTSCENE_DURATION = 10.4;
-const INTRO_LEVEL_COUNT = 7;
 
 const R = (x, y, w, h, kind = "grass") => ({ x, y, w, h, kind });
 const P = (x, y, w = 60, h = 60) => ({ x, y, w, h, kind: "crate", pushable: true, baseX: x, baseY: y });
@@ -150,7 +148,6 @@ const C = (x, y, targetX, targetY, switchId, w = 140, h = 40, kind = "stone") =>
   x, y, w, h, kind, controlled: true, switchId, targetX, targetY, baseX: x, baseY: y, moveProgress: 0
 });
 const S = (x, y, id) => ({ x, y, w: 42, h: 44, id, flipped: false });
-const Q = (x, y, id, w = 72) => ({ x, y, w, h: 12, id, pressed: false, pressProgress: 0 });
 const levels = [
   {
     name: "Dirtbound Trail", width: 1260, start: [70, 430], music: "level1",
@@ -195,13 +192,6 @@ const levels = [
     switches: [S(250,446,"bridge-a"), S(740,376,"bridge-b")],
     hazards: [R(320,490,320,80,"lava"), R(820,490,340,80,"lava"), R(1330,490,50,80,"lava")],
     stars: [[285,400],[510,330],[735,330],[1035,285],[1245,345],[1435,405]], finish: R(1415,360,34,90)
-  },
-  {
-    name: "Pressure Passage", width: 1500, start: [55,430], music: "level3", theme: "lava",
-    platforms: [R(0,490,360,80,"stone"), C(600,430,350,430,"plate-a",150,40,"stone"), R(740,420,210,150,"stone"), P(755,360), F(925,380,"stone",25,40), C(990,520,1000,350,"plate-b",150,40,"grass"), R(1230,390,170,180,"stone"), R(1430,450,70,120,"stone")],
-    pressurePlates: [Q(270,478,"plate-a"), Q(850,408,"plate-b")],
-    hazards: [R(360,490,380,80,"lava"), R(950,490,280,80,"lava"), R(1400,490,30,80,"lava")],
-    stars: [[300,430],[675,375],[815,315],[1075,300],[1315,345],[1460,405]], finish: R(1440,360,34,90)
   }
 ];
 
@@ -266,16 +256,15 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.10.0";
+const GAME_VERSION = "v0.9.2";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "pressure-plates-v1", label: "Version 0.10.0 to 0.10.0" },
   { id: "intro-seven-v1", label: "Version 0.6.2 to 0.9.2" }
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
+  "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
   "v0.2.4", "v0.2.3", "v0.2.2", "v0.2.1", "v0.2.0", "v0.1.4", "v0.1.3", "v0.1.2",
@@ -315,7 +304,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -365,10 +354,6 @@ function startSpikeDeath() {
 function resetLevelMotion() {
   levelMotionTime = 0;
   for (const levelSwitch of currentLevel().switches || []) levelSwitch.flipped = false;
-  for (const plate of currentLevel().pressurePlates || []) {
-    plate.pressed = false;
-    plate.pressProgress = 0;
-  }
   for (const platform of currentLevel().platforms) {
     if (platform.pushable) {
       platform.x = platform.baseX;
@@ -383,26 +368,6 @@ function resetLevelMotion() {
     const offset = Math.sin(platform.phase) * platform.range;
     platform.x = platform.baseX + (platform.axis === "x" ? offset : 0);
     platform.y = platform.baseY + (platform.axis === "y" ? offset : 0);
-  }
-}
-
-function updatePressurePlates(dt) {
-  for (const plate of currentLevel().pressurePlates || []) {
-    const playerOnPlate = player.grounded &&
-      player.x + PLAYER_W > plate.x + 4 && player.x < plate.x + plate.w - 4 &&
-      Math.abs(player.y + PLAYER_H - (plate.y + plate.h)) < 4;
-    const crateOnPlate = currentLevel().platforms.some((platform) =>
-      platform.pushable && !platform.broken &&
-      platform.x + platform.w > plate.x + 4 && platform.x < plate.x + plate.w - 4 &&
-      Math.abs(platform.y + platform.h - (plate.y + plate.h)) < 4
-    );
-    const pressed = playerOnPlate || crateOnPlate;
-    if (pressed !== plate.pressed) playSfx("switch", pressed ? .72 : .48);
-    plate.pressed = pressed;
-    const target = pressed ? 1 : 0;
-    plate.pressProgress = Math.max(0, Math.min(1,
-      plate.pressProgress + Math.sign(target - plate.pressProgress) * dt * 10
-    ));
   }
 }
 
@@ -425,8 +390,7 @@ function updateMovingPlatforms(dt) {
   for (const platform of currentLevel().platforms) {
     if (platform.controlled) {
       const linkedSwitch = currentLevel().switches?.find((candidate) => candidate.id === platform.switchId);
-      const linkedPlate = currentLevel().pressurePlates?.find((candidate) => candidate.id === platform.switchId);
-      const targetProgress = linkedSwitch?.flipped || linkedPlate?.pressed ? 1 : 0;
+      const targetProgress = linkedSwitch?.flipped ? 1 : 0;
       if (platform.moveProgress === targetProgress) continue;
       platform.moveProgress = Math.max(0, Math.min(1,
         platform.moveProgress + Math.sign(targetProgress - platform.moveProgress) * dt / 1.15
@@ -548,14 +512,12 @@ function completeLevelSplit() {
 
 function renderSplitSummary() {
   splitList.replaceChildren();
-  const resultSplits = finishedRun?.splits || levelSplits;
   levels.forEach((level, index) => {
-    if (!Number.isFinite(resultSplits[index])) return;
     const item = document.createElement("li");
     const name = document.createElement("span");
     name.textContent = `${index + 1}. ${level.name}`;
     const time = document.createElement("strong");
-    time.textContent = formatRunTime(resultSplits[index]);
+    time.textContent = formatRunTime(levelSplits[index] || 0);
     item.append(name, time);
     splitList.append(item);
   });
@@ -658,7 +620,7 @@ function unlockThrough(index) {
 }
 
 const ROADMAP_POINTS = [
-  [7, 70], [19, 35], [31, 68], [43, 30], [57, 66], [69, 34], [81, 65], [93, 30]
+  [8, 70], [22, 35], [36, 68], [50, 30], [64, 66], [78, 34], [92, 65]
 ];
 
 function renderRoadmap() {
@@ -1030,10 +992,8 @@ function prepareAdventureResults() {
   const starBonus = totalStars * 2;
   const finalScore = Math.round((timeScore + starBonus) * 10) / 10;
   scoreSummary.textContent = `Time ${formatRunTime(seconds)} · ${totalStars} stars (+${starBonus}) · Final score ${finalScore}`;
-  const introSplits = Array.from({ length: INTRO_LEVEL_COUNT }, (_, index) => levelSplits[index]);
-  const eligible = runStartLevel === 0 && introSplits.every(Number.isFinite);
-  const resultSplits = eligible ? introSplits : [...levelSplits];
-  finishedRun = { seconds, stars: totalStars, score: finalScore, splits: resultSplits, eligible };
+  const eligible = runStartLevel === 0 && levelSplits.length === levels.length;
+  finishedRun = { seconds, stars: totalStars, score: finalScore, splits: [...levelSplits], eligible };
   runPublished = false;
   runNameInput.value = "";
   runNameInput.disabled = false;
@@ -1067,16 +1027,6 @@ function startRewindCutscene() {
   quitButton.disabled = true;
   Object.assign(input, { left: false, right: false, jump: false });
   pressed.jump = false;
-}
-
-function finishAdventureWithoutCutscene() {
-  finishRunTimer();
-  prepareAdventureResults();
-  pauseButton.disabled = true;
-  restartButton.disabled = true;
-  restartRunButton.disabled = true;
-  quitButton.disabled = true;
-  showAdventureComplete();
 }
 
 function updateCutscene(dt) {
@@ -1830,7 +1780,6 @@ function update(dt) {
     return;
   }
 
-  updatePressurePlates(dt);
   updateMovingPlatforms(dt);
 
   const wasGrounded = player.grounded;
@@ -1894,8 +1843,7 @@ function update(dt) {
     playSfx("flag");
     completeLevelSplit();
     unlockThrough(levelIndex + 1);
-    if (levelIndex === INTRO_LEVEL_COUNT - 1) startRewindCutscene();
-    else if (levelIndex === levels.length - 1) finishAdventureWithoutCutscene();
+    if (levelIndex === levels.length - 1) startRewindCutscene();
     else levelTransition = .65;
   }
 
@@ -2246,39 +2194,6 @@ function drawSwitch(levelSwitch, time) {
     ctx.font = "800 11px Inter, sans-serif";
     ctx.fillText("- FLIP", prompt.x + 57, prompt.y + 15);
   }
-  ctx.restore();
-}
-
-function drawPressurePlate(plate) {
-  const x = plate.x - cameraX;
-  if (x + plate.w < -20 || x > VIEW_W + 20) return;
-  const depression = plate.pressProgress * 5;
-  const activeColor = plate.pressed ? "#75e38a" : "#8de4ff";
-
-  ctx.save();
-  ctx.shadowColor = plate.pressed ? "#75e38aaa" : "#8de4ff88";
-  ctx.shadowBlur = plate.pressed ? 12 : 7;
-  ctx.fillStyle = "#17283b";
-  ctx.strokeStyle = "#081421";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.roundRect(x, plate.y + 5, plate.w, 7, 3);
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.fillStyle = activeColor;
-  ctx.strokeStyle = "#dffaff";
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.roundRect(x + 4, plate.y + depression, plate.w - 8, 6, 3);
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.shadowColor = "transparent";
-  ctx.fillStyle = plate.pressed ? "#143d27" : "#12324c";
-  ctx.beginPath();
-  ctx.arc(x + plate.w / 2, plate.y + 3 + depression, 2, 0, Math.PI * 2);
-  ctx.fill();
   ctx.restore();
 }
 
@@ -2711,7 +2626,6 @@ function render(time) {
   drawBackground();
   for (const p of currentLevel().platforms) drawPlatform(p, time);
   for (const levelSwitch of currentLevel().switches || []) drawSwitch(levelSwitch, time);
-  for (const plate of currentLevel().pressurePlates || []) drawPressurePlate(plate);
   for (const pad of currentLevel().jumpPads || []) drawJumpPad(pad, time);
   for (const h of currentLevel().hazards) drawHazard(h, time);
   currentLevel().stars.forEach(([x, y], i) => drawStar(x, y, i, time));
