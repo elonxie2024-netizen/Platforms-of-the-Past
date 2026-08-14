@@ -11,6 +11,7 @@ create table if not exists public.leaderboard_rulesets (
 
 insert into public.leaderboard_rulesets (id, label, accepted_versions)
 values
+  ('intro-ten-v1', 'Version 0.11.0 to 0.11.0', array['v0.11.0']),
   ('pressure-gate-v1', 'Version 0.10.4 to 0.10.4', array['v0.10.4']),
   ('pressure-route-v2', 'Version 0.10.3 to 0.10.3', array['v0.10.3']),
   ('eight-intro-v1', 'Version 0.10.2 to 0.10.2', array['v0.10.2']),
@@ -28,22 +29,22 @@ create table if not exists public.leaderboard_scores (
   game_version text not null check (game_version ~ '^v[0-9]+\.[0-9]+\.[0-9]+$'),
   name text not null check (char_length(btrim(name)) between 1 and 24 and name !~ '[[:cntrl:]]'),
   seconds numeric(8,1) not null check (seconds between 1 and 36000),
-  stars smallint not null check (stars between 0 and 42),
+  stars smallint not null check (stars between 0 and 61),
   score numeric(8,1) generated always as (round(300 - seconds + stars * 2, 1)) stored,
-  splits jsonb not null check (jsonb_typeof(splits) = 'array' and jsonb_array_length(splits) in (7, 8)),
+  splits jsonb not null check (jsonb_typeof(splits) = 'array' and jsonb_array_length(splits) in (7, 8, 10)),
   created_at timestamptz not null default now()
 );
 
 alter table public.leaderboard_scores
   drop constraint if exists leaderboard_scores_stars_check;
 alter table public.leaderboard_scores
-  add constraint leaderboard_scores_stars_check check (stars between 0 and 42);
+  add constraint leaderboard_scores_stars_check check (stars between 0 and 61);
 
 alter table public.leaderboard_scores
   drop constraint if exists leaderboard_scores_splits_check;
 alter table public.leaderboard_scores
   add constraint leaderboard_scores_splits_check
-  check (jsonb_typeof(splits) = 'array' and jsonb_array_length(splits) in (7, 8));
+  check (jsonb_typeof(splits) = 'array' and jsonb_array_length(splits) in (7, 8, 10));
 
 create index if not exists leaderboard_scores_rank_idx
   on public.leaderboard_scores (leaderboard_id, score desc, seconds asc, created_at asc);

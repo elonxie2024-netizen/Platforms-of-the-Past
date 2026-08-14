@@ -62,8 +62,7 @@ const versionsList = document.querySelector("#versionsList");
 const closeVersionsButton = document.querySelector("#closeVersionsButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.11.0", commit: "Pending commit", date: "2026-08-14", message: "Complete the introductory levels", description: "Added patrolling red slime enemies to level 9. They reverse at patrol boundaries or obstacles, defeat the player on side contact, and can be defeated from above. Added a longer final test in level 10 that combines floating platforms, a jump pad, automatic movers, a required crate climb, switches, timed pressure-plate shuttles, and a crate-held final bridge. Expanded the roadmap, full-run splits, star limit, and ending trigger from eight levels to ten." },
-  { version: "v0.10.4", commit: "70f5c5e", date: "2026-08-14", message: "Require the first pressure plate", description: "Moved Pressure Passage's first shuttle beyond normal jump range so the opening lava gap cannot be cleared without activating the plate. Added a short activation hold that carries the shuttle inward long enough for runners to cross the plate and jump immediately instead of waiting beside the ledge." },
+  { version: "v0.10.4", commit: "Pending commit", date: "2026-08-14", message: "Require the first pressure plate", description: "Moved Pressure Passage's first shuttle beyond normal jump range so the opening lava gap cannot be cleared without activating the plate. Added a short activation hold that carries the shuttle inward long enough for runners to cross the plate and jump immediately instead of waiting beside the ledge." },
   { version: "v0.10.3", commit: "538a1af", date: "2026-08-14", message: "Refine pressure plate routes", description: "Shifted the later Pressure Passage geometry left as a single unit so runners can cross the first plate at full speed and intercept its shuttle without waiting. Preserved every distance in the second pressure-plate puzzle and made its bridge support the slime only while the crate keeps the plate depressed." },
   { version: "v0.10.2", commit: "893aa50", date: "2026-08-14", message: "Moved cutscene to after level 8", description: "Moved the rewind-awakening cutscene from the end of level 7 to the end of Pressure Passage. All eight levels now form the complete introductory run before the future rewind-focused levels begin." },
   { version: "v0.10.1", commit: "843c4d1", date: "2026-08-14", message: "Fixed platform edge overlap", description: "Stopped shallow top-corner overlaps from being treated as wall impacts before the landing pass. Fast platform and crate-edge landings now preserve horizontal momentum, while true side collisions and intentional crate pushing remain unchanged." },
@@ -140,7 +139,7 @@ const JUMP_BUFFER = 0.12;
 const PLATFORM_TOP_GRACE = 10;
 const DEATH_DURATION = 0.42;
 const CUTSCENE_DURATION = 10.4;
-const INTRO_LEVEL_COUNT = 10;
+const INTRO_LEVEL_COUNT = 8;
 
 const R = (x, y, w, h, kind = "grass") => ({ x, y, w, h, kind });
 const P = (x, y, w = 60, h = 60) => ({ x, y, w, h, kind: "crate", pushable: true, baseX: x, baseY: y });
@@ -158,10 +157,6 @@ const C = (x, y, targetX, targetY, switchId, w = 140, h = 40, kind = "stone", re
 });
 const S = (x, y, id) => ({ x, y, w: 42, h: 44, id, flipped: false });
 const Q = (x, y, id, w = 72) => ({ x, y, w, h: 12, id, pressed: false, pressProgress: 0 });
-const E = (x, surfaceY, minX, maxX, direction = 1, speed = 62) => ({
-  x, y: surfaceY - PLAYER_H, w: PLAYER_W, h: PLAYER_H, minX, maxX, speed,
-  direction, baseX: x, baseDirection: direction, alive: true
-});
 const levels = [
   {
     name: "Dirtbound Trail", width: 1260, start: [70, 430], music: "level1",
@@ -213,22 +208,6 @@ const levels = [
     pressurePlates: [Q(270,478,"plate-a"), Q(730,408,"plate-b")],
     hazards: [R(360,490,260,80,"lava"), R(830,490,280,80,"lava"), R(1280,490,30,80,"lava")],
     stars: [[300,430],[555,375],[695,315],[955,300],[1195,345],[1340,405]], finish: R(1320,360,34,90)
-  },
-  {
-    name: "Crimson Crossing", width: 1550, start: [55,430], music: "level1",
-    platforms: [R(0,490,330,80), R(390,450,300,120), R(750,410,200,160,"stone"), R(1010,450,300,120), R(1370,420,180,150,"stone")],
-    enemies: [E(520,450,420,630,1), E(1140,450,1040,1250,-1)],
-    hazards: [R(330,472,60,18), R(690,472,60,18), R(950,472,60,18), R(1310,472,60,18)],
-    stars: [[210,440],[460,400],[850,360],[1080,400],[1435,370]], finish: R(1480,330,34,90)
-  },
-  {
-    name: "The Final Test", width: 5100, start: [55,430], music: "level3", theme: "lava",
-    platforms: [R(0,490,430,80), R(500,300,180,270,"stone"), F(740,360,"grass",120,54), M(900,400,250,40,"x",45,1.2,0,"stone"), R(1160,340,210,230,"stone"), M(1510,400,140,40,"y",75,1.2,-Math.PI/2,"grass"), R(1700,430,380,140), P(1800,370), R(2080,260,120,310,"stone"), F(2260,350,"stone",110,54), R(2420,450,80,120,"stone"), R(2500,490,400,80,"stone"), C(3020,520,2970,400,"final-switch-a",150,40,"stone"), R(3220,420,260,150,"stone"), C(3760,390,3510,390,"final-plate-a",150,40,"grass",false,.7), R(3790,330,210,240,"stone"), C(4080,520,4080,300,"final-switch-b",150,40,"stone"), R(4340,400,330,170,"stone"), P(4450,340), F(4670,360,"stone",25,40), C(4750,520,4750,360,"final-plate-b",150,40,"grass",true), R(4980,450,120,120,"stone")],
-    jumpPads: [R(320,470,60,20,"jump-pad")],
-    switches: [S(2810,446,"final-switch-a"), S(3920,286,"final-switch-b")],
-    pressurePlates: [Q(3380,408,"final-plate-a"), Q(4570,388,"final-plate-b")],
-    hazards: [R(430,490,1270,80,"lava"), R(2200,490,220,80,"lava"), R(2900,490,320,80,"lava"), R(3480,490,310,80,"lava"), R(4000,490,340,80,"lava"), R(4670,490,310,80,"lava")],
-    stars: [[350,410],[585,245],[800,315],[1015,340],[1575,300],[2135,215],[2315,305],[2835,400],[3055,350],[3415,360],[3590,335],[3950,240],[4155,250],[4825,310]], finish: R(5020,360,34,90)
   }
 ];
 
@@ -293,11 +272,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.11.0";
+const GAME_VERSION = "v0.10.4";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "intro-ten-v1", label: "Version 0.11.0 to 0.11.0" },
   { id: "pressure-gate-v1", label: "Version 0.10.4 to 0.10.4" },
   { id: "pressure-route-v2", label: "Version 0.10.3 to 0.10.3" },
   { id: "eight-intro-v1", label: "Version 0.10.2 to 0.10.2" },
@@ -307,7 +285,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
+  "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
   "v0.2.4", "v0.2.3", "v0.2.2", "v0.2.1", "v0.2.0", "v0.1.4", "v0.1.3", "v0.1.2",
@@ -347,7 +325,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -363,18 +341,9 @@ function platformHasCollision(platform) {
   return !platform.broken && (!platform.requiresActive || linkedControlActive(platform));
 }
 
-function resetEnemies() {
-  for (const enemy of currentLevel().enemies || []) {
-    enemy.x = enemy.baseX;
-    enemy.direction = enemy.baseDirection;
-    enemy.alive = true;
-  }
-}
-
 function resetPlayer(countDeath = false) {
   if (countDeath) deaths++;
   resetBreakablePlatforms();
-  resetEnemies();
   deathTimer = 0;
   deathParticles = [];
   landingParticles = [];
@@ -499,39 +468,6 @@ function updateMovingPlatforms(dt) {
       platform.baseY + (platform.axis === "y" ? offset : 0)
     );
   }
-}
-
-function updateEnemies(dt, previousPlayerBottom) {
-  for (const enemy of currentLevel().enemies || []) {
-    if (!enemy.alive) continue;
-    const nextX = enemy.x + enemy.direction * enemy.speed * dt;
-    const candidate = { x: nextX, y: enemy.y, w: enemy.w, h: enemy.h };
-    const reachedBoundary = nextX < enemy.minX || nextX > enemy.maxX;
-    const blocked = currentLevel().platforms.some((platform) =>
-      platformHasCollision(platform) && overlaps(candidate, platform)
-    );
-    if (reachedBoundary || blocked) {
-      enemy.direction *= -1;
-      enemy.x = Math.max(enemy.minX, Math.min(enemy.maxX, enemy.x));
-    } else {
-      enemy.x = nextX;
-    }
-
-    if (!overlaps(playerBox(), enemy)) continue;
-    const stomped = player.vy >= 0 && previousPlayerBottom <= enemy.y + 9;
-    if (stomped) {
-      enemy.alive = false;
-      player.y = enemy.y - PLAYER_H;
-      player.vy = -JUMP_SPEED * .48;
-      player.grounded = false;
-      player.coyote = 0;
-      playSfx("enemy-stomp");
-      continue;
-    }
-    startSpikeDeath();
-    return true;
-  }
-  return false;
 }
 
 function loadLevel(index, keepScore = true) {
@@ -743,7 +679,7 @@ function unlockThrough(index) {
 }
 
 const ROADMAP_POINTS = [
-  [6, 70], [16, 35], [26, 68], [36, 30], [46, 66], [56, 34], [66, 68], [76, 30], [86, 66], [94, 34]
+  [7, 70], [19, 35], [31, 68], [43, 30], [57, 66], [69, 34], [81, 65], [93, 30]
 ];
 
 function renderRoadmap() {
@@ -1425,9 +1361,6 @@ function playSfx(name, intensity = 1) {
     playNoise(.12, .075, 1250);
     scheduleTone(125, now, .09, "square", .07, sfxGain);
     scheduleTone(82, now + .045, .11, "triangle", .06, sfxGain);
-  } else if (name === "enemy-stomp") {
-    scheduleTone(185, now, .07, "square", .075, sfxGain);
-    scheduleTone(285, now + .035, .1, "triangle", .065, sfxGain);
   } else if (name === "death") {
     const oscillator = audioContext.createOscillator();
     const envelope = audioContext.createGain();
@@ -1916,7 +1849,6 @@ function update(dt) {
   updateMovingPlatforms(dt);
 
   const wasGrounded = player.grounded;
-  const previousPlayerBottom = player.y + PLAYER_H;
   const direction = Number(input.right) - Number(input.left);
   const acceleration = player.grounded ? GROUND_ACCEL : AIR_ACCEL;
   if (direction) {
@@ -1952,7 +1884,6 @@ function update(dt) {
   if (landedOn && !padActivated) player.padLaunched = false;
   player.x = Math.max(0, Math.min(currentLevel().width - PLAYER_W, player.x));
 
-  if (updateEnemies(dt, previousPlayerBottom)) return;
   const box = playerBox();
   if (player.y > VIEW_H + 100) {
     playSfx("death");
@@ -2437,18 +2368,18 @@ function drawFlag(flag) {
   ctx.fillStyle = "#f0445a"; ctx.beginPath(); ctx.moveTo(x + 10, flag.y + 5); ctx.lineTo(x + 55, flag.y + 18); ctx.lineTo(x + 10, flag.y + 34); ctx.fill();
 }
 
-function drawSlimeCharacter(character, time, palette) {
-  const x = character.x - cameraX, y = character.y;
+function drawPlayer(time) {
+  const x = player.x - cameraX, y = player.y;
   ctx.save(); ctx.translate(x + PLAYER_W / 2, y + PLAYER_H / 2);
-  if (!character.grounded) ctx.rotate(character.vx * .00025);
-  ctx.scale(character.facing, 1);
-  const moving = character.grounded && Math.abs(character.vx) > 20;
+  if (!player.grounded) ctx.rotate(player.vx * .00025);
+  ctx.scale(player.facing, 1);
+  const moving = player.grounded && Math.abs(player.vx) > 20;
   const bounce = moving ? Math.sin(time * .018) * 1.6 : Math.sin(time * .004) * .6;
-  const squash = character.grounded ? bounce : -1.4;
+  const squash = player.grounded ? bounce : -1.4;
 
   // A squat rounded-square slime body that gently squashes as it moves.
-  ctx.fillStyle = palette.body;
-  ctx.strokeStyle = palette.outline;
+  ctx.fillStyle = "#55c96b";
+  ctx.strokeStyle = "#207a43";
   ctx.lineWidth = 2.5;
   ctx.beginPath();
   ctx.roundRect(
@@ -2462,9 +2393,9 @@ function drawSlimeCharacter(character, time, palette) {
   ctx.stroke();
 
   // Gloss, simple eyes, and a tiny smile keep the character readable at game size.
-  ctx.fillStyle = palette.highlight;
+  ctx.fillStyle = "#9af0a2";
   ctx.beginPath(); ctx.ellipse(-8, -5, 3.5, 4.5, .55, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = palette.face;
+  ctx.fillStyle = "#173d2c";
   ctx.beginPath();
   ctx.ellipse(-5, 0, 2.5, 3.8, 0, 0, Math.PI * 2);
   ctx.ellipse(6, 0, 2.5, 3.8, 0, 0, Math.PI * 2);
@@ -2474,29 +2405,11 @@ function drawSlimeCharacter(character, time, palette) {
   ctx.arc(-5.7, -1.2, .8, 0, Math.PI * 2);
   ctx.arc(5.3, -1.2, .8, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = palette.face;
+  ctx.strokeStyle = "#173d2c";
   ctx.lineWidth = 1.7;
   ctx.lineCap = "round";
   ctx.beginPath(); ctx.arc(.5, 7, 4.5, .15, Math.PI - .15); ctx.stroke();
   ctx.restore();
-}
-
-function drawPlayer(time) {
-  drawSlimeCharacter(player, time, {
-    body: "#55c96b", outline: "#207a43", highlight: "#9af0a2", face: "#173d2c"
-  });
-}
-
-function drawEnemies(time) {
-  for (const enemy of currentLevel().enemies || []) {
-    if (!enemy.alive) continue;
-    drawSlimeCharacter({
-      x: enemy.x, y: enemy.y, vx: enemy.direction * enemy.speed,
-      grounded: true, facing: enemy.direction
-    }, time, {
-      body: "#e85b61", outline: "#8f2735", highlight: "#ff9a9e", face: "#4b1721"
-    });
-  }
 }
 
 function drawDeathParticles() {
@@ -2815,7 +2728,6 @@ function render(time) {
   for (const plate of currentLevel().pressurePlates || []) drawPressurePlate(plate);
   for (const pad of currentLevel().jumpPads || []) drawJumpPad(pad, time);
   for (const h of currentLevel().hazards) drawHazard(h, time);
-  drawEnemies(time);
   currentLevel().stars.forEach(([x, y], i) => drawStar(x, y, i, time));
   drawFlag(currentLevel().finish);
   drawBlockDebris();

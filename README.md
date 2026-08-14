@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Rewind is introduced in the ending cinematic, while its gameplay mechanic will be implemented later.
 
-**Current version:** `v0.10.4`
+**Current version:** `v0.11.0`
 
 ## How it works
 
@@ -20,7 +20,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Collect stars.** Each level hides stars across its main route and more dangerous jumps.
 
-**Reach the flag.** Finish all eight introductory levels to complete the current adventure and see your final results.
+**Reach the flag.** Finish all ten introductory levels to complete the current adventure and see your final results.
 
 **Awaken rewind.** Completing the introductory adventure triggers a cinematic in which the slime discovers a time machine and gains its first time-travel power. Click the game screen to skip directly to the results.
 
@@ -56,14 +56,16 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 The playable prototype includes:
 
-- Eight compact introductory levels that introduce the terrain textures and mechanics in stages
+- Ten introductory levels that introduce the terrain textures and mechanics, then test them in longer combined challenges
 - A jump pad in level 3 and automatically cycling moving platforms in level 4
 - Required crate-pushing puzzles in level 5; crates act as movable steps
 - Asset-textured floating blocks and visibly cracked breakable variants that burst into material-specific debris in level 6
 - A session-based level roadmap with connected numbered stages and progression locks
 - Reversible nearby switches with clickable `E - FLIP` prompts that raise or submerge linked platforms in level 7
-- A story cutscene after level 8 that reveals the time machine and the slime's rewind power
+- A story cutscene after level 10 that reveals the time machine and the slime's rewind power
 - Thin automatic pressure plates and plate-controlled platforms in level 8, with a no-wait first shuttle and a required crate-held second bridge
+- Two patrolling red slime enemies in level 9 that reverse at ledges and obstacles, defeat the player from the side, and can be stomped from above
+- A long final test in level 10 that combines floating platforms, jump pads, automatic movers, crates, switches, and pressure plates
 - An evolved post-cutscene main menu where two continuously moving platforms trade places while the slime climbs with its real in-game jump physics
 - Post-cutscene menu controls for animation style, asset-based platform texture, and backdrop
 - Animated lava, spikes, steeper elevation changes, and more demanding star routes
