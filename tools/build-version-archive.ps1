@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $releases = [ordered]@{
+  'v0.8.1'  = 'edc97dd'
   'v0.8.0'  = 'fdaba75'
   'v0.7.6'  = '9cc5fc1'
   'v0.7.5'  = '6447b71'

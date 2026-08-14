@@ -328,30 +328,6 @@ canvas {
   font: inherit;
 }
 
-.leaderboard-tabs {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(82px, 1fr));
-  width: min(360px, 100%);
-  padding: 4px;
-  border: 1px solid #ffffff22;
-  border-radius: 999px;
-  background: #07142b8f;
-}
-
-.overlay-panel .leaderboard-tabs button {
-  border: 0;
-  padding: 8px 14px;
-  color: #b8cbe2;
-  background: transparent;
-  box-shadow: none;
-}
-
-.overlay-panel .leaderboard-tabs button.active {
-  color: #17233b;
-  background: #72d8f5;
-  box-shadow: 0 4px 12px #0004;
-}
-
 .versions-panel { width: min(650px, 100%); }
 .versions-note { color: #b8cbe2; font-size: .82rem; }
 

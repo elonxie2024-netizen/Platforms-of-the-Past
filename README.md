@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Rewind is introduced in the ending cinematic, while its gameplay mechanic will be implemented later.
 
-**Current version:** `v0.8.1`
+**Current version:** `v0.8.3`
 
 ## How it works
 
@@ -28,7 +28,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Compare your splits.** A second timer tracks the current level and resets whenever you restart that level. The run timer keeps going, while the results screen records the successful attempt for each level.
 
-**Publish a run.** Complete the full adventure from Dirtbound Trail, name the run, and optionally publish it to the global leaderboard. Records are shared across devices, while gameplay-changing releases use separate boards so scores remain comparable.
+**Publish a run.** Complete the full adventure from Dirtbound Trail, name the run, and optionally publish it to the global leaderboard. Records are shared across devices, gameplay-changing releases use separate boards, and rankings can be viewed by fastest time, most stars, or highest total score.
 
 **Play past versions.** Open Versions from the main menu to launch any archived release build in a new tab.
 
