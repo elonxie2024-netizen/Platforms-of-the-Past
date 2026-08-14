@@ -23,8 +23,6 @@ const volumeInput = document.querySelector("#volumeInput");
 const volumeValue = document.querySelector("#volumeValue");
 const menuStage = document.querySelector(".menu-stage");
 const menuSlime = document.querySelector(".menu-slime");
-const menuPlatforms = [...document.querySelectorAll(".menu-platform")];
-const menuClouds = [...document.querySelectorAll(".menu-cloud")];
 const mainLeaderboardButton = document.querySelector("#mainLeaderboardButton");
 const pauseMenu = document.querySelector("#pauseMenu");
 const resumeButton = document.querySelector("#resumeButton");
@@ -34,15 +32,12 @@ const pauseLeaderboardButton = document.querySelector("#pauseLeaderboardButton")
 const pauseQuitButton = document.querySelector("#pauseQuitButton");
 const leaderboardMenu = document.querySelector("#leaderboardMenu");
 const leaderboardList = document.querySelector("#leaderboardList");
-const leaderboardVersion = document.querySelector("#leaderboardVersion");
-const leaderboardNote = document.querySelector("#leaderboardNote");
 const closeLeaderboardButton = document.querySelector("#closeLeaderboardButton");
 const runNameInput = document.querySelector("#runNameInput");
 const publishRunButton = document.querySelector("#publishRunButton");
 const publishStatus = document.querySelector("#publishStatus");
 const splitList = document.querySelector("#splitList");
 const mainChangelogButton = document.querySelector("#mainChangelogButton");
-const restartSessionButton = document.querySelector("#restartSessionButton");
 const pauseChangelogButton = document.querySelector("#pauseChangelogButton");
 const changelogMenu = document.querySelector("#changelogMenu");
 const changelogList = document.querySelector("#changelogList");
@@ -50,24 +45,9 @@ const closeChangelogButton = document.querySelector("#closeChangelogButton");
 const roadmapMenu = document.querySelector("#roadmapMenu");
 const levelRoadmap = document.querySelector("#levelRoadmap");
 const closeRoadmapButton = document.querySelector("#closeRoadmapButton");
-const versionsButton = document.querySelector("#versionsButton");
-const versionsMenu = document.querySelector("#versionsMenu");
-const versionsList = document.querySelector("#versionsList");
-const closeVersionsButton = document.querySelector("#closeVersionsButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.8.0", commit: "Pending commit", date: "2026-08-13", message: "Add global leaderboards and version archive", description: "Replaced browser-only records with a shared online leaderboard available across devices and tabs. Added independent gameplay ruleset IDs so balance-changing releases receive separate boards, restricted ranked submissions to complete level-one starts, and added a menu of playable release archives built from the original Git commits." },
-  { version: "v0.7.6", commit: "9cc5fc1", date: "2026-08-13", message: "Updated post-cutscene animation", description: "Rebuilt the awakened main-menu climb as one continuous loop without separate move-and-wait phases. Both platforms now descend at a constant speed and recycle seamlessly, while the slime's trajectory uses the game's real gravity and jump-speed calculations scaled uniformly to the smaller menu scene." },
-  { version: "v0.7.5", commit: "6447b71", date: "2026-08-12", message: "Add cutscene skipping", description: "Made the final rewind cutscene skippable by clicking anywhere on the game canvas. Skipping immediately completes the cinematic and opens the existing adventure results screen without changing the finished run's recorded time, score, stars, or level splits." },
-  { version: "v0.7.4", commit: "4a8de6e", date: "2026-08-12", message: "Add session-based progression", description: "Changed roadmap unlocks and the post-cutscene menu transformation to last only for the current browser session. Refreshing now restores Dirtbound Trail as the sole unlocked level and returns the menu to its original animation, while a new Restart session button performs the same complete reset immediately." },
-  { version: "v0.7.3", commit: "4a8de6e", date: "2026-08-12", message: "Refine the post-cutscene climb loop", description: "Reworked the awakened main-menu animation around the original two platforms. One remains central while the other drops below the stage, reappears at the top as a new destination, and trades places with it after the slime jumps upward." },
-  { version: "v0.7.2", commit: "8bcce68", date: "2026-08-12", message: "Added post-cutscene menu animation", description: "Added a persistent post-cutscene main-menu animation. After awakening rewind and returning to the menu, the slime endlessly climbs a looping staircase of rising platforms while layered clouds drift past." },
-  { version: "v0.7.1", commit: "1aaa466", date: "2026-08-12", message: "Finished cutscene", description: "Completed the cinematic after all seven introductory levels. The slime automatically crosses a short platforming route, enters a time machine instead of a flag, is struck by temporal static, and awakens the power of rewind before the existing results screen appears." },
-  { version: "v0.7.0", commit: "232ee51", date: "2026-08-12", message: "Added rewind cutscene", description: "Established the rewind-origin update and its initial ending-cutscene structure." },
-  { version: "v0.6.2", commit: "094b908", date: "2026-08-12", message: "Added clickable switches", description: "Turned the nearby E - FLIP prompt into a clickable in-game control while retaining keyboard interaction. The prompt's visible bounds and pointer hit area now stay aligned as it gently bobs above the switch." },
-  { version: "v0.6.1", commit: "acfadd2", date: "2026-08-12", message: "Added 2 way switches", description: "Changed switches into two-way controls. A nearby lever can be flipped in either direction, causing its linked platform to move smoothly between its raised destination and submerged starting position." },
-  { version: "v0.6.0", commit: "8f4c9a0", date: "2026-08-12", message: "Added 7th level with switches", description: "Added the seventh and final introductory level. Nearby levers display an E interaction prompt and move their linked platforms into place when flipped, creating a route that must be assembled before it can be crossed." },
-  { version: "v0.5.2", commit: "0ab1735", date: "2026-08-12", message: "Added roadmap for levels", description: "Changed Play to open a connected level roadmap instead of immediately starting level 1. Completed levels and the next challenge are blue and selectable, future levels are gray and locked, and progression persists in the browser." },
+  { version: "v0.5.2", commit: "Pending commit", date: "2026-08-12", message: "Add level roadmap", description: "Changed Play to open a connected level roadmap instead of immediately starting level 1. Completed levels and the next challenge are blue and selectable, future levels are gray and locked, and progression persists in the browser." },
   { version: "v0.5.1", commit: "d5edda3", date: "2026-08-11", message: "Revamped cracked block texture", description: "Replaced the colored symbol blocks with nine-sliced rectangles made from the original grass, stone, and crate assets. Breakable variants now share an unmistakable cracked appearance and burst into material-specific dirt, pebble, or woodchip debris." },
   { version: "v0.5.0", commit: "ce40cef", date: "2026-08-11", message: "Breakable blocks added in 6th level", description: "Added a sixth level introducing three floating block types: delayed crumble blocks that break after being stood on, impact blocks that break after a jump landing, and permanent floating blocks that never break. Breakable blocks warn the player before disappearing and reset after death or restart." },
   { version: "v0.4.6", commit: "ccf56e7", date: "2026-08-11", message: "Fixed terrain 2", description: "Rebuilt the lower grass and stone layers as left-side, tiled-middle, and right-side columns. The pillar sides now line up with the top layer instead of allowing the center texture to extend past its edges." },
@@ -120,7 +100,6 @@ const JUMP_PAD_SPEED = 1120;
 const COYOTE_TIME = 0.1;
 const JUMP_BUFFER = 0.12;
 const DEATH_DURATION = 0.42;
-const CUTSCENE_DURATION = 10.4;
 
 const R = (x, y, w, h, kind = "grass") => ({ x, y, w, h, kind });
 const P = (x, y, w = 60, h = 60) => ({ x, y, w, h, kind: "crate", pushable: true, baseX: x, baseY: y });
@@ -132,10 +111,6 @@ const F = (x, y, material = "stone", w = 110, h = 54) => ({ x, y, w, h, kind: "f
 const M = (x, y, w, h, axis, range, speed, phase = 0, kind = "stone") => ({
   x, y, w, h, kind, moving: true, axis, range, speed, phase, baseX: x, baseY: y
 });
-const C = (x, y, targetX, targetY, switchId, w = 140, h = 40, kind = "stone") => ({
-  x, y, w, h, kind, controlled: true, switchId, targetX, targetY, baseX: x, baseY: y, moveProgress: 0
-});
-const S = (x, y, id) => ({ x, y, w: 42, h: 44, id, flipped: false });
 const levels = [
   {
     name: "Dirtbound Trail", width: 1260, start: [70, 430], music: "level1",
@@ -173,13 +148,6 @@ const levels = [
     platforms: [R(0,490,260,80,"stone"), F(320,430,"grass"), B(500,390,"stand","grass"), F(680,350,"stone"), B(860,420,"impact","stone"), F(1040,360,"crate"), B(1220,420,"stand","crate"), R(1380,450,120,120,"stone")],
     hazards: [R(260,490,1120,80,"lava")],
     stars: [[375,385],[555,345],[735,305],[915,375],[1095,315],[1275,375],[1435,405]], finish: R(1415,360,34,90)
-  },
-  {
-    name: "Switchback Summit", width: 1500, start: [55,430], music: "level2",
-    platforms: [R(0,490,320,80,"stone"), C(410,520,440,380,"bridge-a",140,40,"stone"), R(640,420,180,150,"stone"), C(900,520,920,345,"bridge-b",145,40,"grass"), R(1160,390,170,180,"stone"), R(1380,450,120,120,"stone")],
-    switches: [S(250,446,"bridge-a"), S(740,376,"bridge-b")],
-    hazards: [R(320,490,320,80,"lava"), R(820,490,340,80,"lava"), R(1330,490,50,80,"lava")],
-    stars: [[285,400],[510,330],[735,330],[1035,285],[1245,345],[1435,405]], finish: R(1415,360,34,90)
   }
 ];
 
@@ -223,10 +191,6 @@ let deathTimer = 0;
 let deathParticles = [];
 let blockDebris = [];
 let gameStarted = false;
-let cutsceneActive = false;
-let cutsceneTime = 0;
-let cutsceneZapPlayed = false;
-let cutscenePowerPlayed = false;
 let runStartedAt = 0;
 let runElapsed = 0;
 let timerRunning = false;
@@ -242,26 +206,10 @@ let leaderboardReturn = "main";
 let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
-const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.8.0";
-const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
-const LEADERBOARD_RULESETS = [
-  { id: "intro-seven-v1", label: "Intro Seven ruleset (current)" }
-];
-const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
-const RELEASE_VERSIONS = [
-  "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
-  "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
-  "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
-  "v0.2.4", "v0.2.3", "v0.2.2", "v0.2.1", "v0.2.0", "v0.1.4", "v0.1.3", "v0.1.2",
-  "v0.1.1", "v0.1.0", "v0.0.13", "v0.0.12", "v0.0.11", "v0.0.10", "v0.0.5"
-];
-let rewindMenuAwakened = false;
-let awakenedMenuAnimationStart = null;
-let highestUnlockedLevel = 0;
-let leaderboardEntries = [];
-let leaderboardRequest = 0;
+const LEADERBOARD_STORAGE_KEY = "platforms-past-leaderboard-v1";
+const PROGRESS_STORAGE_KEY = "platforms-past-progress-v1";
+let highestUnlockedLevel = loadUnlockedLevel();
+let leaderboardEntries = loadLeaderboardEntries();
 let masterVolume = 1;
 let audioContext = null;
 let masterGain = null;
@@ -271,20 +219,12 @@ let musicTimer = null;
 let currentTrack = "menu";
 let musicStep = 0;
 let nextMusicNoteTime = 0;
-let developmentSequencePosition = 0;
 const activeMusicVoices = new Set();
-
-function clearLegacySessionState() {
-  try { LEGACY_SESSION_STORAGE_KEYS.forEach(key => localStorage.removeItem(key)); }
-  catch { /* Session state is already kept in memory only. */ }
-}
-
-clearLegacySessionState();
 
 const spriteSheet = new Image();
 let spritesReady = false;
 spriteSheet.addEventListener("load", () => { spritesReady = true; });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -332,16 +272,10 @@ function startSpikeDeath() {
 
 function resetLevelMotion() {
   levelMotionTime = 0;
-  for (const levelSwitch of currentLevel().switches || []) levelSwitch.flipped = false;
   for (const platform of currentLevel().platforms) {
     if (platform.pushable) {
       platform.x = platform.baseX;
       platform.y = platform.baseY;
-    }
-    if (platform.controlled) {
-      platform.x = platform.baseX;
-      platform.y = platform.baseY;
-      platform.moveProgress = 0;
     }
     if (!platform.moving) continue;
     const offset = Math.sin(platform.phase) * platform.range;
@@ -350,45 +284,22 @@ function resetLevelMotion() {
   }
 }
 
-function movePlatformWithPlayer(platform, nextX, nextY) {
-  const oldX = platform.x;
-  const oldY = platform.y;
-  const wasStanding = player.grounded &&
-    Math.abs(player.y + PLAYER_H - oldY) < 3 &&
-    player.x + PLAYER_W > oldX && player.x < oldX + platform.w;
-  platform.x = nextX;
-  platform.y = nextY;
-  if (wasStanding) {
-    player.x += platform.x - oldX;
-    player.y += platform.y - oldY;
-  }
-}
-
 function updateMovingPlatforms(dt) {
   levelMotionTime += dt;
   for (const platform of currentLevel().platforms) {
-    if (platform.controlled) {
-      const linkedSwitch = currentLevel().switches?.find((candidate) => candidate.id === platform.switchId);
-      const targetProgress = linkedSwitch?.flipped ? 1 : 0;
-      if (platform.moveProgress === targetProgress) continue;
-      platform.moveProgress = Math.max(0, Math.min(1,
-        platform.moveProgress + Math.sign(targetProgress - platform.moveProgress) * dt / 1.15
-      ));
-      const eased = platform.moveProgress * platform.moveProgress * (3 - 2 * platform.moveProgress);
-      movePlatformWithPlayer(
-        platform,
-        platform.baseX + (platform.targetX - platform.baseX) * eased,
-        platform.baseY + (platform.targetY - platform.baseY) * eased
-      );
-      continue;
-    }
     if (!platform.moving) continue;
+    const oldX = platform.x;
+    const oldY = platform.y;
+    const wasStanding = player.grounded &&
+      Math.abs(player.y + PLAYER_H - oldY) < 3 &&
+      player.x + PLAYER_W > oldX && player.x < oldX + platform.w;
     const offset = Math.sin(levelMotionTime * platform.speed + platform.phase) * platform.range;
-    movePlatformWithPlayer(
-      platform,
-      platform.baseX + (platform.axis === "x" ? offset : 0),
-      platform.baseY + (platform.axis === "y" ? offset : 0)
-    );
+    platform.x = platform.baseX + (platform.axis === "x" ? offset : 0);
+    platform.y = platform.baseY + (platform.axis === "y" ? offset : 0);
+    if (wasStanding) {
+      player.x += platform.x - oldX;
+      player.y += platform.y - oldY;
+    }
   }
 }
 
@@ -502,50 +413,51 @@ function renderSplitSummary() {
   });
 }
 
-function leaderboardHeaders(includeJson = false) {
-  return {
-    apikey: SUPABASE_PUBLISHABLE_KEY,
-    ...(includeJson ? { "Content-Type": "application/json" } : {})
-  };
-}
-
-async function loadGlobalLeaderboard(rulesetId) {
-  const query = new URLSearchParams({
-    select: "name,game_version,seconds,stars,score,created_at",
-    leaderboard_id: `eq.${rulesetId}`,
-    order: "score.desc,seconds.asc,created_at.asc",
-    limit: "50"
-  });
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard_scores?${query}`, {
-    headers: leaderboardHeaders()
-  });
-  if (!response.ok) throw new Error(`Leaderboard request failed (${response.status})`);
-  return response.json();
-}
-
-function applyRewindMenuState() {
-  menuStage.classList.toggle("rewind-awakened", rewindMenuAwakened);
-  awakenedMenuAnimationStart = null;
-  if (!rewindMenuAwakened) {
-    menuPlatforms.forEach(platform => {
-      platform.style.removeProperty("left");
-      platform.style.removeProperty("right");
-      platform.style.removeProperty("bottom");
-    });
+function loadLeaderboardEntries() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LEADERBOARD_STORAGE_KEY) || "[]");
+    if (!Array.isArray(saved)) return [];
+    return saved.filter((entry) =>
+      entry && typeof entry.name === "string" &&
+      Number.isFinite(entry.score) && Number.isFinite(entry.seconds) && Number.isFinite(entry.stars)
+    );
+  } catch {
+    return [];
   }
-  menuStage.setAttribute("aria-label", rewindMenuAwakened
-    ? "The rewind-powered green slime endlessly climbing between two looping platforms through clouds"
-    : "A green slime endlessly jumping between two grassy platforms");
+}
+
+function saveLeaderboardEntries() {
+  try {
+    localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(leaderboardEntries));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function loadUnlockedLevel() {
+  try {
+    const rawProgress = localStorage.getItem(PROGRESS_STORAGE_KEY);
+    if (rawProgress === null) {
+      const oldRuns = JSON.parse(localStorage.getItem(LEADERBOARD_STORAGE_KEY) || "[]");
+      if (Array.isArray(oldRuns) && oldRuns.length > 0) return levels.length - 1;
+    }
+    const saved = Number(rawProgress);
+    return Number.isInteger(saved) ? Math.max(0, Math.min(levels.length - 1, saved)) : 0;
+  } catch {
+    return 0;
+  }
 }
 
 function unlockThrough(index) {
   const unlocked = Math.max(0, Math.min(levels.length - 1, index));
   if (unlocked <= highestUnlockedLevel) return;
   highestUnlockedLevel = unlocked;
+  try { localStorage.setItem(PROGRESS_STORAGE_KEY, String(highestUnlockedLevel)); } catch { /* Progress remains available for this session. */ }
 }
 
 const ROADMAP_POINTS = [
-  [8, 70], [22, 35], [36, 68], [50, 30], [64, 66], [78, 34], [92, 65]
+  [10, 72], [27, 39], [43, 68], [59, 31], [75, 63], [91, 28]
 ];
 
 function renderRoadmap() {
@@ -604,7 +516,6 @@ function closeRoadmap() {
 }
 
 function startRoadmapRun(index) {
-  resetCutscene();
   runStartLevel = index;
   gameStarted = true;
   paused = false;
@@ -618,7 +529,6 @@ function startRoadmapRun(index) {
   roadmapMenu.hidden = true;
   leaderboardMenu.hidden = true;
   changelogMenu.hidden = true;
-  versionsMenu.hidden = true;
   pauseButton.disabled = false;
   restartButton.disabled = false;
   restartRunButton.disabled = false;
@@ -647,7 +557,7 @@ function renderLeaderboard() {
     name.textContent = entry.name;
     const details = document.createElement("small");
     details.className = "leaderboard-details";
-    details.textContent = `${entry.game_version} · ${formatRunTime(Number(entry.seconds))} · ${entry.stars} ${entry.stars === 1 ? "star" : "stars"}`;
+    details.textContent = `${formatRunTime(entry.seconds)} · ${entry.stars} ${entry.stars === 1 ? "star" : "stars"}`;
     name.append(details);
     const score = document.createElement("span");
     score.className = "leaderboard-result";
@@ -657,37 +567,9 @@ function renderLeaderboard() {
   });
 }
 
-async function refreshLeaderboard() {
-  const request = ++leaderboardRequest;
-  leaderboardEntries = [];
-  leaderboardNote.textContent = "Loading scores from around the world...";
-  renderLeaderboard();
-  try {
-    const entries = await loadGlobalLeaderboard(leaderboardVersion.value || CURRENT_LEADERBOARD_ID);
-    if (request !== leaderboardRequest) return;
-    leaderboardEntries = entries;
-    leaderboardNote.textContent = "Boards are separated whenever gameplay or scoring changes.";
-    renderLeaderboard();
-  } catch {
-    if (request !== leaderboardRequest) return;
-    leaderboardNote.textContent = "The global leaderboard is unavailable. Check the connection or finish the Supabase setup.";
-    renderLeaderboard();
-  }
-}
-
-function populateLeaderboardVersions() {
-  leaderboardVersion.replaceChildren();
-  LEADERBOARD_RULESETS.forEach(ruleset => {
-    const option = document.createElement("option");
-    option.value = ruleset.id;
-    option.textContent = ruleset.label;
-    leaderboardVersion.append(option);
-  });
-  leaderboardVersion.value = CURRENT_LEADERBOARD_ID;
-}
-
 function openLeaderboard(source) {
   leaderboardReturn = source;
+  renderLeaderboard();
   if (source === "pause") pauseMenu.hidden = true;
   else {
     settingsPanel.hidden = true;
@@ -695,7 +577,6 @@ function openLeaderboard(source) {
     mainMenu.hidden = true;
   }
   leaderboardMenu.hidden = false;
-  refreshLeaderboard();
   closeLeaderboardButton.focus();
 }
 
@@ -708,33 +589,6 @@ function closeLeaderboard() {
     mainMenu.hidden = false;
     mainLeaderboardButton.focus();
   }
-}
-
-function renderVersions() {
-  versionsList.replaceChildren();
-  RELEASE_VERSIONS.forEach(version => {
-    const link = document.createElement("a");
-    link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `versions/${version}/`;
-    link.target = "_blank";
-    link.rel = "noopener";
-    versionsList.append(link);
-  });
-}
-
-function openVersions() {
-  settingsPanel.hidden = true;
-  settingsButton.setAttribute("aria-expanded", "false");
-  mainMenu.hidden = true;
-  renderVersions();
-  versionsMenu.hidden = false;
-  versionsList.querySelector("a")?.focus();
-}
-
-function closeVersions() {
-  versionsMenu.hidden = true;
-  mainMenu.hidden = false;
-  versionsButton.focus();
 }
 
 function renderChangelog() {
@@ -792,7 +646,7 @@ function updatePauseButton() {
 }
 
 function setPaused(shouldPause) {
-  if (!gameStarted || won || cutsceneActive || paused === shouldPause) return;
+  if (!gameStarted || won || paused === shouldPause) return;
   if (shouldPause) {
     timerWasRunningBeforePause = timerRunning;
     levelTimerWasRunningBeforePause = levelTimerRunning;
@@ -832,7 +686,7 @@ function setPaused(shouldPause) {
   updatePauseButton();
 }
 
-async function publishFinishedRun() {
+function publishFinishedRun() {
   if (!finishedRun || runPublished) return;
   const name = runNameInput.value.trim().slice(0, 24);
   if (!name) {
@@ -840,34 +694,14 @@ async function publishFinishedRun() {
     runNameInput.focus();
     return;
   }
-  if (!finishedRun.eligible) {
-    publishStatus.textContent = "Only complete runs started from Dirtbound Trail can be ranked.";
-    return;
-  }
+  leaderboardEntries.push({ name, ...finishedRun, publishedAt: Date.now() });
+  leaderboardEntries.sort((a, b) => b.score - a.score || a.seconds - b.seconds);
+  leaderboardEntries = leaderboardEntries.slice(0, 50);
+  const saved = saveLeaderboardEntries();
+  runPublished = true;
   publishRunButton.disabled = true;
   runNameInput.disabled = true;
-  publishStatus.textContent = "Publishing run...";
-  try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard_scores`, {
-      method: "POST",
-      headers: leaderboardHeaders(true),
-      body: JSON.stringify({
-        leaderboard_id: CURRENT_LEADERBOARD_ID,
-        game_version: GAME_VERSION,
-        name,
-        seconds: finishedRun.seconds,
-        stars: finishedRun.stars,
-        splits: finishedRun.splits
-      })
-    });
-    if (!response.ok) throw new Error(`Publish failed (${response.status})`);
-    runPublished = true;
-    publishStatus.textContent = "Run published to the global leaderboard.";
-  } catch {
-    publishRunButton.disabled = false;
-    runNameInput.disabled = false;
-    publishStatus.textContent = "Could not publish. Check the connection or finish the Supabase setup.";
-  }
+  publishStatus.textContent = saved ? "Run published to the local leaderboard." : "Run published for this session.";
 }
 
 function resetFinishedRun() {
@@ -880,69 +714,6 @@ function resetFinishedRun() {
   splitList.replaceChildren();
 }
 
-function resetCutscene() {
-  gameShell.classList.remove("cutscene-playing");
-  cutsceneActive = false;
-  cutsceneTime = 0;
-  cutsceneZapPlayed = false;
-  cutscenePowerPlayed = false;
-}
-
-function prepareAdventureResults() {
-  const seconds = Math.round(runElapsed * 10) / 10;
-  const timeScore = Math.round((300 - seconds) * 10) / 10;
-  const starBonus = totalStars * 2;
-  const finalScore = Math.round((timeScore + starBonus) * 10) / 10;
-  scoreSummary.textContent = `Time ${formatRunTime(seconds)} · ${totalStars} stars (+${starBonus}) · Final score ${finalScore}`;
-  const eligible = runStartLevel === 0 && levelSplits.length === levels.length;
-  finishedRun = { seconds, stars: totalStars, score: finalScore, splits: [...levelSplits], eligible };
-  runPublished = false;
-  runNameInput.value = "";
-  runNameInput.disabled = false;
-  publishRunButton.disabled = false;
-  publishStatus.textContent = "";
-  if (!eligible) publishStatus.textContent = "Practice run: global ranking requires starting from Dirtbound Trail.";
-  renderSplitSummary();
-}
-
-function showAdventureComplete() {
-  gameShell.classList.remove("cutscene-playing");
-  cutsceneActive = false;
-  rewindMenuAwakened = true;
-  applyRewindMenuState();
-  won = true;
-  message.hidden = false;
-  runNameInput.focus();
-}
-
-function startRewindCutscene() {
-  finishRunTimer();
-  prepareAdventureResults();
-  resetCutscene();
-  cutsceneActive = true;
-  gameShell.classList.add("cutscene-playing");
-  message.hidden = true;
-  pauseButton.disabled = true;
-  restartButton.disabled = true;
-  restartRunButton.disabled = true;
-  quitButton.disabled = true;
-  Object.assign(input, { left: false, right: false, jump: false });
-  pressed.jump = false;
-}
-
-function updateCutscene(dt) {
-  cutsceneTime = Math.min(CUTSCENE_DURATION, cutsceneTime + dt);
-  if (!cutsceneZapPlayed && cutsceneTime >= 6.65) {
-    cutsceneZapPlayed = true;
-    playSfx("time-zap");
-  }
-  if (!cutscenePowerPlayed && cutsceneTime >= 7.45) {
-    cutscenePowerPlayed = true;
-    playSfx("rewind-awaken");
-  }
-  if (cutsceneTime >= CUTSCENE_DURATION) showAdventureComplete();
-}
-
 function setKey(code, down) {
   if (down && ["ArrowLeft", "KeyA", "ArrowRight", "KeyD", "ArrowUp", "KeyW", "Space"].includes(code)) startRunTimer();
   if (["ArrowLeft", "KeyA"].includes(code)) input.left = down;
@@ -953,72 +724,10 @@ function setKey(code, down) {
   }
 }
 
-function nearbySwitch() {
-  if (!player.grounded) return null;
-  const playerCenter = player.x + PLAYER_W / 2;
-  const playerFeet = player.y + PLAYER_H;
-  return (currentLevel().switches || []).find((levelSwitch) =>
-    Math.abs(playerCenter - (levelSwitch.x + levelSwitch.w / 2)) <= 72 &&
-    Math.abs(playerFeet - (levelSwitch.y + levelSwitch.h)) <= 8
-  ) || null;
-}
-
-function activateNearbySwitch() {
-  const levelSwitch = nearbySwitch();
-  if (!levelSwitch) return false;
-  levelSwitch.flipped = !levelSwitch.flipped;
-  playSfx("switch");
-  return true;
-}
-
-function switchPromptBounds(levelSwitch, time) {
-  const centerX = levelSwitch.x - cameraX + levelSwitch.w / 2;
-  return {
-    x: centerX - 44,
-    y: levelSwitch.y - 38 + Math.sin(time * .006) * 2,
-    w: 88,
-    h: 29
-  };
-}
-
-canvas.addEventListener("pointerdown", (event) => {
-  if (cutsceneActive) {
-    event.preventDefault();
-    showAdventureComplete();
-    return;
-  }
-  if (!gameStarted || paused || won) return;
-  const levelSwitch = nearbySwitch();
-  if (!levelSwitch) return;
-  const canvasRect = canvas.getBoundingClientRect();
-  const pointerX = (event.clientX - canvasRect.left) * VIEW_W / canvasRect.width;
-  const pointerY = (event.clientY - canvasRect.top) * VIEW_H / canvasRect.height;
-  const prompt = switchPromptBounds(levelSwitch, performance.now());
-  if (pointerX < prompt.x || pointerX > prompt.x + prompt.w || pointerY < prompt.y || pointerY > prompt.y + prompt.h) return;
-  event.preventDefault();
-  activateNearbySwitch();
-  canvas.focus();
-});
-
-function trackDevelopmentSequence(event) {
-  if (event.repeat || event.key.length !== 1) return;
-  const sequence = [99, 104, 101, 101, 115, 101, 98, 117, 114, 103, 101, 114];
-  const key = event.key.toLowerCase().charCodeAt(0);
-  developmentSequencePosition = key === sequence[developmentSequencePosition]
-    ? developmentSequencePosition + 1
-    : key === sequence[0] ? 1 : 0;
-  if (developmentSequencePosition !== sequence.length) return;
-  developmentSequencePosition = 0;
-  unlockThrough(levels.length - 1);
-  if (!roadmapMenu.hidden) renderRoadmap();
-}
-
 addEventListener("keydown", (event) => {
   if (event.target instanceof Element && event.target.matches("input, textarea, select")) return;
-  trackDevelopmentSequence(event);
   if (!gameStarted) return;
-  if (cutsceneActive) return;
-  if (["ArrowLeft", "ArrowRight", "ArrowUp", "Space", "KeyP", "KeyE"].includes(event.code)) event.preventDefault();
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "Space", "KeyP"].includes(event.code)) event.preventDefault();
   if (event.code === "KeyP" && !won) {
     if (!leaderboardMenu.hidden && leaderboardReturn === "pause") closeLeaderboard();
     else if (!changelogMenu.hidden && changelogReturn === "pause") closeChangelog();
@@ -1026,7 +735,6 @@ addEventListener("keydown", (event) => {
     return;
   }
   if (paused) return;
-  if (event.code === "KeyE") activateNearbySwitch();
   if (event.code === "KeyR") restartLevel();
   if (event.code === "KeyT") startOver();
   if (event.code === "Enter" && won) startOver();
@@ -1047,11 +755,6 @@ closeLeaderboardButton.addEventListener("click", closeLeaderboard);
 mainChangelogButton.addEventListener("click", () => openChangelog("main"));
 pauseChangelogButton.addEventListener("click", () => openChangelog("pause"));
 closeChangelogButton.addEventListener("click", closeChangelog);
-versionsButton.addEventListener("click", openVersions);
-closeVersionsButton.addEventListener("click", closeVersions);
-leaderboardVersion.addEventListener("change", refreshLeaderboard);
-addEventListener("focus", () => { if (!leaderboardMenu.hidden) refreshLeaderboard(); });
-restartSessionButton.addEventListener("click", restartSession);
 publishRunButton.addEventListener("click", publishFinishedRun);
 runNameInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -1180,17 +883,6 @@ function playSfx(name, intensity = 1) {
   } else if (name === "jump-pad") {
     [55, 62, 67].forEach((note, index) => scheduleTone(midiToFrequency(note), now + index * .035, .13, "square", .09, sfxGain));
     playNoise(.07, .035, 1800);
-  } else if (name === "switch") {
-    scheduleTone(160, now, .08, "square", .07, sfxGain);
-    scheduleTone(245, now + .06, .13, "triangle", .09, sfxGain);
-  } else if (name === "time-zap") {
-    playNoise(.28, .13, 5200);
-    scheduleTone(520, now, .1, "sawtooth", .12, sfxGain);
-    scheduleTone(1160, now + .07, .18, "square", .1, sfxGain);
-    scheduleTone(185, now + .16, .22, "sawtooth", .11, sfxGain);
-  } else if (name === "rewind-awaken") {
-    [60, 67, 72, 79, 84].forEach((note, index) => scheduleTone(midiToFrequency(note), now + index * .09, .3, "sine", .13, sfxGain));
-    scheduleTone(110, now, .65, "triangle", .08, sfxGain);
   } else if (name === "block-break") {
     playNoise(.12, .075, 1250);
     scheduleTone(125, now, .09, "square", .07, sfxGain);
@@ -1244,78 +936,11 @@ document.addEventListener("pointerdown", () => ensureAudio(), { once: true });
 document.addEventListener("keydown", () => ensureAudio(), { once: true });
 
 function updateMenuAnimation(time) {
-  if (mainMenu.hidden) {
-    awakenedMenuAnimationStart = null;
-    return;
-  }
+  if (mainMenu.hidden) return;
 
   const stageWidth = menuStage.clientWidth;
   const stageHeight = menuStage.clientHeight;
   const slimeWidth = menuSlime.offsetWidth || 44;
-
-  if (rewindMenuAwakened) {
-    const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (awakenedMenuAnimationStart === null) awakenedMenuAnimationStart = time;
-    const animationTime = time - awakenedMenuAnimationStart;
-    const physicsScale = .75;
-    const middleBottom = Math.max(28, stageHeight * .22);
-    const climbHeight = Math.min(75, stageHeight * .43);
-    const worldClimbHeight = climbHeight / physicsScale;
-    const discriminant = Math.max(0, JUMP_SPEED ** 2 - 2 * GRAVITY * worldClimbHeight);
-    const flightSeconds = (JUMP_SPEED + Math.sqrt(discriminant)) / GRAVITY;
-    const cycleDuration = flightSeconds * 1000;
-    const cycle = reducedMotion ? 0 : Math.floor(animationTime / cycleDuration);
-    const flightTime = reducedMotion ? 0 : (animationTime % cycleDuration) / 1000;
-    const sourceIndex = cycle % 2;
-    const destinationIndex = (sourceIndex + 1) % 2;
-    const source = menuPlatforms[sourceIndex];
-    const destination = menuPlatforms[destinationIndex];
-    const leftX = stageWidth * .08;
-    const rightX = stageWidth * .60;
-    const sourceX = sourceIndex === 0 ? leftX : rightX;
-    const destinationX = destinationIndex === 0 ? leftX : rightX;
-    const scrollSpeed = climbHeight / flightSeconds;
-    const scrollDistance = scrollSpeed * flightTime;
-    const sourceBottom = middleBottom - scrollDistance;
-    const destinationBottom = middleBottom + climbHeight - scrollDistance;
-
-    source.style.left = `${sourceX}px`;
-    source.style.right = "auto";
-    source.style.bottom = `${sourceBottom}px`;
-    destination.style.left = `${destinationX}px`;
-    destination.style.right = "auto";
-    destination.style.bottom = `${destinationBottom}px`;
-
-    menuClouds.forEach((cloud, index) => {
-      const cloudCycle = stageHeight + 70;
-      const top = -48 + ((index * 79 + (reducedMotion ? 0 : animationTime * (.006 + index * .0015))) % cloudCycle);
-      const scale = [1, .72, .55][index];
-      cloud.style.top = `${top}px`;
-      cloud.style.transform = `scale(${scale})`;
-    });
-
-    const sourceCenter = sourceX + source.offsetWidth / 2;
-    const destinationCenter = destinationX + destination.offsetWidth / 2;
-    const platformHeight = source.offsetHeight || 34;
-    const direction = destinationCenter > sourceCenter ? 1 : -1;
-    const platformWidth = source.offsetWidth;
-    const edgeInset = slimeWidth / 2 + 10;
-    const startX = sourceX + (direction > 0 ? platformWidth - edgeInset : edgeInset);
-    const endX = destinationX + (direction > 0 ? edgeInset : platformWidth - edgeInset);
-    const horizontalSpeed = (endX - startX) / flightSeconds;
-    const slimeX = startX + horizontalSpeed * flightTime;
-    const physicsHeight = (JUMP_SPEED * flightTime - .5 * GRAVITY * flightTime ** 2) * physicsScale;
-    const slimeBottom = middleBottom + platformHeight + physicsHeight - scrollDistance;
-    const verticalVelocity = (JUMP_SPEED - GRAVITY * flightTime) * physicsScale - scrollSpeed;
-    const scaledJumpSpeed = JUMP_SPEED * physicsScale;
-    const airborneStretch = reducedMotion ? 0 : Math.min(1, Math.abs(verticalVelocity) / scaledJumpSpeed);
-    const rotation = reducedMotion ? 0 : direction * verticalVelocity / scaledJumpSpeed * 3;
-    menuSlime.style.left = `${slimeX - slimeWidth / 2}px`;
-    menuSlime.style.bottom = `${slimeBottom}px`;
-    menuSlime.style.transform = `rotate(${rotation}deg) scale(${1 - airborneStretch * .035}, ${1 + airborneStretch * .05})`;
-    return;
-  }
-
   const leftPlatform = stageWidth * .23;
   const rightPlatform = stageWidth * .77;
   const baseBottom = 48;
@@ -1409,7 +1034,6 @@ document.querySelectorAll("[data-control]").forEach((button) => {
 });
 
 function startOver() {
-  resetCutscene();
   paused = false;
   timerWasRunningBeforePause = false;
   levelTimerWasRunningBeforePause = false;
@@ -1417,7 +1041,6 @@ function startOver() {
   roadmapMenu.hidden = true;
   leaderboardMenu.hidden = true;
   changelogMenu.hidden = true;
-  versionsMenu.hidden = true;
   levelSplits = [];
   resetFinishedRun();
   resetRunTimer();
@@ -1431,7 +1054,6 @@ function startOver() {
 }
 
 function quitRun() {
-  resetCutscene();
   gameStarted = false;
   paused = false;
   timerWasRunningBeforePause = false;
@@ -1447,7 +1069,6 @@ function quitRun() {
   roadmapMenu.hidden = true;
   leaderboardMenu.hidden = true;
   changelogMenu.hidden = true;
-  versionsMenu.hidden = true;
   settingsButton.setAttribute("aria-expanded", "false");
   levelSplits = [];
   resetRunTimer();
@@ -1457,16 +1078,6 @@ function quitRun() {
   startMusic("menu");
   playButton.focus();
   updatePauseButton();
-}
-
-function restartSession() {
-  highestUnlockedLevel = 0;
-  rewindMenuAwakened = false;
-  runStartLevel = 0;
-  developmentSequencePosition = 0;
-  clearLegacySessionState();
-  applyRewindMenuState();
-  quitRun();
 }
 
 function tryPushCrate(crate, distance) {
@@ -1602,11 +1213,6 @@ function update(dt) {
   if (!gameStarted) return;
   if (paused) return;
 
-  if (cutsceneActive) {
-    updateCutscene(dt);
-    return;
-  }
-
   updateBlockDebris(dt);
 
   if (deathTimer > 0) {
@@ -1689,8 +1295,25 @@ function update(dt) {
     playSfx("flag");
     completeLevelSplit();
     unlockThrough(levelIndex + 1);
-    if (levelIndex === levels.length - 1) startRewindCutscene();
-    else levelTransition = .65;
+    if (levelIndex === levels.length - 1) {
+      won = true;
+      finishRunTimer();
+      const seconds = Math.round(runElapsed * 10) / 10;
+      const timeScore = Math.round((300 - seconds) * 10) / 10;
+      const starBonus = totalStars * 2;
+      const finalScore = Math.round((timeScore + starBonus) * 10) / 10;
+      scoreSummary.textContent = `Time ${formatRunTime(seconds)} · ${totalStars} stars (+${starBonus}) · Final score ${finalScore}`;
+      finishedRun = { seconds, stars: totalStars, score: finalScore, splits: [...levelSplits] };
+      runPublished = false;
+      runNameInput.value = "";
+      runNameInput.disabled = false;
+      publishRunButton.disabled = false;
+      publishStatus.textContent = "";
+      pauseButton.disabled = true;
+      renderSplitSummary();
+      message.hidden = false;
+      runNameInput.focus();
+    } else levelTransition = .65;
   }
 
   const target = Math.max(0, Math.min(currentLevel().width - VIEW_W, player.x - VIEW_W * .38));
@@ -1995,54 +1618,6 @@ function drawMovingPlatformMarker(platform, x) {
   ctx.restore();
 }
 
-function drawSwitch(levelSwitch, time) {
-  const x = levelSwitch.x - cameraX;
-  if (x + levelSwitch.w < -30 || x > VIEW_W + 30) return;
-  const centerX = x + levelSwitch.w / 2;
-  const baseY = levelSwitch.y + levelSwitch.h;
-  const leverDirection = levelSwitch.flipped ? 1 : -1;
-
-  ctx.save();
-  ctx.shadowColor = "#0a102288";
-  ctx.shadowBlur = 5;
-  ctx.shadowOffsetY = 3;
-  ctx.fillStyle = "#38485a";
-  ctx.strokeStyle = "#172434";
-  ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.roundRect(x + 3, baseY - 14, levelSwitch.w - 6, 14, 5); ctx.fill(); ctx.stroke();
-  ctx.shadowColor = "transparent";
-  ctx.strokeStyle = "#d4dbe1";
-  ctx.lineWidth = 6;
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  ctx.moveTo(centerX, baseY - 13);
-  ctx.lineTo(centerX + leverDirection * 13, levelSwitch.y + 7);
-  ctx.stroke();
-  ctx.fillStyle = levelSwitch.flipped ? "#74dc88" : "#efb746";
-  ctx.strokeStyle = "#183a2a";
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(centerX + leverDirection * 13, levelSwitch.y + 7, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-
-  if (nearbySwitch() === levelSwitch) {
-    const prompt = switchPromptBounds(levelSwitch, time);
-    ctx.fillStyle = "#07162de8";
-    ctx.strokeStyle = "#8de4ff";
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect(prompt.x, prompt.y, prompt.w, prompt.h, 9); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = "#ffe05d";
-    ctx.beginPath(); ctx.roundRect(prompt.x + 7, prompt.y + 5, 20, 19, 5); ctx.fill();
-    ctx.fillStyle = "#152039";
-    ctx.font = "900 13px Inter, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("E", prompt.x + 17, prompt.y + 15);
-    ctx.fillStyle = "#e9f7ff";
-    ctx.font = "800 11px Inter, sans-serif";
-    ctx.fillText("- FLIP", prompt.x + 57, prompt.y + 15);
-  }
-  ctx.restore();
-}
-
 function drawJumpPad(pad, time) {
   const x = pad.x - cameraX;
   if (x + pad.w < -20 || x > VIEW_W + 20) return;
@@ -2200,258 +1775,10 @@ function drawBlockDebris() {
   }
 }
 
-function cutsceneEase(value) {
-  const clamped = Math.max(0, Math.min(1, value));
-  return clamped * clamped * (3 - 2 * clamped);
-}
-
-function cutsceneJump(time, startTime, endTime, startX, startY, endX, endY, height) {
-  const progress = Math.max(0, Math.min(1, (time - startTime) / (endTime - startTime)));
-  return {
-    x: startX + (endX - startX) * progress,
-    y: startY + (endY - startY) * progress - Math.sin(progress * Math.PI) * height,
-    airborne: progress > 0 && progress < 1
-  };
-}
-
-function cutsceneSlimePose(time) {
-  if (time < .8) return { x: 55, y: 418, airborne: false };
-  if (time < 1.45) return { x: 55 + cutsceneEase((time - .8) / .65) * 110, y: 418, airborne: false };
-  if (time < 2.35) return cutsceneJump(time, 1.45, 2.35, 165, 418, 305, 368, 78);
-  if (time < 2.95) return { x: 305 + cutsceneEase((time - 2.35) / .6) * 85, y: 368, airborne: false };
-  if (time < 3.85) return cutsceneJump(time, 2.95, 3.85, 390, 368, 525, 408, 72);
-  if (time < 4.4) return { x: 525 + cutsceneEase((time - 3.85) / .55) * 95, y: 408, airborne: false };
-  if (time < 5.35) return cutsceneJump(time, 4.4, 5.35, 620, 408, 750, 348, 82);
-  if (time < 6.35) return { x: 750 + cutsceneEase((time - 5.35) / 1) * 112, y: 348, airborne: false };
-  if (time < 7.45) return { x: 862, y: 348, airborne: false, inside: true };
-  return { x: 862 - cutsceneEase((time - 7.45) / .9) * 72, y: 348, airborne: false, powered: true };
-}
-
-function drawCutsceneSlime(pose, time, alpha = 1) {
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.translate(pose.x + PLAYER_W / 2, pose.y + PLAYER_H / 2);
-  if (pose.airborne) ctx.rotate(.08);
-  const running = !pose.airborne && time > .8 && time < 6.35;
-  const bounce = running ? Math.sin(time * 18) * 1.6 : Math.sin(time * 4) * .6;
-
-  if (pose.powered) {
-    const pulse = .7 + Math.sin(time * 9) * .12;
-    ctx.shadowColor = "#79f5ff";
-    ctx.shadowBlur = 24;
-    ctx.strokeStyle = `rgba(121,245,255,${pulse})`;
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(0, 0, 27 + Math.sin(time * 7) * 3, 0, Math.PI * 2); ctx.stroke();
-  }
-
-  ctx.fillStyle = "#55c96b";
-  ctx.strokeStyle = pose.powered ? "#64ecdf" : "#207a43";
-  ctx.lineWidth = 2.5;
-  ctx.beginPath(); ctx.roundRect(-17 - bounce * .4, -11, 34 + bounce * .8, 31 - bounce * .3, 9); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = "#9af0a2";
-  ctx.beginPath(); ctx.ellipse(-8, -5, 3.5, 4.5, .55, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#173d2c";
-  ctx.beginPath(); ctx.ellipse(-5, 0, 2.5, 3.8, 0, 0, Math.PI * 2); ctx.ellipse(6, 0, 2.5, 3.8, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#fff";
-  ctx.beginPath(); ctx.arc(-5.7, -1.2, .8, 0, Math.PI * 2); ctx.arc(5.3, -1.2, .8, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = "#173d2c";
-  ctx.lineWidth = 1.7;
-  ctx.beginPath(); ctx.arc(.5, 7, 4.5, .15, Math.PI - .15); ctx.stroke();
-  ctx.restore();
-}
-
-function drawTimeMachine(time, staticIntensity) {
-  const x = 825;
-  const y = 252;
-  const width = 120;
-  const height = 138;
-  const glow = .55 + Math.sin(time * 7) * .15 + staticIntensity * .25;
-
-  ctx.save();
-  ctx.shadowColor = `rgba(91,232,255,${glow})`;
-  ctx.shadowBlur = 18 + staticIntensity * 18;
-  const frameGradient = ctx.createLinearGradient(x, y, x + width, y + height);
-  frameGradient.addColorStop(0, "#d3dae4");
-  frameGradient.addColorStop(.42, "#53687a");
-  frameGradient.addColorStop(1, "#253546");
-  ctx.fillStyle = frameGradient;
-  ctx.strokeStyle = "#142233";
-  ctx.lineWidth = 5;
-  ctx.beginPath();
-  ctx.roundRect(x, y + 24, width, height - 24, 42);
-  ctx.fill(); ctx.stroke();
-
-  const portalGradient = ctx.createRadialGradient(x + 60, y + 83, 5, x + 60, y + 83, 42);
-  portalGradient.addColorStop(0, `rgba(228,255,255,${.72 + staticIntensity * .2})`);
-  portalGradient.addColorStop(.36, "#47dce8");
-  portalGradient.addColorStop(.72, "#5367cf");
-  portalGradient.addColorStop(1, "#111c45");
-  ctx.fillStyle = portalGradient;
-  ctx.beginPath(); ctx.ellipse(x + 60, y + 84, 39, 50, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = "#aafaff";
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  ctx.fillStyle = "#24364b";
-  ctx.strokeStyle = "#101d2c";
-  ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.roundRect(x - 8, y + height - 16, width + 16, 22, 7); ctx.fill(); ctx.stroke();
-
-  ctx.fillStyle = "#e8f5f7";
-  ctx.strokeStyle = "#26384d";
-  ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.arc(x + 60, y + 18, 21, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  ctx.strokeStyle = "#3b63a0";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(x + 60, y + 18); ctx.lineTo(x + 60 - Math.sin(time * 2.2) * 11, y + 18 - Math.cos(time * 2.2) * 11);
-  ctx.moveTo(x + 60, y + 18); ctx.lineTo(x + 60 + Math.sin(time * 4.4) * 7, y + 18 + Math.cos(time * 4.4) * 7);
-  ctx.stroke();
-  ctx.fillStyle = "#3b63a0";
-  ctx.beginPath(); ctx.arc(x + 60, y + 18, 3, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
-}
-
-function drawTemporalStatic(time, intensity) {
-  if (intensity <= 0) return;
-  const centerX = 885;
-  const centerY = 333;
-  ctx.save();
-  ctx.lineCap = "round";
-  for (let index = 0; index < 18; index++) {
-    const angle = index / 18 * Math.PI * 2 + time * (index % 2 ? -.9 : 1.2);
-    const radius = 45 + (index % 4) * 13 + Math.sin(time * 13 + index) * 7;
-    const x = centerX + Math.cos(angle) * radius;
-    const y = centerY + Math.sin(angle) * radius * .75;
-    const length = 5 + index % 3 * 3;
-    ctx.strokeStyle = index % 3 === 0 ? `rgba(255,255,255,${intensity})` : `rgba(86,235,255,${intensity * .9})`;
-    ctx.lineWidth = 1.5 + index % 2;
-    ctx.beginPath();
-    ctx.moveTo(x - Math.cos(angle) * length, y - Math.sin(angle) * length);
-    ctx.lineTo(x + Math.cos(angle) * length, y + Math.sin(angle) * length);
-    ctx.stroke();
-  }
-
-  ctx.strokeStyle = `rgba(215,252,255,${intensity})`;
-  ctx.lineWidth = 2.5;
-  for (let arc = 0; arc < 4; arc++) {
-    const startY = 275 + arc * 32 + Math.sin(time * 19 + arc) * 8;
-    ctx.beginPath();
-    ctx.moveTo(822, startY);
-    for (let step = 1; step <= 6; step++) {
-      ctx.lineTo(822 + step * 21, startY + Math.sin(time * 31 + arc * 4 + step * 2) * 12);
-    }
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
-function drawRewindPower(time, pose) {
-  if (time < 7.45) return;
-  const progress = cutsceneEase((time - 7.45) / 1.25);
-  const centerX = pose.x + PLAYER_W / 2;
-  const centerY = pose.y + PLAYER_H / 2;
-
-  ctx.save();
-  for (let echo = 1; echo <= 4; echo++) {
-    drawCutsceneSlime({ ...pose, x: pose.x + echo * 19, powered: false }, time - echo * .08, progress * (.2 - echo * .03));
-  }
-  ctx.translate(centerX, centerY);
-  ctx.strokeStyle = `rgba(126,241,255,${progress})`;
-  ctx.fillStyle = `rgba(126,241,255,${progress})`;
-  ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.arc(0, 0, 46, .35, Math.PI * 1.75); ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(-43, -15); ctx.lineTo(-52, -4); ctx.lineTo(-36, -2); ctx.closePath(); ctx.fill();
-  ctx.restore();
-
-  ctx.save();
-  ctx.globalAlpha = progress;
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#9df8ff";
-  ctx.shadowColor = "#51dff4";
-  ctx.shadowBlur = 18;
-  ctx.font = "900 15px Inter, sans-serif";
-  ctx.fillText("POWER AWAKENED", VIEW_W / 2, 82);
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "900 44px Inter, sans-serif";
-  ctx.fillText("REWIND", VIEW_W / 2, 126);
-  ctx.restore();
-}
-
-function drawCutscene(time) {
-  const sceneTime = cutsceneTime;
-  const gradient = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-  gradient.addColorStop(0, "#10183f");
-  gradient.addColorStop(.58, "#435887");
-  gradient.addColorStop(1, "#d28b72");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-
-  ctx.fillStyle = "#ffffffba";
-  for (let index = 0; index < 34; index++) {
-    const x = (index * 83 + 31) % VIEW_W;
-    const y = 48 + (index * 47) % 235;
-    const radius = 1 + (index % 3) * .45;
-    ctx.globalAlpha = .45 + Math.sin(time * .003 + index) * .25;
-    ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = "#1c2947aa";
-  ctx.beginPath(); ctx.moveTo(0, 390);
-  for (let x = 0; x <= VIEW_W; x += 80) ctx.lineTo(x, 300 + Math.sin(x * .013) * 55);
-  ctx.lineTo(VIEW_W, VIEW_H); ctx.lineTo(0, VIEW_H); ctx.fill();
-
-  const cutscenePlatforms = [
-    [0, 460, 220, 90], [280, 410, 165, 140], [500, 450, 160, 100], [720, 390, 240, 160]
-  ];
-  for (const [x, y, width, height] of cutscenePlatforms) drawAssetRectangle("grass", x, y, width, height);
-
-  const pose = cutsceneSlimePose(sceneTime);
-  if (pose.powered) drawRewindPower(sceneTime, pose);
-  const staticStart = Math.max(0, Math.min(1, (sceneTime - 5.85) / .65));
-  const staticEnd = sceneTime > 7.45 ? Math.max(0, 1 - (sceneTime - 7.45) / 1.2) : 1;
-  const staticIntensity = staticStart * staticEnd;
-  const insideAlpha = pose.inside ? .72 + Math.sin(sceneTime * 35) * .25 : 1;
-  if (!pose.powered) drawCutsceneSlime(pose, sceneTime, insideAlpha);
-  drawTimeMachine(sceneTime, staticIntensity);
-  drawTemporalStatic(sceneTime, staticIntensity);
-  if (pose.powered) drawCutsceneSlime(pose, sceneTime);
-
-  if (sceneTime < 1.4) {
-    ctx.save();
-    ctx.globalAlpha = Math.min(1, sceneTime / .5) * Math.max(0, 1 - (sceneTime - 1) / .4);
-    ctx.fillStyle = "#eaf9ff";
-    ctx.textAlign = "center";
-    ctx.font = "800 18px Inter, sans-serif";
-    ctx.fillText("BEYOND THE LAST SUMMIT...", VIEW_W / 2, 64);
-    ctx.restore();
-  }
-
-  const zapDistance = Math.abs(sceneTime - 6.72);
-  if (zapDistance < .24) {
-    ctx.fillStyle = `rgba(230,253,255,${(1 - zapDistance / .24) * .9})`;
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-  }
-
-  const fadeIn = Math.max(0, 1 - sceneTime / .45);
-  const fadeOut = Math.max(0, (sceneTime - (CUTSCENE_DURATION - .75)) / .75);
-  ctx.fillStyle = `rgba(4,8,22,${Math.max(fadeIn, fadeOut)})`;
-  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-  ctx.fillStyle = "#02040b";
-  ctx.fillRect(0, 0, VIEW_W, 24);
-  ctx.fillRect(0, VIEW_H - 24, VIEW_W, 24);
-}
-
 function render(time) {
   ctx.clearRect(0, 0, VIEW_W, VIEW_H);
-  if (cutsceneActive) {
-    drawCutscene(time);
-    return;
-  }
   drawBackground();
   for (const p of currentLevel().platforms) drawPlatform(p, time);
-  for (const levelSwitch of currentLevel().switches || []) drawSwitch(levelSwitch, time);
   for (const pad of currentLevel().jumpPads || []) drawJumpPad(pad, time);
   for (const h of currentLevel().hazards) drawHazard(h, time);
   currentLevel().stars.forEach(([x, y], i) => drawStar(x, y, i, time));
@@ -2475,7 +1802,5 @@ function frame(time) {
   requestAnimationFrame(frame);
 }
 
-applyRewindMenuState();
-populateLeaderboardVersions();
 loadLevel(0, false);
 requestAnimationFrame(frame);

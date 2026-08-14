@@ -24,9 +24,8 @@
 
     <section class="game-frame" aria-label="Platforms of the Past game">
       <div class="hud" aria-live="polite">
-        <span id="levelLabel">Level 1 / 5</span>
-        <span id="timerLabel">Run 0:00.0</span>
-        <span id="levelTimerLabel">Level 0:00.0</span>
+        <span id="levelLabel">Level 1 / 10</span>
+        <span id="timerLabel">Time 0:00.0</span>
         <span id="starLabel">Stars 0 / 0</span>
       </div>
       <button id="fullscreenButton" class="fullscreen-toggle" type="button" aria-label="Enter full screen" title="Enter full screen" aria-pressed="false">
@@ -39,12 +38,9 @@
       </button>
       <div id="mainMenu" class="main-menu">
         <div class="menu-panel">
-          <p class="menu-version">v0.8.0</p>
+          <p class="menu-version">v0.3.0</p>
           <h2>Platforms of the Past</h2>
           <div class="menu-stage" role="img" aria-label="A green slime endlessly jumping between two grassy platforms">
-            <div class="menu-cloud menu-cloud-one" aria-hidden="true"></div>
-            <div class="menu-cloud menu-cloud-two" aria-hidden="true"></div>
-            <div class="menu-cloud menu-cloud-three" aria-hidden="true"></div>
             <div class="menu-platform menu-platform-left" aria-hidden="true"></div>
             <div class="menu-platform menu-platform-right" aria-hidden="true"></div>
             <div class="menu-slime" aria-hidden="true"></div>
@@ -53,23 +49,11 @@
             <button id="playButton" type="button">Play</button>
             <button id="settingsButton" type="button" aria-expanded="false" aria-controls="settingsPanel">Settings</button>
             <button id="mainLeaderboardButton" type="button">Leaderboard</button>
-            <button id="mainChangelogButton" type="button">Changelog</button>
-            <button id="versionsButton" type="button">Versions</button>
-            <button id="restartSessionButton" type="button">Restart session</button>
           </div>
           <div id="settingsPanel" class="settings-panel" hidden>
             <label for="volumeInput">Volume <output id="volumeValue" for="volumeInput">100%</output></label>
             <input id="volumeInput" type="range" min="0" max="100" value="100" step="1">
           </div>
-        </div>
-      </div>
-      <div id="roadmapMenu" class="overlay-menu" hidden>
-        <div class="overlay-panel roadmap-panel">
-          <p class="eyebrow">Choose your path</p>
-          <h2>Adventure Roadmap</h2>
-          <p class="roadmap-note">Completed levels and your next challenge are available. Locked levels open as you progress.</p>
-          <div id="levelRoadmap" class="level-roadmap" aria-label="Level roadmap"></div>
-          <button id="closeRoadmapButton" class="secondary-button" type="button">Back to main menu</button>
         </div>
       </div>
       <div id="pauseMenu" class="overlay-menu" hidden>
@@ -81,39 +65,17 @@
             <button id="pauseRestartLevelButton" type="button">Restart level</button>
             <button id="pauseRestartRunButton" type="button">Restart run</button>
             <button id="pauseLeaderboardButton" type="button">Leaderboard</button>
-            <button id="pauseChangelogButton" type="button">Changelog</button>
             <button id="pauseQuitButton" class="secondary-button" type="button">Quit run</button>
           </div>
         </div>
       </div>
       <div id="leaderboardMenu" class="overlay-menu" hidden>
         <div class="overlay-panel leaderboard-panel">
-          <p class="eyebrow">Global records</p>
+          <p class="eyebrow">Local records</p>
           <h2>Leaderboard</h2>
-          <label class="leaderboard-picker" for="leaderboardVersion">Gameplay version
-            <select id="leaderboardVersion"></select>
-          </label>
-          <p id="leaderboardNote" class="leaderboard-note">Loading scores from around the world...</p>
+          <p class="leaderboard-note">Published runs are saved in this browser until accounts are added.</p>
           <ol id="leaderboardList" class="leaderboard-list"></ol>
           <button id="closeLeaderboardButton" type="button">Back</button>
-        </div>
-      </div>
-      <div id="versionsMenu" class="overlay-menu" hidden>
-        <div class="overlay-panel versions-panel">
-          <p class="eyebrow">Playable history</p>
-          <h2>Game versions</h2>
-          <p class="versions-note">Choose any released build. Archived versions open in a new tab.</p>
-          <div id="versionsList" class="versions-list"></div>
-          <button id="closeVersionsButton" type="button">Back</button>
-        </div>
-      </div>
-      <div id="changelogMenu" class="overlay-menu" hidden>
-        <div class="overlay-panel changelog-panel">
-          <p class="eyebrow">Development history</p>
-          <h2>Changelog</h2>
-          <p class="changelog-note">Every update recorded from the Git commit history.</p>
-          <div id="changelogList" class="changelog-list"></div>
-          <button id="closeChangelogButton" type="button">Back</button>
         </div>
       </div>
       <canvas id="game" width="960" height="540" tabindex="0" aria-label="Platform game. Move with A and D or the arrow keys. Jump with W, Up Arrow, or Space."></canvas>
@@ -121,10 +83,6 @@
         <p class="eyebrow">Adventure complete</p>
         <h2>You reached the summit!</h2>
         <p id="scoreSummary"></p>
-        <div class="split-summary">
-          <h3>Level splits</h3>
-          <ol id="splitList" class="split-list"></ol>
-        </div>
         <div class="publish-run">
           <label for="runNameInput">Name this run</label>
           <div class="publish-row">
@@ -146,8 +104,8 @@
       <button type="button" data-control="jump" class="jump" aria-label="Jump">Jump</button>
     </div>
 
-    <p class="instructions"><strong>Move</strong> A / D or arrows <span aria-hidden="true">&bull;</span> <strong>Jump</strong> W / Up / Space <span aria-hidden="true">&bull;</span> <strong>Interact</strong> E <span aria-hidden="true">&bull;</span> <strong>Pause</strong> P <span aria-hidden="true">&bull;</span> <strong>Restart level</strong> R <span aria-hidden="true">&bull;</span> <strong>Restart run</strong> T</p>
+    <p class="instructions"><strong>Move</strong> A / D or arrows <span aria-hidden="true">&bull;</span> <strong>Jump</strong> W / Up / Space <span aria-hidden="true">&bull;</span> <strong>Pause</strong> P <span aria-hidden="true">&bull;</span> <strong>Restart level</strong> R <span aria-hidden="true">&bull;</span> <strong>Restart run</strong> T</p>
   </main>
-  <script src="game.js?v=0.8.0"></script>
+  <script src="game.js?v=0.3.0"></script>
 </body>
 </html>

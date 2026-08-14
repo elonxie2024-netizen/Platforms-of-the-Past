@@ -34,8 +34,6 @@ const pauseLeaderboardButton = document.querySelector("#pauseLeaderboardButton")
 const pauseQuitButton = document.querySelector("#pauseQuitButton");
 const leaderboardMenu = document.querySelector("#leaderboardMenu");
 const leaderboardList = document.querySelector("#leaderboardList");
-const leaderboardVersion = document.querySelector("#leaderboardVersion");
-const leaderboardNote = document.querySelector("#leaderboardNote");
 const closeLeaderboardButton = document.querySelector("#closeLeaderboardButton");
 const runNameInput = document.querySelector("#runNameInput");
 const publishRunButton = document.querySelector("#publishRunButton");
@@ -50,14 +48,9 @@ const closeChangelogButton = document.querySelector("#closeChangelogButton");
 const roadmapMenu = document.querySelector("#roadmapMenu");
 const levelRoadmap = document.querySelector("#levelRoadmap");
 const closeRoadmapButton = document.querySelector("#closeRoadmapButton");
-const versionsButton = document.querySelector("#versionsButton");
-const versionsMenu = document.querySelector("#versionsMenu");
-const versionsList = document.querySelector("#versionsList");
-const closeVersionsButton = document.querySelector("#closeVersionsButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.8.0", commit: "Pending commit", date: "2026-08-13", message: "Add global leaderboards and version archive", description: "Replaced browser-only records with a shared online leaderboard available across devices and tabs. Added independent gameplay ruleset IDs so balance-changing releases receive separate boards, restricted ranked submissions to complete level-one starts, and added a menu of playable release archives built from the original Git commits." },
-  { version: "v0.7.6", commit: "9cc5fc1", date: "2026-08-13", message: "Updated post-cutscene animation", description: "Rebuilt the awakened main-menu climb as one continuous loop without separate move-and-wait phases. Both platforms now descend at a constant speed and recycle seamlessly, while the slime's trajectory uses the game's real gravity and jump-speed calculations scaled uniformly to the smaller menu scene." },
+  { version: "v0.7.6", commit: "Pending commit", date: "2026-08-13", message: "Smooth the post-cutscene climb", description: "Rebuilt the awakened main-menu climb as one continuous loop without separate move-and-wait phases. Both platforms now descend at a constant speed and recycle seamlessly, while the slime's trajectory uses the game's real gravity and jump-speed calculations scaled uniformly to the smaller menu scene." },
   { version: "v0.7.5", commit: "6447b71", date: "2026-08-12", message: "Add cutscene skipping", description: "Made the final rewind cutscene skippable by clicking anywhere on the game canvas. Skipping immediately completes the cinematic and opens the existing adventure results screen without changing the finished run's recorded time, score, stars, or level splits." },
   { version: "v0.7.4", commit: "4a8de6e", date: "2026-08-12", message: "Add session-based progression", description: "Changed roadmap unlocks and the post-cutscene menu transformation to last only for the current browser session. Refreshing now restores Dirtbound Trail as the sole unlocked level and returns the menu to its original animation, while a new Restart session button performs the same complete reset immediately." },
   { version: "v0.7.3", commit: "4a8de6e", date: "2026-08-12", message: "Refine the post-cutscene climb loop", description: "Reworked the awakened main-menu animation around the original two platforms. One remains central while the other drops below the stage, reappears at the top as a new destination, and trades places with it after the slime jumps upward." },
@@ -242,26 +235,12 @@ let leaderboardReturn = "main";
 let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
+const LEADERBOARD_STORAGE_KEY = "platforms-past-leaderboard-v1";
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.8.0";
-const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
-const LEADERBOARD_RULESETS = [
-  { id: "intro-seven-v1", label: "Intro Seven ruleset (current)" }
-];
-const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
-const RELEASE_VERSIONS = [
-  "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
-  "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
-  "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
-  "v0.2.4", "v0.2.3", "v0.2.2", "v0.2.1", "v0.2.0", "v0.1.4", "v0.1.3", "v0.1.2",
-  "v0.1.1", "v0.1.0", "v0.0.13", "v0.0.12", "v0.0.11", "v0.0.10", "v0.0.5"
-];
 let rewindMenuAwakened = false;
 let awakenedMenuAnimationStart = null;
 let highestUnlockedLevel = 0;
-let leaderboardEntries = [];
-let leaderboardRequest = 0;
+let leaderboardEntries = loadLeaderboardEntries();
 let masterVolume = 1;
 let audioContext = null;
 let masterGain = null;
@@ -284,7 +263,7 @@ clearLegacySessionState();
 const spriteSheet = new Image();
 let spritesReady = false;
 spriteSheet.addEventListener("load", () => { spritesReady = true; });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -502,25 +481,26 @@ function renderSplitSummary() {
   });
 }
 
-function leaderboardHeaders(includeJson = false) {
-  return {
-    apikey: SUPABASE_PUBLISHABLE_KEY,
-    ...(includeJson ? { "Content-Type": "application/json" } : {})
-  };
+function loadLeaderboardEntries() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LEADERBOARD_STORAGE_KEY) || "[]");
+    if (!Array.isArray(saved)) return [];
+    return saved.filter((entry) =>
+      entry && typeof entry.name === "string" &&
+      Number.isFinite(entry.score) && Number.isFinite(entry.seconds) && Number.isFinite(entry.stars)
+    );
+  } catch {
+    return [];
+  }
 }
 
-async function loadGlobalLeaderboard(rulesetId) {
-  const query = new URLSearchParams({
-    select: "name,game_version,seconds,stars,score,created_at",
-    leaderboard_id: `eq.${rulesetId}`,
-    order: "score.desc,seconds.asc,created_at.asc",
-    limit: "50"
-  });
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard_scores?${query}`, {
-    headers: leaderboardHeaders()
-  });
-  if (!response.ok) throw new Error(`Leaderboard request failed (${response.status})`);
-  return response.json();
+function saveLeaderboardEntries() {
+  try {
+    localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(leaderboardEntries));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function applyRewindMenuState() {
@@ -618,7 +598,6 @@ function startRoadmapRun(index) {
   roadmapMenu.hidden = true;
   leaderboardMenu.hidden = true;
   changelogMenu.hidden = true;
-  versionsMenu.hidden = true;
   pauseButton.disabled = false;
   restartButton.disabled = false;
   restartRunButton.disabled = false;
@@ -647,7 +626,7 @@ function renderLeaderboard() {
     name.textContent = entry.name;
     const details = document.createElement("small");
     details.className = "leaderboard-details";
-    details.textContent = `${entry.game_version} · ${formatRunTime(Number(entry.seconds))} · ${entry.stars} ${entry.stars === 1 ? "star" : "stars"}`;
+    details.textContent = `${formatRunTime(entry.seconds)} · ${entry.stars} ${entry.stars === 1 ? "star" : "stars"}`;
     name.append(details);
     const score = document.createElement("span");
     score.className = "leaderboard-result";
@@ -657,37 +636,9 @@ function renderLeaderboard() {
   });
 }
 
-async function refreshLeaderboard() {
-  const request = ++leaderboardRequest;
-  leaderboardEntries = [];
-  leaderboardNote.textContent = "Loading scores from around the world...";
-  renderLeaderboard();
-  try {
-    const entries = await loadGlobalLeaderboard(leaderboardVersion.value || CURRENT_LEADERBOARD_ID);
-    if (request !== leaderboardRequest) return;
-    leaderboardEntries = entries;
-    leaderboardNote.textContent = "Boards are separated whenever gameplay or scoring changes.";
-    renderLeaderboard();
-  } catch {
-    if (request !== leaderboardRequest) return;
-    leaderboardNote.textContent = "The global leaderboard is unavailable. Check the connection or finish the Supabase setup.";
-    renderLeaderboard();
-  }
-}
-
-function populateLeaderboardVersions() {
-  leaderboardVersion.replaceChildren();
-  LEADERBOARD_RULESETS.forEach(ruleset => {
-    const option = document.createElement("option");
-    option.value = ruleset.id;
-    option.textContent = ruleset.label;
-    leaderboardVersion.append(option);
-  });
-  leaderboardVersion.value = CURRENT_LEADERBOARD_ID;
-}
-
 function openLeaderboard(source) {
   leaderboardReturn = source;
+  renderLeaderboard();
   if (source === "pause") pauseMenu.hidden = true;
   else {
     settingsPanel.hidden = true;
@@ -695,7 +646,6 @@ function openLeaderboard(source) {
     mainMenu.hidden = true;
   }
   leaderboardMenu.hidden = false;
-  refreshLeaderboard();
   closeLeaderboardButton.focus();
 }
 
@@ -708,33 +658,6 @@ function closeLeaderboard() {
     mainMenu.hidden = false;
     mainLeaderboardButton.focus();
   }
-}
-
-function renderVersions() {
-  versionsList.replaceChildren();
-  RELEASE_VERSIONS.forEach(version => {
-    const link = document.createElement("a");
-    link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `versions/${version}/`;
-    link.target = "_blank";
-    link.rel = "noopener";
-    versionsList.append(link);
-  });
-}
-
-function openVersions() {
-  settingsPanel.hidden = true;
-  settingsButton.setAttribute("aria-expanded", "false");
-  mainMenu.hidden = true;
-  renderVersions();
-  versionsMenu.hidden = false;
-  versionsList.querySelector("a")?.focus();
-}
-
-function closeVersions() {
-  versionsMenu.hidden = true;
-  mainMenu.hidden = false;
-  versionsButton.focus();
 }
 
 function renderChangelog() {
@@ -832,7 +755,7 @@ function setPaused(shouldPause) {
   updatePauseButton();
 }
 
-async function publishFinishedRun() {
+function publishFinishedRun() {
   if (!finishedRun || runPublished) return;
   const name = runNameInput.value.trim().slice(0, 24);
   if (!name) {
@@ -840,34 +763,14 @@ async function publishFinishedRun() {
     runNameInput.focus();
     return;
   }
-  if (!finishedRun.eligible) {
-    publishStatus.textContent = "Only complete runs started from Dirtbound Trail can be ranked.";
-    return;
-  }
+  leaderboardEntries.push({ name, ...finishedRun, publishedAt: Date.now() });
+  leaderboardEntries.sort((a, b) => b.score - a.score || a.seconds - b.seconds);
+  leaderboardEntries = leaderboardEntries.slice(0, 50);
+  const saved = saveLeaderboardEntries();
+  runPublished = true;
   publishRunButton.disabled = true;
   runNameInput.disabled = true;
-  publishStatus.textContent = "Publishing run...";
-  try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard_scores`, {
-      method: "POST",
-      headers: leaderboardHeaders(true),
-      body: JSON.stringify({
-        leaderboard_id: CURRENT_LEADERBOARD_ID,
-        game_version: GAME_VERSION,
-        name,
-        seconds: finishedRun.seconds,
-        stars: finishedRun.stars,
-        splits: finishedRun.splits
-      })
-    });
-    if (!response.ok) throw new Error(`Publish failed (${response.status})`);
-    runPublished = true;
-    publishStatus.textContent = "Run published to the global leaderboard.";
-  } catch {
-    publishRunButton.disabled = false;
-    runNameInput.disabled = false;
-    publishStatus.textContent = "Could not publish. Check the connection or finish the Supabase setup.";
-  }
+  publishStatus.textContent = saved ? "Run published to the local leaderboard." : "Run published for this session.";
 }
 
 function resetFinishedRun() {
@@ -894,14 +797,12 @@ function prepareAdventureResults() {
   const starBonus = totalStars * 2;
   const finalScore = Math.round((timeScore + starBonus) * 10) / 10;
   scoreSummary.textContent = `Time ${formatRunTime(seconds)} · ${totalStars} stars (+${starBonus}) · Final score ${finalScore}`;
-  const eligible = runStartLevel === 0 && levelSplits.length === levels.length;
-  finishedRun = { seconds, stars: totalStars, score: finalScore, splits: [...levelSplits], eligible };
+  finishedRun = { seconds, stars: totalStars, score: finalScore, splits: [...levelSplits] };
   runPublished = false;
   runNameInput.value = "";
   runNameInput.disabled = false;
   publishRunButton.disabled = false;
   publishStatus.textContent = "";
-  if (!eligible) publishStatus.textContent = "Practice run: global ranking requires starting from Dirtbound Trail.";
   renderSplitSummary();
 }
 
@@ -1047,10 +948,6 @@ closeLeaderboardButton.addEventListener("click", closeLeaderboard);
 mainChangelogButton.addEventListener("click", () => openChangelog("main"));
 pauseChangelogButton.addEventListener("click", () => openChangelog("pause"));
 closeChangelogButton.addEventListener("click", closeChangelog);
-versionsButton.addEventListener("click", openVersions);
-closeVersionsButton.addEventListener("click", closeVersions);
-leaderboardVersion.addEventListener("change", refreshLeaderboard);
-addEventListener("focus", () => { if (!leaderboardMenu.hidden) refreshLeaderboard(); });
 restartSessionButton.addEventListener("click", restartSession);
 publishRunButton.addEventListener("click", publishFinishedRun);
 runNameInput.addEventListener("keydown", (event) => {
@@ -1417,7 +1314,6 @@ function startOver() {
   roadmapMenu.hidden = true;
   leaderboardMenu.hidden = true;
   changelogMenu.hidden = true;
-  versionsMenu.hidden = true;
   levelSplits = [];
   resetFinishedRun();
   resetRunTimer();
@@ -1447,7 +1343,6 @@ function quitRun() {
   roadmapMenu.hidden = true;
   leaderboardMenu.hidden = true;
   changelogMenu.hidden = true;
-  versionsMenu.hidden = true;
   settingsButton.setAttribute("aria-expanded", "false");
   levelSplits = [];
   resetRunTimer();
@@ -2476,6 +2371,5 @@ function frame(time) {
 }
 
 applyRewindMenuState();
-populateLeaderboardVersions();
 loadLevel(0, false);
 requestAnimationFrame(frame);

@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Rewind is introduced in the ending cinematic, while its gameplay mechanic will be implemented later.
 
-**Current version:** `v0.7.6`
+**Current version:** `v0.8.0`
 
 ## How it works
 
@@ -28,7 +28,9 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Compare your splits.** A second timer tracks the current level and resets whenever you restart that level. The run timer keeps going, while the results screen records the successful attempt for each level.
 
-**Publish a run.** After completing the adventure, name the run and optionally publish it to the local leaderboard. Records are stored in your browser until accounts are implemented.
+**Publish a run.** Complete the full adventure from Dirtbound Trail, name the run, and optionally publish it to the global leaderboard. Records are shared across devices, while gameplay-changing releases use separate boards so scores remain comparable.
+
+**Play past versions.** Open Versions from the main menu to launch any archived release build in a new tab.
 
 **Follow development.** Open the changelog from the main menu or pause menu to read every version and Git commit in the game's history.
 
@@ -64,7 +66,8 @@ The playable prototype includes:
 - A persistent speedrun timer and completion score
 - Per-level timing and a complete split summary
 - A pause menu that freezes the timer
-- A local leaderboard for named, published runs
+- A global, version-separated leaderboard for named full-adventure runs
+- A playable archive of every released version
 - A complete in-game changelog based on the Git history
 - Responsive running and jumping
 - Coyote time and jump buffering
@@ -101,3 +104,9 @@ Then visit [http://localhost:8000](http://localhost:8000).
 ## Credits
 
 Made by [elonxie2024-netizen](https://github.com/elonxie2024-netizen).
+
+## Leaderboard maintenance
+
+The public leaderboard tables and access rules are created by [`supabase-setup.sql`](supabase-setup.sql). The displayed game version and the leaderboard ruleset are intentionally separate: cosmetic, texture, audio, menu, and cutscene-only releases keep the existing ruleset, while changes to physics, levels, timing, stars, or scoring must introduce a new ruleset in both the game configuration and Supabase.
+
+Playable release snapshots are generated from their original Git commits by [`tools/build-version-archive.ps1`](tools/build-version-archive.ps1). Run that script after adding a committed release to its version map.
