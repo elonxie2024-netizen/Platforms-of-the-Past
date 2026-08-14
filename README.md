@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Rewind is introduced in the ending cinematic, while its gameplay mechanic will be implemented later.
 
-**Current version:** `v0.9.1`
+**Current version:** `v0.9.2`
 
 ## How it works
 
@@ -79,7 +79,7 @@ The playable prototype includes:
 - A main menu with a saved volume setting
 - Quit controls during a run and after completing the game
 - Procedural soundtracks for the menu and each level
-- Surface-aware landing sounds plus effects for collecting, finishing, and dying
+- Surface-aware landing sounds and particles plus effects for collecting, finishing, and dying
 - Keyboard and touchscreen controls
 
 ## Time-travel plans

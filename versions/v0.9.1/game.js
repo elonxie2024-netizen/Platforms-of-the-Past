@@ -62,8 +62,7 @@ const versionsList = document.querySelector("#versionsList");
 const closeVersionsButton = document.querySelector("#closeVersionsButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.9.2", commit: "Pending commit", date: "2026-08-14", message: "Add material landing particles", description: "Added subtle landing bursts matched to each surface: dirt flecks from grass, pebbles from stone, and wood chips from crates. Particle strength follows landing impact and pauses with the rest of gameplay." },
-  { version: "v0.9.1", commit: "4a7e227", date: "2026-08-14", message: "Fixed leaderboard size", description: "Constrained the leaderboard to the game viewport so long ranking lists scroll independently while the Back button remains visible and accessible." },
+  { version: "v0.9.1", commit: "Pending commit", date: "2026-08-14", message: "Keep leaderboard navigation visible", description: "Constrained the leaderboard to the game viewport so long ranking lists scroll independently while the Back button remains visible and accessible." },
   { version: "v0.9.0", commit: "a8c2f76", date: "2026-08-14", message: "Added customization panel for animation", description: "Unlocked main-menu customization after the final cutscene. Players can switch between the previous bounce and current climb animations, render platforms with the game's grass, stone, or crate assets, and swap between the sunny and lava-dark backdrops for the rest of the session." },
   { version: "v0.8.3", commit: "40cf24c", date: "2026-08-13", message: "Added leaderboard metrics", description: "Added Time, Stars, and Score tabs to the global leaderboard. Time is selected by default, while each tab reorders the same version-compatible runs using its chosen metric and appropriate tie breakers." },
   { version: "v0.8.2", commit: "ee37d36", date: "2026-08-13", message: "Changed global leaderboard version ranges pt 2", description: "Added the missing playable v0.8.0 archive to complete the version-range update." },
@@ -234,7 +233,6 @@ let levelMotionTime = 0;
 let deathTimer = 0;
 let deathParticles = [];
 let blockDebris = [];
-let landingParticles = [];
 let gameStarted = false;
 let cutsceneActive = false;
 let cutsceneTime = 0;
@@ -256,15 +254,15 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.9.2";
+const GAME_VERSION = "v0.9.1";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "intro-seven-v1", label: "Version 0.6.2 to 0.9.2" }
+  { id: "intro-seven-v1", label: "Version 0.6.2 to 0.9.1" }
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
+  "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
   "v0.2.4", "v0.2.3", "v0.2.2", "v0.2.1", "v0.2.0", "v0.1.4", "v0.1.3", "v0.1.2",
@@ -304,7 +302,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -315,7 +313,6 @@ function resetPlayer(countDeath = false) {
   resetBreakablePlatforms();
   deathTimer = 0;
   deathParticles = [];
-  landingParticles = [];
   const [x, y] = currentLevel().start;
   Object.assign(player, { x, y, vx: 0, vy: 0, grounded: false, coyote: 0, jumpBuffer: 0, padLaunched: false });
   cameraX = Math.max(0, x - VIEW_W * .3);
@@ -1671,48 +1668,6 @@ function updateBlockDebris(dt) {
   blockDebris = blockDebris.filter((piece) => piece.life > 0);
 }
 
-function createLandingParticles(landing) {
-  const material = landing.kind;
-  const colors = material === "grass"
-    ? ["#6f3f24", "#92552b", "#bd7133"]
-    : material === "crate"
-      ? ["#7b421f", "#b86b2b", "#e0a04a"]
-      : ["#59616a", "#7d8790", "#aeb5bb"];
-  const strength = Math.max(.35, Math.min(1, landing.impactSpeed / 650));
-  const count = 4 + Math.round(strength * 3);
-  const footX = player.x + PLAYER_W / 2;
-  const footY = player.y + PLAYER_H - 1;
-
-  for (let index = 0; index < count; index++) {
-    const direction = index % 2 === 0 ? -1 : 1;
-    const speed = (24 + Math.random() * 38) * strength;
-    landingParticles.push({
-      material,
-      x: footX + direction * (5 + Math.random() * 10),
-      y: footY - Math.random() * 2,
-      vx: direction * speed,
-      vy: -(20 + Math.random() * 38) * strength,
-      size: 2 + Math.random() * 2.2,
-      rotation: Math.random() * Math.PI,
-      spin: (Math.random() - .5) * 10,
-      color: colors[index % colors.length],
-      life: .26 + Math.random() * .16
-    });
-  }
-}
-
-function updateLandingParticles(dt) {
-  for (const particle of landingParticles) {
-    particle.x += particle.vx * dt;
-    particle.y += particle.vy * dt;
-    particle.vy += 360 * dt;
-    particle.vx *= Math.max(0, 1 - dt * 3.5);
-    particle.rotation += particle.spin * dt;
-    particle.life -= dt;
-  }
-  landingParticles = landingParticles.filter((particle) => particle.life > 0);
-}
-
 function updateBreakablePlatforms(dt, landedOn) {
   const platform = landedOn?.platform;
   if (platform?.breakable && platform.breakTimer === null) {
@@ -1758,7 +1713,6 @@ function update(dt) {
   }
 
   updateBlockDebris(dt);
-  updateLandingParticles(dt);
 
   if (deathTimer > 0) {
     deathTimer = Math.max(0, deathTimer - dt);
@@ -1810,10 +1764,7 @@ function update(dt) {
   moveAndCollideX(dt);
   const landedOn = moveAndCollideY(dt);
   updateBreakablePlatforms(dt, landedOn);
-  if (!wasGrounded && landedOn) {
-    createLandingParticles(landedOn);
-    playSfx(`land-${landedOn.kind}`, landedOn.intensity);
-  }
+  if (!wasGrounded && landedOn) playSfx(`land-${landedOn.kind}`, landedOn.intensity);
   const padActivated = activateJumpPad();
   if (landedOn && !padActivated) player.padLaunched = false;
   player.x = Math.max(0, Math.min(currentLevel().width - PLAYER_W, player.x));
@@ -2354,26 +2305,6 @@ function drawBlockDebris() {
   }
 }
 
-function drawLandingParticles() {
-  for (const particle of landingParticles) {
-    ctx.save();
-    ctx.translate(particle.x - cameraX, particle.y);
-    ctx.rotate(particle.rotation);
-    ctx.globalAlpha = Math.min(1, particle.life * 4);
-    ctx.fillStyle = particle.color;
-    ctx.beginPath();
-    if (particle.material === "stone") {
-      ctx.roundRect(-particle.size / 2, -particle.size * .35, particle.size, particle.size * .7, 1);
-    } else if (particle.material === "crate") {
-      ctx.roundRect(-particle.size, -particle.size * .18, particle.size * 2, particle.size * .36, 1);
-    } else {
-      ctx.ellipse(0, 0, particle.size * .7, particle.size * .45, 0, 0, Math.PI * 2);
-    }
-    ctx.fill();
-    ctx.restore();
-  }
-}
-
 function cutsceneEase(value) {
   const clamped = Math.max(0, Math.min(1, value));
   return clamped * clamped * (3 - 2 * clamped);
@@ -2631,7 +2562,6 @@ function render(time) {
   currentLevel().stars.forEach(([x, y], i) => drawStar(x, y, i, time));
   drawFlag(currentLevel().finish);
   drawBlockDebris();
-  drawLandingParticles();
   if (deathTimer > 0) drawDeathParticles();
   else drawPlayer(time);
   if (levelTransition > 0) {
