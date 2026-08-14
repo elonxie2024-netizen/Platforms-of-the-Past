@@ -10,7 +10,7 @@ create table if not exists public.leaderboard_rulesets (
 );
 
 insert into public.leaderboard_rulesets (id, label, accepted_versions)
-values ('intro-seven-v1', 'Intro Seven ruleset', array['v0.8.0'])
+values ('intro-seven-v1', 'Version 0.6.2 to 0.8.1', array['v0.8.0', 'v0.8.1'])
 on conflict (id) do update
 set label = excluded.label,
     accepted_versions = excluded.accepted_versions,

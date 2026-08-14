@@ -56,7 +56,8 @@ const versionsList = document.querySelector("#versionsList");
 const closeVersionsButton = document.querySelector("#closeVersionsButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.8.0", commit: "Pending commit", date: "2026-08-13", message: "Add global leaderboards and version archive", description: "Replaced browser-only records with a shared online leaderboard available across devices and tabs. Added independent gameplay ruleset IDs so balance-changing releases receive separate boards, restricted ranked submissions to complete level-one starts, and added a menu of playable release archives built from the original Git commits." },
+  { version: "v0.8.1", commit: "Pending commit", date: "2026-08-13", message: "Clarify shared leaderboard versions", description: "Renamed leaderboard choices as explicit version ranges so players can see which releases share identical gameplay and compete on the same board." },
+  { version: "v0.8.0", commit: "fdaba75", date: "2026-08-13", message: "Make supabase and global leaderboard", description: "Replaced browser-only records with a shared online leaderboard available across devices and tabs. Added independent gameplay ruleset IDs so balance-changing releases receive separate boards, restricted ranked submissions to complete level-one starts, and added a menu of playable release archives built from the original Git commits." },
   { version: "v0.7.6", commit: "9cc5fc1", date: "2026-08-13", message: "Updated post-cutscene animation", description: "Rebuilt the awakened main-menu climb as one continuous loop without separate move-and-wait phases. Both platforms now descend at a constant speed and recycle seamlessly, while the slime's trajectory uses the game's real gravity and jump-speed calculations scaled uniformly to the smaller menu scene." },
   { version: "v0.7.5", commit: "6447b71", date: "2026-08-12", message: "Add cutscene skipping", description: "Made the final rewind cutscene skippable by clicking anywhere on the game canvas. Skipping immediately completes the cinematic and opens the existing adventure results screen without changing the finished run's recorded time, score, stars, or level splits." },
   { version: "v0.7.4", commit: "4a8de6e", date: "2026-08-12", message: "Add session-based progression", description: "Changed roadmap unlocks and the post-cutscene menu transformation to last only for the current browser session. Refreshing now restores Dirtbound Trail as the sole unlocked level and returns the menu to its original animation, while a new Restart session button performs the same complete reset immediately." },
@@ -243,15 +244,15 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.8.0";
+const GAME_VERSION = "v0.8.1";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "intro-seven-v1", label: "Intro Seven ruleset (current)" }
+  { id: "intro-seven-v1", label: "Version 0.6.2 to 0.8.1" }
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
+  "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
   "v0.2.4", "v0.2.3", "v0.2.2", "v0.2.1", "v0.2.0", "v0.1.4", "v0.1.3", "v0.1.2",
