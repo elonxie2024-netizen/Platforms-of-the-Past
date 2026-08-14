@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Rewind is introduced in the ending cinematic, while its gameplay mechanic will be implemented later.
 
-**Current version:** `v0.10.0`
+**Current version:** `v0.10.1`
 
 ## How it works
 
@@ -75,7 +75,7 @@ The playable prototype includes:
 - A global, version-separated leaderboard for named full-adventure runs
 - A playable archive of every released version
 - A complete in-game changelog based on the Git history
-- Responsive running and jumping
+- Responsive running and jumping with stable high-speed platform-edge landings
 - Coyote time and jump buffering
 - Hazards, collectibles, and level exits
 - A following camera and completion summary

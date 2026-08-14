@@ -62,8 +62,7 @@ const versionsList = document.querySelector("#versionsList");
 const closeVersionsButton = document.querySelector("#closeVersionsButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.10.1", commit: "Pending commit", date: "2026-08-14", message: "Fix platform edge collisions", description: "Stopped shallow top-corner overlaps from being treated as wall impacts before the landing pass. Fast platform and crate-edge landings now preserve horizontal momentum, while true side collisions and intentional crate pushing remain unchanged." },
-  { version: "v0.10.0", commit: "b03ea23", date: "2026-08-14", message: "Added 8th level with pressure plates", description: "Added Pressure Passage as level 8, unlocked after the seven-level introduction and rewind cutscene. Thin illuminated pressure plates activate linked platforms automatically while held, and a pushable crate can keep a plate depressed while the slime crosses its route." },
+  { version: "v0.10.0", commit: "Pending commit", date: "2026-08-14", message: "Add pressure plate level", description: "Added Pressure Passage as level 8, unlocked after the seven-level introduction and rewind cutscene. Thin illuminated pressure plates activate linked platforms automatically while held, and a pushable crate can keep a plate depressed while the slime crosses its route." },
   { version: "v0.9.2", commit: "5ce8f93", date: "2026-08-14", message: "Added particles", description: "Added subtle landing bursts matched to each surface: dirt flecks from grass, pebbles from stone, and wood chips from crates. Particle strength follows landing impact and pauses with the rest of gameplay." },
   { version: "v0.9.1", commit: "4a7e227", date: "2026-08-14", message: "Fixed leaderboard size", description: "Constrained the leaderboard to the game viewport so long ranking lists scroll independently while the Back button remains visible and accessible." },
   { version: "v0.9.0", commit: "a8c2f76", date: "2026-08-14", message: "Added customization panel for animation", description: "Unlocked main-menu customization after the final cutscene. Players can switch between the previous bounce and current climb animations, render platforms with the game's grass, stone, or crate assets, and swap between the sunny and lava-dark backdrops for the rest of the session." },
@@ -133,7 +132,6 @@ const JUMP_SPEED = 720;
 const JUMP_PAD_SPEED = 1120;
 const COYOTE_TIME = 0.1;
 const JUMP_BUFFER = 0.12;
-const PLATFORM_TOP_GRACE = 10;
 const DEATH_DURATION = 0.42;
 const CUTSCENE_DURATION = 10.4;
 const INTRO_LEVEL_COUNT = 7;
@@ -268,17 +266,16 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.10.1";
+const GAME_VERSION = "v0.10.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "edge-collision-v1", label: "Version 0.10.1 to 0.10.1" },
   { id: "pressure-plates-v1", label: "Version 0.10.0 to 0.10.0" },
   { id: "intro-seven-v1", label: "Version 0.6.2 to 0.9.2" }
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
+  "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
   "v0.2.4", "v0.2.3", "v0.2.2", "v0.2.1", "v0.2.0", "v0.1.4", "v0.1.3", "v0.1.2",
@@ -318,7 +315,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -1649,10 +1646,6 @@ function moveAndCollideX(dt) {
   for (const solid of currentLevel().platforms) {
     if (solid.broken) continue;
     if (!overlaps(box, solid)) continue;
-    const feet = player.y + PLAYER_H;
-    const approachingTop = player.vy >= 0 && player.y < solid.y &&
-      feet <= solid.y + PLATFORM_TOP_GRACE;
-    if (approachingTop) continue;
     if (solid.pushable) {
       if (distance > 0 && player.x < solid.x) {
         const pushDistance = player.x + PLAYER_W - solid.x;
