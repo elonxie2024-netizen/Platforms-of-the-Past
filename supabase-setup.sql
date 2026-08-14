@@ -11,6 +11,7 @@ create table if not exists public.leaderboard_rulesets (
 
 insert into public.leaderboard_rulesets (id, label, accepted_versions)
 values
+  ('pressure-gate-v1', 'Version 0.10.4 to 0.10.4', array['v0.10.4']),
   ('pressure-route-v2', 'Version 0.10.3 to 0.10.3', array['v0.10.3']),
   ('eight-intro-v1', 'Version 0.10.2 to 0.10.2', array['v0.10.2']),
   ('edge-collision-v1', 'Version 0.10.1 to 0.10.1', array['v0.10.1']),

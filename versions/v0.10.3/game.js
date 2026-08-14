@@ -62,8 +62,7 @@ const versionsList = document.querySelector("#versionsList");
 const closeVersionsButton = document.querySelector("#closeVersionsButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.10.4", commit: "Pending commit", date: "2026-08-14", message: "Require the first pressure plate", description: "Moved Pressure Passage's first shuttle beyond normal jump range so the opening lava gap cannot be cleared without activating the plate. Added a short activation hold that carries the shuttle inward long enough for runners to cross the plate and jump immediately instead of waiting beside the ledge." },
-  { version: "v0.10.3", commit: "538a1af", date: "2026-08-14", message: "Refine pressure plate routes", description: "Shifted the later Pressure Passage geometry left as a single unit so runners can cross the first plate at full speed and intercept its shuttle without waiting. Preserved every distance in the second pressure-plate puzzle and made its bridge support the slime only while the crate keeps the plate depressed." },
+  { version: "v0.10.3", commit: "Pending commit", date: "2026-08-14", message: "Refine pressure plate routes", description: "Shifted the later Pressure Passage geometry left as a single unit so runners can cross the first plate at full speed and intercept its shuttle without waiting. Preserved every distance in the second pressure-plate puzzle and made its bridge support the slime only while the crate keeps the plate depressed." },
   { version: "v0.10.2", commit: "893aa50", date: "2026-08-14", message: "Moved cutscene to after level 8", description: "Moved the rewind-awakening cutscene from the end of level 7 to the end of Pressure Passage. All eight levels now form the complete introductory run before the future rewind-focused levels begin." },
   { version: "v0.10.1", commit: "843c4d1", date: "2026-08-14", message: "Fixed platform edge overlap", description: "Stopped shallow top-corner overlaps from being treated as wall impacts before the landing pass. Fast platform and crate-edge landings now preserve horizontal momentum, while true side collisions and intentional crate pushing remain unchanged." },
   { version: "v0.10.0", commit: "b03ea23", date: "2026-08-14", message: "Added 8th level with pressure plates", description: "Added Pressure Passage as level 8, unlocked after the seven-level introduction and rewind cutscene. Thin illuminated pressure plates activate linked platforms automatically while held, and a pushable crate can keep a plate depressed while the slime crosses its route." },
@@ -151,9 +150,8 @@ const F = (x, y, material = "stone", w = 110, h = 54) => ({ x, y, w, h, kind: "f
 const M = (x, y, w, h, axis, range, speed, phase = 0, kind = "stone") => ({
   x, y, w, h, kind, moving: true, axis, range, speed, phase, baseX: x, baseY: y
 });
-const C = (x, y, targetX, targetY, switchId, w = 140, h = 40, kind = "stone", requiresActive = false, releaseDelay = 0) => ({
-  x, y, w, h, kind, controlled: true, switchId, targetX, targetY, baseX: x, baseY: y,
-  moveProgress: 0, requiresActive, releaseDelay, releaseTimer: 0
+const C = (x, y, targetX, targetY, switchId, w = 140, h = 40, kind = "stone", requiresActive = false) => ({
+  x, y, w, h, kind, controlled: true, switchId, targetX, targetY, baseX: x, baseY: y, moveProgress: 0, requiresActive
 });
 const S = (x, y, id) => ({ x, y, w: 42, h: 44, id, flipped: false });
 const Q = (x, y, id, w = 72) => ({ x, y, w, h: 12, id, pressed: false, pressProgress: 0 });
@@ -204,7 +202,7 @@ const levels = [
   },
   {
     name: "Pressure Passage", width: 1380, start: [55,430], music: "level3", theme: "lava",
-    platforms: [R(0,490,360,80,"stone"), C(600,430,400,430,"plate-a",150,40,"stone",false,.7), R(620,420,210,150,"stone"), P(635,360), F(805,380,"stone",25,40), C(870,520,880,350,"plate-b",150,40,"grass",true), R(1110,390,170,180,"stone"), R(1310,450,70,120,"stone")],
+    platforms: [R(0,490,360,80,"stone"), C(480,430,350,430,"plate-a",150,40,"stone"), R(620,420,210,150,"stone"), P(635,360), F(805,380,"stone",25,40), C(870,520,880,350,"plate-b",150,40,"grass",true), R(1110,390,170,180,"stone"), R(1310,450,70,120,"stone")],
     pressurePlates: [Q(270,478,"plate-a"), Q(730,408,"plate-b")],
     hazards: [R(360,490,260,80,"lava"), R(830,490,280,80,"lava"), R(1280,490,30,80,"lava")],
     stars: [[300,430],[555,375],[695,315],[955,300],[1195,345],[1340,405]], finish: R(1320,360,34,90)
@@ -272,11 +270,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.10.4";
+const GAME_VERSION = "v0.10.3";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "pressure-gate-v1", label: "Version 0.10.4 to 0.10.4" },
   { id: "pressure-route-v2", label: "Version 0.10.3 to 0.10.3" },
   { id: "eight-intro-v1", label: "Version 0.10.2 to 0.10.2" },
   { id: "edge-collision-v1", label: "Version 0.10.1 to 0.10.1" },
@@ -285,7 +282,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
+  "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
   "v0.2.4", "v0.2.3", "v0.2.2", "v0.2.1", "v0.2.0", "v0.1.4", "v0.1.3", "v0.1.2",
@@ -325,7 +322,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -398,7 +395,6 @@ function resetLevelMotion() {
       platform.x = platform.baseX;
       platform.y = platform.baseY;
       platform.moveProgress = 0;
-      platform.releaseTimer = 0;
     }
     if (!platform.moving) continue;
     const offset = Math.sin(platform.phase) * platform.range;
@@ -445,9 +441,7 @@ function updateMovingPlatforms(dt) {
   levelMotionTime += dt;
   for (const platform of currentLevel().platforms) {
     if (platform.controlled) {
-      if (linkedControlActive(platform)) platform.releaseTimer = platform.releaseDelay;
-      else platform.releaseTimer = Math.max(0, platform.releaseTimer - dt);
-      const targetProgress = linkedControlActive(platform) || platform.releaseTimer > 0 ? 1 : 0;
+      const targetProgress = linkedControlActive(platform) ? 1 : 0;
       if (platform.moveProgress === targetProgress) continue;
       platform.moveProgress = Math.max(0, Math.min(1,
         platform.moveProgress + Math.sign(targetProgress - platform.moveProgress) * dt / 1.15
