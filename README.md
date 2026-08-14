@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Rewind is introduced in the ending cinematic, while its gameplay mechanic will be implemented later.
 
-**Current version:** `v0.10.2`
+**Current version:** `v0.10.3`
 
 ## How it works
 
@@ -63,7 +63,7 @@ The playable prototype includes:
 - A session-based level roadmap with connected numbered stages and progression locks
 - Reversible nearby switches with clickable `E - FLIP` prompts that raise or submerge linked platforms in level 7
 - A story cutscene after level 8 that reveals the time machine and the slime's rewind power
-- Thin automatic pressure plates and plate-controlled platforms in level 8, including a crate-held plate puzzle
+- Thin automatic pressure plates and plate-controlled platforms in level 8, with a no-wait first shuttle and a required crate-held second bridge
 - An evolved post-cutscene main menu where two continuously moving platforms trade places while the slime climbs with its real in-game jump physics
 - Post-cutscene menu controls for animation style, asset-based platform texture, and backdrop
 - Animated lava, spikes, steeper elevation changes, and more demanding star routes
