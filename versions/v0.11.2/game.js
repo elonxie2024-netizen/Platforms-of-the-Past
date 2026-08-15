@@ -62,8 +62,7 @@ const versionsList = document.querySelector("#versionsList");
 const closeVersionsButton = document.querySelector("#closeVersionsButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.11.3", commit: "Pending commit", date: "2026-08-15", message: "Give enemies angry expressions", description: "Changed the red enemy slimes from friendly smiles to subtle frowns with naturally angled eyebrows, while leaving the player's friendly expression unchanged." },
-  { version: "v0.11.2", commit: "336de3b", date: "2026-08-14", message: "Repair playable version archives", description: "Rebuilt the archive generator so historical releases link to sibling versions correctly, load their own archived scripts and styles, and share a generated archive asset bundle. Added generation checks that stop broken nested version links from being published again." },
+  { version: "v0.11.2", commit: "Pending commit", date: "2026-08-14", message: "Repair playable version archives", description: "Rebuilt the archive generator so historical releases link to sibling versions correctly, load their own archived scripts and styles, and share a generated archive asset bundle. Added generation checks that stop broken nested version links from being published again." },
   { version: "v0.11.1", commit: "52986ee", date: "2026-08-14", message: "Add enemy defeat particles", description: "Added a brief red slime-piece burst when an enemy is stomped, matching the player's understated green death effect without changing enemy behavior, physics, timing, or scoring." },
   { version: "v0.11.0", commit: "686139c", date: "2026-08-14", message: "Complete the introductory levels", description: "Added patrolling red slime enemies to level 9. They reverse at patrol boundaries or obstacles, defeat the player on side contact, and can be defeated from above. Added a longer final test in level 10 that combines floating platforms, a jump pad, automatic movers, a required crate climb, switches, timed pressure-plate shuttles, and a crate-held final bridge. Expanded the roadmap, full-run splits, star limit, and ending trigger from eight levels to ten." },
   { version: "v0.10.4", commit: "70f5c5e", date: "2026-08-14", message: "Require the first pressure plate", description: "Moved Pressure Passage's first shuttle beyond normal jump range so the opening lava gap cannot be cleared without activating the plate. Added a short activation hold that carries the shuttle inward long enough for runners to cross the plate and jump immediately instead of waiting beside the ledge." },
@@ -297,11 +296,11 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.11.3";
+const GAME_VERSION = "v0.11.2";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "intro-ten-v1", label: "Version 0.11.0 to 0.11.3" },
+  { id: "intro-ten-v1", label: "Version 0.11.0 to 0.11.2" },
   { id: "pressure-gate-v1", label: "Version 0.10.4 to 0.10.4" },
   { id: "pressure-route-v2", label: "Version 0.10.3 to 0.10.3" },
   { id: "eight-intro-v1", label: "Version 0.10.2 to 0.10.2" },
@@ -311,7 +310,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
+  "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
   "v0.2.4", "v0.2.3", "v0.2.2", "v0.2.1", "v0.2.0", "v0.1.4", "v0.1.3", "v0.1.2",
@@ -351,7 +350,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -971,7 +970,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -2497,7 +2496,7 @@ function drawSlimeCharacter(character, time, palette) {
   ctx.fill();
   ctx.stroke();
 
-  // Gloss and simple facial features keep each slime readable at game size.
+  // Gloss, simple eyes, and a tiny smile keep the character readable at game size.
   ctx.fillStyle = palette.highlight;
   ctx.beginPath(); ctx.ellipse(-8, -5, 3.5, 4.5, .55, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = palette.face;
@@ -2513,15 +2512,7 @@ function drawSlimeCharacter(character, time, palette) {
   ctx.strokeStyle = palette.face;
   ctx.lineWidth = 1.7;
   ctx.lineCap = "round";
-  if (palette.expression === "angry") {
-    ctx.beginPath();
-    ctx.moveTo(-9, -6); ctx.lineTo(-2.8, -3.4);
-    ctx.moveTo(9, -6); ctx.lineTo(3, -3.4);
-    ctx.stroke();
-    ctx.beginPath(); ctx.arc(.5, 9, 4.5, Math.PI + .18, Math.PI * 2 - .18); ctx.stroke();
-  } else {
-    ctx.beginPath(); ctx.arc(.5, 7, 4.5, .15, Math.PI - .15); ctx.stroke();
-  }
+  ctx.beginPath(); ctx.arc(.5, 7, 4.5, .15, Math.PI - .15); ctx.stroke();
   ctx.restore();
 }
 
@@ -2538,7 +2529,7 @@ function drawEnemies(time) {
       x: enemy.x, y: enemy.y, vx: enemy.direction * enemy.speed,
       grounded: true, facing: enemy.direction
     }, time, {
-      body: "#e85b61", outline: "#8f2735", highlight: "#ff9a9e", face: "#4b1721", expression: "angry"
+      body: "#e85b61", outline: "#8f2735", highlight: "#ff9a9e", face: "#4b1721"
     });
   }
 }
