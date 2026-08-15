@@ -62,8 +62,7 @@ const versionsList = document.querySelector("#versionsList");
 const closeVersionsButton = document.querySelector("#closeVersionsButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.11.5", commit: "Pending commit", date: "2026-08-15", message: "Remove flag-overlapping stars", description: "Removed only the five stars whose collectible areas overlapped finish-flag trigger boxes in levels 3, 5, 6, 7, and 8. Stars near flags that remain independently collectible were left untouched." },
-  { version: "v0.11.4", commit: "d5c7b63", date: "2026-08-15", message: "Refine enemy frowns", description: "Kept the red enemies' eyes and angry eyebrows, then replaced the high frown with the player's exact smile curve flipped vertically within the same mouth area." },
+  { version: "v0.11.4", commit: "Pending commit", date: "2026-08-15", message: "Refine enemy frowns", description: "Kept the red enemies' eyes and angry eyebrows, then replaced the high frown with the player's exact smile curve flipped vertically within the same mouth area." },
   { version: "v0.11.3", commit: "eb25612", date: "2026-08-15", message: "Give enemies angry expressions", description: "Changed the red enemy slimes from friendly smiles to subtle frowns with naturally angled eyebrows, while leaving the player's friendly expression unchanged." },
   { version: "v0.11.2", commit: "336de3b", date: "2026-08-14", message: "Repair playable version archives", description: "Rebuilt the archive generator so historical releases link to sibling versions correctly, load their own archived scripts and styles, and share a generated archive asset bundle. Added generation checks that stop broken nested version links from being published again." },
   { version: "v0.11.1", commit: "52986ee", date: "2026-08-14", message: "Add enemy defeat particles", description: "Added a brief red slime-piece burst when an enemy is stomped, matching the player's understated green death effect without changing enemy behavior, physics, timing, or scoring." },
@@ -185,7 +184,7 @@ const levels = [
     platforms: [R(0,490,450,80), R(525,300,180,270,"stone"), R(760,390,180,180), R(1020,330,180,240,"stone"), R(1260,460,120,110), R(610,242,62,58,"crate")],
     jumpPads: [R(360,470,60,20,"jump-pad")],
     hazards: [R(450,472,75,18), R(705,472,55,18), R(940,472,80,18), R(1200,472,60,18)],
-    stars: [[390,410],[610,235],[850,345],[1110,285]], finish: R(1300,370,34,90)
+    stars: [[390,410],[610,235],[850,345],[1110,285],[1310,415]], finish: R(1300,370,34,90)
   },
   {
     name: "Clockwork Crossing", width: 1500, start: [55, 430], music: "level2", theme: "lava",
@@ -197,27 +196,27 @@ const levels = [
     name: "Crateyard Climb", width: 1500, start: [55, 430], music: "level1",
     platforms: [R(0,490,720,80), R(720,310,90,260,"stone"), R(880,430,190,140), R(1130,250,180,320,"stone"), R(1370,390,130,180), P(450,430), P(900,370)],
     hazards: [R(810,472,70,18), R(1070,472,60,18), R(1310,472,60,18)],
-    stars: [[505,385],[765,265],[970,325],[1215,205]], finish: R(1415,300,34,90)
+    stars: [[505,385],[765,265],[970,325],[1215,205],[1425,345]], finish: R(1415,300,34,90)
   },
   {
     name: "Fracture Falls", width: 1500, start: [55, 430], music: "level3", theme: "lava",
     platforms: [R(0,490,260,80,"stone"), F(320,430,"grass"), B(500,390,"stand","grass"), F(680,350,"stone"), B(860,420,"impact","stone"), F(1040,360,"crate"), B(1220,420,"stand","crate"), R(1380,450,120,120,"stone")],
     hazards: [R(260,490,1120,80,"lava")],
-    stars: [[375,385],[555,345],[735,305],[915,375],[1095,315],[1275,375]], finish: R(1415,360,34,90)
+    stars: [[375,385],[555,345],[735,305],[915,375],[1095,315],[1275,375],[1435,405]], finish: R(1415,360,34,90)
   },
   {
     name: "Switchback Summit", width: 1500, start: [55,430], music: "level2",
     platforms: [R(0,490,320,80,"stone"), C(410,520,440,380,"bridge-a",140,40,"stone"), R(640,420,180,150,"stone"), C(900,520,920,345,"bridge-b",145,40,"grass"), R(1160,390,170,180,"stone"), R(1380,450,120,120,"stone")],
     switches: [S(250,446,"bridge-a"), S(740,376,"bridge-b")],
     hazards: [R(320,490,320,80,"lava"), R(820,490,340,80,"lava"), R(1330,490,50,80,"lava")],
-    stars: [[285,400],[510,330],[735,330],[1035,285],[1245,345]], finish: R(1415,360,34,90)
+    stars: [[285,400],[510,330],[735,330],[1035,285],[1245,345],[1435,405]], finish: R(1415,360,34,90)
   },
   {
     name: "Pressure Passage", width: 1380, start: [55,430], music: "level3", theme: "lava",
     platforms: [R(0,490,360,80,"stone"), C(600,430,400,430,"plate-a",150,40,"stone",false,.7), R(620,420,210,150,"stone"), P(635,360), F(805,380,"stone",25,40), C(870,520,880,350,"plate-b",150,40,"grass",true), R(1110,390,170,180,"stone"), R(1310,450,70,120,"stone")],
     pressurePlates: [Q(270,478,"plate-a"), Q(730,408,"plate-b")],
     hazards: [R(360,490,260,80,"lava"), R(830,490,280,80,"lava"), R(1280,490,30,80,"lava")],
-    stars: [[300,430],[555,375],[695,315],[955,300],[1195,345]], finish: R(1320,360,34,90)
+    stars: [[300,430],[555,375],[695,315],[955,300],[1195,345],[1340,405]], finish: R(1320,360,34,90)
   },
   {
     name: "Crimson Crossing", width: 1550, start: [55,430], music: "level1",
@@ -299,11 +298,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.11.5";
+const GAME_VERSION = "v0.11.4";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "flag-star-cleanup-v1", label: "Version 0.11.5 to 0.11.5" },
   { id: "intro-ten-v1", label: "Version 0.11.0 to 0.11.4" },
   { id: "pressure-gate-v1", label: "Version 0.10.4 to 0.10.4" },
   { id: "pressure-route-v2", label: "Version 0.10.3 to 0.10.3" },
@@ -314,7 +312,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
+  "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
   "v0.2.4", "v0.2.3", "v0.2.2", "v0.2.1", "v0.2.0", "v0.1.4", "v0.1.3", "v0.1.2",
@@ -354,7 +352,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -974,7 +972,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
