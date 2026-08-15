@@ -224,7 +224,7 @@ const activeMusicVoices = new Set();
 const spriteSheet = new Image();
 let spritesReady = false;
 spriteSheet.addEventListener("load", () => { spritesReady = true; });
-spriteSheet.src = "../../assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }

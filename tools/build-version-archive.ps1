@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $releases = [ordered]@{
+  'v0.11.1' = '52986ee'
   'v0.11.0' = '686139c'
   'v0.10.4' = '70f5c5e'
   'v0.10.3' = '538a1af'
@@ -54,7 +55,14 @@ $releases = [ordered]@{
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $archiveRoot = Join-Path $repoRoot 'versions'
+$archiveAssetRoot = Join-Path $archiveRoot 'assets'
 New-Item -ItemType Directory -Force -Path $archiveRoot | Out-Null
+New-Item -ItemType Directory -Force -Path $archiveAssetRoot | Out-Null
+
+$sourceAsset = Join-Path $repoRoot 'assets\platformer-assets.png'
+$archiveAsset = Join-Path $archiveAssetRoot 'platformer-assets.png'
+if (-not (Test-Path -LiteralPath $sourceAsset)) { throw "Missing shared game asset: $sourceAsset" }
+Copy-Item -LiteralPath $sourceAsset -Destination $archiveAsset -Force
 
 foreach ($release in $releases.GetEnumerator()) {
   $releaseRoot = Join-Path $archiveRoot $release.Key
@@ -63,10 +71,31 @@ foreach ($release in $releases.GetEnumerator()) {
     $content = (& git -C $repoRoot show "$($release.Value):$file") -join "`n"
     if ($LASTEXITCODE -ne 0) { throw "Could not read $file from $($release.Value)." }
     if ($file -eq 'game.js') {
-      $content = $content.Replace('"assets/', '"../../assets/').Replace("'assets/", "'../../assets/")
+      # Archived versions sit beside one another, not beneath another `versions` directory.
+      $content = $content.Replace('./versions/${version}/index.html', '../${version}/index.html')
+      $content = $content.Replace('versions/${version}/', '../${version}/index.html')
+    }
+    # Every archive uses its own code and styles, plus one shared asset directory under /versions.
+    $content = $content.Replace('"assets/', '"../assets/').Replace("'assets/", "'../assets/")
+    $content = $content.Replace('url(assets/', 'url(../assets/')
+    if ($file -eq 'index.html') {
+      $content = $content.Replace('href="styles.css"', 'href="./styles.css"')
+      $content = $content.Replace('src="game.js', 'src="./game.js')
     }
     [IO.File]::WriteAllText((Join-Path $releaseRoot $file), $content + "`n", [Text.UTF8Encoding]::new($false))
   }
+
+  $generatedGame = Get-Content -LiteralPath (Join-Path $releaseRoot 'game.js') -Raw
+  $generatedIndex = Get-Content -LiteralPath (Join-Path $releaseRoot 'index.html') -Raw
+  if ($generatedGame.Contains('versions/${version}/')) {
+    throw "Broken nested version link remained in $($release.Key)."
+  }
+  if (-not $generatedIndex.Contains('href="./styles.css"')) {
+    throw "Archived stylesheet path is invalid in $($release.Key)."
+  }
+  if (-not $generatedIndex.Contains('src="./game.js')) {
+    throw "Archived script path is invalid in $($release.Key)."
+  }
 }
 
-Write-Host "Built $($releases.Count) playable release archives in $archiveRoot"
+Write-Host "Built $($releases.Count) playable release archives with shared assets in $archiveRoot"
