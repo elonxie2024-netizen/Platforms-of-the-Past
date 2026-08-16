@@ -15,7 +15,6 @@ const restartButton = document.querySelector("#restartButton");
 const restartRunButton = document.querySelector("#restartRunButton");
 const quitButton = document.querySelector("#quitButton");
 const victoryQuitButton = document.querySelector("#victoryQuitButton");
-const continueButton = document.querySelector("#continueButton");
 const mainMenu = document.querySelector("#mainMenu");
 const playButton = document.querySelector("#playButton");
 const settingsButton = document.querySelector("#settingsButton");
@@ -63,8 +62,7 @@ const versionsList = document.querySelector("#versionsList");
 const closeVersionsButton = document.querySelector("#closeVersionsButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.11.7", commit: "Pending commit", date: "2026-08-16", message: "Move results before the cutscene", description: "Moved the completed-run results screen to immediately after level 10 so timing, splits, publishing, and quitting happen before the story cinematic. Added a large story Continue button directly below publishing that pulses and receives focus after a successful publication, then starts the rewind cutscene and leads into a frozen level 11 placeholder for the gameplay planned for v0.12.0." },
-  { version: "v0.11.6", commit: "f47ded0", date: "2026-08-15", message: "Add enemy rewards and an opening route", description: "Made each defeated enemy drop one collectible star at the spot where it was stomped. Enemy stars count toward the level display, run total, star bonus, and leaderboard score, while remaining protected from repeated collection after a death. Raised Dirtbound Trail's opening floating crate so the slime can run beneath it as a faster route that skips the nearby star, while preserving the upper collectible route." },
+  { version: "v0.11.6", commit: "Pending commit", date: "2026-08-15", message: "Add enemy rewards and an opening route", description: "Made each defeated enemy drop one collectible star at the spot where it was stomped. Enemy stars count toward the level display, run total, star bonus, and leaderboard score, while remaining protected from repeated collection after a death. Raised Dirtbound Trail's opening floating crate so the slime can run beneath it as a faster route that skips the nearby star, while preserving the upper collectible route." },
   { version: "v0.11.5", commit: "3b2a7b1", date: "2026-08-15", message: "Remove flag-overlapping stars", description: "Removed only the five stars whose collectible areas overlapped finish-flag trigger boxes in levels 3, 5, 6, 7, and 8. Stars near flags that remain independently collectible were left untouched." },
   { version: "v0.11.4", commit: "d5c7b63", date: "2026-08-15", message: "Refine enemy frowns", description: "Kept the red enemies' eyes and angry eyebrows, then replaced the high frown with the player's exact smile curve flipped vertically within the same mouth area." },
   { version: "v0.11.3", commit: "eb25612", date: "2026-08-15", message: "Give enemies angry expressions", description: "Changed the red enemy slimes from friendly smiles to subtle frowns with naturally angled eyebrows, while leaving the player's friendly expression unchanged." },
@@ -238,10 +236,6 @@ const levels = [
     pressurePlates: [Q(3380,408,"final-plate-a"), Q(4570,388,"final-plate-b")],
     hazards: [R(430,490,1270,80,"lava"), R(2200,490,220,80,"lava"), R(2900,490,320,80,"lava"), R(3480,490,310,80,"lava"), R(4000,490,340,80,"lava"), R(4670,490,310,80,"lava")],
     stars: [[350,410],[585,245],[800,315],[1015,340],[1575,300],[2135,215],[2315,305],[2835,400],[3055,350],[3415,360],[3590,335],[3950,240],[4155,250],[4825,310]], finish: R(5020,360,34,90)
-  },
-  {
-    name: "Rewind Awakens", width: VIEW_W, start: [VIEW_W / 2 - PLAYER_W / 2, 390],
-    music: "level3", placeholder: true, platforms: [], hazards: [], stars: [], finish: null
   }
 ];
 
@@ -307,11 +301,11 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.11.7";
+const GAME_VERSION = "v0.11.6";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "enemy-star-drops-v1", label: "Version 0.11.6 to 0.11.7" },
+  { id: "enemy-star-drops-v1", label: "Version 0.11.6 to 0.11.6" },
   { id: "flag-star-cleanup-v1", label: "Version 0.11.5 to 0.11.5" },
   { id: "intro-ten-v1", label: "Version 0.11.0 to 0.11.4" },
   { id: "pressure-gate-v1", label: "Version 0.10.4 to 0.10.4" },
@@ -323,7 +317,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
+  "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
   "v0.2.4", "v0.2.3", "v0.2.2", "v0.2.1", "v0.2.0", "v0.1.4", "v0.1.3", "v0.1.2",
@@ -363,7 +357,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -803,7 +797,7 @@ function unlockThrough(index) {
 }
 
 const ROADMAP_POINTS = [
-  [5, 70], [14, 35], [23, 68], [32, 30], [41, 66], [50, 34], [59, 68], [68, 30], [77, 66], [86, 34], [95, 70]
+  [6, 70], [16, 35], [26, 68], [36, 30], [46, 66], [56, 34], [66, 68], [76, 30], [86, 66], [94, 34]
 ];
 
 function renderRoadmap() {
@@ -823,7 +817,7 @@ function renderRoadmap() {
 
   levels.forEach((level, index) => {
     const node = document.createElement("div");
-    const locked = level.placeholder || index > highestUnlockedLevel;
+    const locked = index > highestUnlockedLevel;
     node.className = `roadmap-level${locked ? " locked" : ""}`;
     node.style.left = `${ROADMAP_POINTS[index][0]}%`;
     node.style.top = `${ROADMAP_POINTS[index][1]}%`;
@@ -996,7 +990,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -1144,8 +1138,6 @@ async function publishFinishedRun() {
     if (!response.ok) throw new Error(`Publish failed (${response.status})`);
     runPublished = true;
     publishStatus.textContent = "Run published to the global leaderboard.";
-    continueButton.classList.add("ready");
-    continueButton.focus();
   } catch {
     publishRunButton.disabled = false;
     runNameInput.disabled = false;
@@ -1160,7 +1152,6 @@ function resetFinishedRun() {
   runNameInput.disabled = false;
   publishRunButton.disabled = false;
   publishStatus.textContent = "";
-  continueButton.classList.remove("ready");
   splitList.replaceChildren();
 }
 
@@ -1191,26 +1182,21 @@ function prepareAdventureResults() {
   renderSplitSummary();
 }
 
-function showRunResults() {
-  finishRunTimer();
-  prepareAdventureResults();
+function showAdventureComplete() {
+  gameShell.classList.remove("cutscene-playing");
+  cutsceneActive = false;
+  menuCustomizationUnlocked = true;
+  rewindMenuAwakened = true;
+  applyRewindMenuState();
   won = true;
   message.hidden = false;
-  pauseButton.disabled = true;
-  restartButton.disabled = true;
-  restartRunButton.disabled = true;
-  quitButton.disabled = true;
-  Object.assign(input, { left: false, right: false, jump: false });
-  pressed.jump = false;
-  continueButton.classList.toggle("ready", !finishedRun.eligible);
-  if (finishedRun.eligible) runNameInput.focus();
-  else continueButton.focus();
+  runNameInput.focus();
 }
 
 function startRewindCutscene() {
+  finishRunTimer();
+  prepareAdventureResults();
   resetCutscene();
-  continueButton.classList.remove("ready");
-  won = false;
   cutsceneActive = true;
   gameShell.classList.add("cutscene-playing");
   message.hidden = true;
@@ -1220,21 +1206,6 @@ function startRewindCutscene() {
   quitButton.disabled = true;
   Object.assign(input, { left: false, right: false, jump: false });
   pressed.jump = false;
-}
-
-function showLevelElevenPlaceholder() {
-  resetCutscene();
-  menuCustomizationUnlocked = true;
-  rewindMenuAwakened = true;
-  applyRewindMenuState();
-  unlockThrough(INTRO_LEVEL_COUNT);
-  loadLevel(INTRO_LEVEL_COUNT);
-  won = false;
-  message.hidden = true;
-  pauseButton.disabled = true;
-  restartButton.disabled = true;
-  restartRunButton.disabled = true;
-  quitButton.disabled = false;
 }
 
 function updateCutscene(dt) {
@@ -1247,7 +1218,7 @@ function updateCutscene(dt) {
     cutscenePowerPlayed = true;
     playSfx("rewind-awaken");
   }
-  if (cutsceneTime >= CUTSCENE_DURATION) showLevelElevenPlaceholder();
+  if (cutsceneTime >= CUTSCENE_DURATION) showAdventureComplete();
 }
 
 function setKey(code, down) {
@@ -1291,7 +1262,7 @@ function switchPromptBounds(levelSwitch, time) {
 canvas.addEventListener("pointerdown", (event) => {
   if (cutsceneActive) {
     event.preventDefault();
-    showLevelElevenPlaceholder();
+    showAdventureComplete();
     return;
   }
   if (!gameStarted || paused || won) return;
@@ -1321,11 +1292,10 @@ function trackDevelopmentSequence(event) {
 }
 
 addEventListener("keydown", (event) => {
-  if (event.target instanceof Element && event.target.matches("input, textarea, select, button")) return;
+  if (event.target instanceof Element && event.target.matches("input, textarea, select")) return;
   trackDevelopmentSequence(event);
   if (!gameStarted) return;
   if (cutsceneActive) return;
-  if (currentLevel().placeholder) return;
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "Space", "KeyP", "KeyE"].includes(event.code)) event.preventDefault();
   if (event.code === "KeyP" && !won) {
     if (!leaderboardMenu.hidden && leaderboardReturn === "pause") closeLeaderboard();
@@ -1337,7 +1307,7 @@ addEventListener("keydown", (event) => {
   if (event.code === "KeyE") activateNearbySwitch();
   if (event.code === "KeyR") restartLevel();
   if (event.code === "KeyT") startOver();
-  if (event.code === "Enter" && won) startRewindCutscene();
+  if (event.code === "Enter" && won) startOver();
   setKey(event.code, true);
 });
 addEventListener("keyup", (event) => { if (gameStarted) setKey(event.code, false); });
@@ -1367,7 +1337,6 @@ menuAnimationButtons.forEach(button => button.addEventListener("click", () => se
 menuTextureButtons.forEach(button => button.addEventListener("click", () => selectMenuTexture(button.dataset.menuTexture)));
 menuBackdropButtons.forEach(button => button.addEventListener("click", () => selectMenuBackdrop(button.dataset.menuBackdrop)));
 publishRunButton.addEventListener("click", publishFinishedRun);
-continueButton.addEventListener("click", startRewindCutscene);
 runNameInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();
@@ -1716,7 +1685,6 @@ if (requestFullscreen && exitFullscreen) {
 document.querySelectorAll("[data-control]").forEach((button) => {
   const control = button.dataset.control;
   const set = (down) => {
-    if (currentLevel().placeholder) return;
     if (down) startRunTimer();
     if (control === "jump" && down && !input.jump) pressed.jump = true;
     input[control] = down;
@@ -1975,8 +1943,6 @@ function update(dt) {
     return;
   }
 
-  if (currentLevel().placeholder) return;
-
   updateBlockDebris(dt);
   updateLandingParticles(dt);
   updateEnemyDeathParticles(dt);
@@ -2077,11 +2043,9 @@ function update(dt) {
   if (overlaps(box, currentLevel().finish)) {
     playSfx("flag");
     completeLevelSplit();
-    if (levelIndex === INTRO_LEVEL_COUNT - 1) showRunResults();
-    else {
-      unlockThrough(levelIndex + 1);
-      levelTransition = .65;
-    }
+    unlockThrough(levelIndex + 1);
+    if (levelIndex === INTRO_LEVEL_COUNT - 1) startRewindCutscene();
+    else levelTransition = .65;
   }
 
   const target = Math.max(0, Math.min(currentLevel().width - VIEW_W, player.x - VIEW_W * .38));
@@ -2943,43 +2907,10 @@ function drawCutscene(time) {
   ctx.fillRect(0, VIEW_H - 24, VIEW_W, 24);
 }
 
-function drawLevelElevenPlaceholder() {
-  const background = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-  background.addColorStop(0, "#111a32");
-  background.addColorStop(1, "#080d1c");
-  ctx.fillStyle = background;
-  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-
-  ctx.save();
-  ctx.translate(VIEW_W / 2, VIEW_H / 2 - 18);
-  ctx.strokeStyle = "rgba(111, 220, 255, .16)";
-  ctx.lineWidth = 2;
-  for (const radius of [86, 126, 166]) {
-    ctx.beginPath();
-    ctx.arc(0, 0, radius, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  ctx.fillStyle = "#8de4ff";
-  ctx.textAlign = "center";
-  ctx.font = "800 16px Inter, sans-serif";
-  ctx.fillText("LEVEL 11", 0, -34);
-  ctx.fillStyle = "#f4fbff";
-  ctx.font = "900 42px Inter, sans-serif";
-  ctx.fillText("REWIND AWAKENS", 0, 18);
-  ctx.fillStyle = "#aebed8";
-  ctx.font = "700 17px Inter, sans-serif";
-  ctx.fillText("COMING IN v0.12.0", 0, 58);
-  ctx.restore();
-}
-
 function render(time) {
   ctx.clearRect(0, 0, VIEW_W, VIEW_H);
   if (cutsceneActive) {
     drawCutscene(time);
-    return;
-  }
-  if (currentLevel().placeholder) {
-    drawLevelElevenPlaceholder();
     return;
   }
   drawBackground();

@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Rewind is introduced in the ending cinematic, while its gameplay mechanic will be implemented later.
 
-**Current version:** `v0.11.6`
+**Current version:** `v0.11.7`
 
 ## How it works
 
@@ -62,7 +62,8 @@ The playable prototype includes:
 - Asset-textured floating blocks and visibly cracked breakable variants that burst into material-specific debris in level 6
 - A session-based level roadmap with connected numbered stages and progression locks
 - Reversible nearby switches with clickable `E - FLIP` prompts that raise or submerge linked platforms in level 7
-- A story cutscene after level 10 that reveals the time machine and the slime's rewind power
+- A completed-run results screen after level 10 with publishing, quitting, and a prominent story Continue button that pulses after publication
+- A frozen level 11 placeholder after the cutscene, reserving the first rewind level for v0.12.0
 - Thin automatic pressure plates and plate-controlled platforms in level 8, with a no-wait first shuttle and a required crate-held second bridge
 - Two patrolling red slime enemies in level 9 that reverse at ledges and obstacles, defeat the player from the side, burst into red slime pieces when stomped, and each drop a collectible star
 - A long final test in level 10 that combines floating platforms, jump pads, automatic movers, crates, switches, and pressure plates

@@ -677,28 +677,6 @@ canvas {
 .message h2 { font-size: clamp(1.7rem, 5vw, 3.3rem); }
 .message button { background: #ffe05d; color: #17233b; border: 0; }
 .message-actions { display: flex; justify-content: center; gap: 10px; }
-.message .continue-button {
-  width: min(100%, 430px);
-  padding: 14px 24px;
-  border: 2px solid #fff2a8;
-  font-size: 1.05rem;
-  box-shadow: 0 8px 24px #0006, 0 0 0 0 #ffe05d80;
-}
-.message .continue-button.ready {
-  animation: continue-pulse 1.35s ease-in-out infinite;
-}
-@keyframes continue-pulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 8px 24px #0006, 0 0 0 0 #ffe05d70; }
-  50% { transform: scale(1.045); box-shadow: 0 10px 28px #0008, 0 0 0 10px #ffe05d00; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .message .continue-button.ready { animation: none; outline: 4px solid #ffe05d80; outline-offset: 4px; }
-}
-.message-actions #playAgainButton {
-  border: 1px solid #ffffff36;
-  color: #fff;
-  background: #ffffff14;
-}
 .message #victoryQuitButton {
   border: 1px solid #ffffff36;
   color: #fff;
