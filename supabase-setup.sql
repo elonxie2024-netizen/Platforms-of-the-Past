@@ -11,6 +11,7 @@ create table if not exists public.leaderboard_rulesets (
 
 insert into public.leaderboard_rulesets (id, label, accepted_versions)
 values
+  ('custom-runs-v1', 'Version 0.13.0 to 0.13.1', array['v0.13.0', 'v0.13.1']),
   ('first-rewind-v1', 'Version 0.12.0 to 0.12.0', array['v0.12.0']),
   ('enemy-star-drops-v1', 'Version 0.11.6 to 0.11.7', array['v0.11.6', 'v0.11.7']),
   ('flag-star-cleanup-v1', 'Version 0.11.5 to 0.11.5', array['v0.11.5']),

@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. The first rewind mechanic is available in level 11 after the introductory adventure and awakening cinematic.
 
-**Current version:** `v0.12.0`
+**Current version:** `v0.13.1`
 
 ## How it works
 
