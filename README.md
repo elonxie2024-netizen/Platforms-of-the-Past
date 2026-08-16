@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. The first rewind mechanic is available in level 11 after the introductory adventure and awakening cinematic.
 
-**Current version:** `v0.13.1`
+**Current version:** `v0.13.2`
 
 ## How it works
 
@@ -40,7 +40,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Choose your route.** Play opens the run builder, which also links to a practice roadmap. Completed levels and the next challenge can be replayed there, while future practice levels remain locked until reached. Refreshing or selecting Restart session begins again from Dirtbound Trail.
 
-**Build a run.** Before starting, combine an objective, a constraint, and a leaderboard metric. Run objectives include completing the full introduction or selected levels, collecting every star, dying to every hazard type, and activating every available mechanic. Rankings are separated by challenge and can use Time, Score, or Stars.
+**Build a run.** Before starting, combine an objective, a constraint, and a leaderboard metric. Run objectives include completing the full introduction or selected levels, collecting every star, dying once to every placed hazard, and activating every available mechanic. Falls are not placed hazards and do not count. Rankings are separated by challenge and can use Time, Score, or Stars.
 
 **Change the past.** In the finished game, time travel will let you switch eras and reshape the level. A bridge that is broken in the present may still stand in the past, while a seed planted long ago could become a path through the future.
 
