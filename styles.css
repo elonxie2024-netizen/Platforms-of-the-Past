@@ -497,6 +497,99 @@ canvas {
   cursor: pointer;
 }
 
+.run-builder-panel {
+  width: min(900px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.run-builder-panel h2 { font-size: clamp(1.65rem, 4vw, 2.6rem); }
+
+.run-builder-sections {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr .8fr;
+  gap: 12px;
+  text-align: left;
+}
+
+.run-builder-sections fieldset {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #ffffff22;
+  border-radius: 16px;
+  background: #07142b9c;
+}
+
+.run-builder-sections legend {
+  padding: 0 7px;
+  color: #8de4ff;
+  font-size: .78rem;
+  font-weight: 950;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.run-builder-sections label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 9px;
+  border: 1px solid #ffffff1e;
+  border-radius: 11px;
+  color: #e9f5ff;
+  background: #ffffff08;
+  cursor: pointer;
+}
+
+.run-builder-sections label:has(input:checked) {
+  border-color: #72d8f5;
+  background: #174467;
+  box-shadow: inset 0 0 0 1px #72d8f54d;
+}
+
+.run-builder-sections input { margin-top: 2px; accent-color: #ffe05d; }
+.run-builder-sections label span { display: grid; gap: 2px; }
+.run-builder-sections label strong { font-size: .79rem; }
+.run-builder-sections label small { color: #aac0d8; font-size: .66rem; line-height: 1.3; }
+
+.specific-level-choices {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+  padding-top: 4px;
+}
+.specific-level-choices[hidden] { display: none; }
+
+.specific-level-choices label {
+  justify-content: center;
+  padding: 7px 4px;
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+.run-setup-summary { min-height: 1.2em; color: #ffe98b; font-size: .78rem; font-weight: 750; }
+.run-builder-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 14px;
+  background: #0b1a33f2;
+}
+.run-builder-actions .secondary-button { color: #fff; background: #ffffff12; }
+.leaderboard-run-type { margin: -4px 0 0; color: #ffe98b; font-size: .75rem; font-weight: 800; }
+
 .roadmap-panel { width: min(790px, 100%); }
 .roadmap-note { max-width: 620px; color: #b8cbe2; font-size: .82rem; }
 
@@ -809,6 +902,11 @@ canvas {
   .level-roadmap { min-height: 210px; }
   .roadmap-level button { width: 43px; height: 43px; border-width: 2px; }
   .roadmap-level .level-name { max-width: 58px; font-size: .56rem; }
+}
+
+@media (max-width: 760px) {
+  .run-builder-sections { grid-template-columns: 1fr; }
+  .run-builder-panel { justify-items: stretch; text-align: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {

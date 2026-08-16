@@ -35,8 +35,20 @@ create table if not exists public.leaderboard_scores (
   stars smallint not null check (stars between 0 and 61),
   score numeric(8,1) generated always as (round(300 - seconds + stars * 2, 1)) stored,
   splits jsonb not null check (jsonb_typeof(splits) = 'array' and jsonb_array_length(splits) in (7, 8, 10)),
+  run_type_id text not null default 'classic',
+  ranking_metric text not null default 'time' check (ranking_metric in ('time', 'score', 'stars')),
   created_at timestamptz not null default now()
 );
+
+alter table public.leaderboard_scores
+  add column if not exists run_type_id text not null default 'classic';
+alter table public.leaderboard_scores
+  add column if not exists ranking_metric text not null default 'time';
+
+alter table public.leaderboard_scores
+  drop constraint if exists leaderboard_scores_ranking_metric_check;
+alter table public.leaderboard_scores
+  add constraint leaderboard_scores_ranking_metric_check check (ranking_metric in ('time', 'score', 'stars'));
 
 alter table public.leaderboard_scores
   drop constraint if exists leaderboard_scores_stars_check;
@@ -47,10 +59,13 @@ alter table public.leaderboard_scores
   drop constraint if exists leaderboard_scores_splits_check;
 alter table public.leaderboard_scores
   add constraint leaderboard_scores_splits_check
-  check (jsonb_typeof(splits) = 'array' and jsonb_array_length(splits) in (7, 8, 10));
+  check (jsonb_typeof(splits) = 'array' and jsonb_array_length(splits) between 1 and 10);
 
 create index if not exists leaderboard_scores_rank_idx
   on public.leaderboard_scores (leaderboard_id, score desc, seconds asc, created_at asc);
+
+create index if not exists leaderboard_scores_run_type_rank_idx
+  on public.leaderboard_scores (leaderboard_id, run_type_id, ranking_metric, seconds asc, score desc, stars desc);
 
 alter table public.leaderboard_rulesets enable row level security;
 alter table public.leaderboard_scores enable row level security;

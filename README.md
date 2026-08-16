@@ -38,7 +38,9 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Follow development.** Open the changelog from the main menu or pause menu to read every version and Git commit in the game's history.
 
-**Choose your route.** Play opens a level roadmap for the current session. Completed levels and the next challenge can be replayed, while future levels remain locked until reached. Refreshing or selecting Restart session begins again from Dirtbound Trail.
+**Choose your route.** Play opens the run builder, which also links to a practice roadmap. Completed levels and the next challenge can be replayed there, while future practice levels remain locked until reached. Refreshing or selecting Restart session begins again from Dirtbound Trail.
+
+**Build a run.** Before starting, combine an objective, a constraint, and a leaderboard metric. Run objectives include completing the full introduction or selected levels, collecting every star, dying to every hazard type, and activating every available mechanic. Rankings are separated by challenge and can use Time, Score, or Stars.
 
 **Change the past.** In the finished game, time travel will let you switch eras and reshape the level. A bridge that is broken in the present may still stand in the past, while a seed planted long ago could become a path through the future.
 
@@ -65,6 +67,7 @@ The playable prototype includes:
 - Required crate-pushing puzzles in level 5; crates act as movable steps
 - Asset-textured floating blocks and visibly cracked breakable variants that burst into material-specific debris in level 6
 - A session-based level roadmap with connected numbered stages and progression locks
+- A custom run builder with mix-and-match objectives, constraints, specific level routes, and leaderboard metrics
 - Reversible nearby switches with clickable `E - FLIP` prompts that raise or submerge linked platforms in level 7
 - A completed-run results screen after level 10 with publishing, quitting, and a prominent story Continue button that pulses after publication
 - A focused level 11 rewind tutorial where pressure plates send a gap-crossing platform away; hold `F` to preview backward, hold `G` with it to preview forward, then release `F` to commit the rewind

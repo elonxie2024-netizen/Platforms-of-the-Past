@@ -65,9 +65,16 @@ const versionsButton = document.querySelector("#versionsButton");
 const versionsMenu = document.querySelector("#versionsMenu");
 const versionsList = document.querySelector("#versionsList");
 const closeVersionsButton = document.querySelector("#closeVersionsButton");
+const runSetupMenu = document.querySelector("#runSetupMenu");
+const runSetupForm = document.querySelector("#runSetupForm");
+const specificLevelChoices = document.querySelector("#specificLevelChoices");
+const runSetupSummary = document.querySelector("#runSetupSummary");
+const practiceRoadmapButton = document.querySelector("#practiceRoadmapButton");
+const closeRunSetupButton = document.querySelector("#closeRunSetupButton");
+const leaderboardRunType = document.querySelector("#leaderboardRunType");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.12.0", commit: "Pending commit", date: "2026-08-16", message: "Add the first rewind level", description: "Replaced the level 11 placeholder with First Recall, a focused rewind tutorial. The pressure-plate-covered start sends a shuttle across a large gap. Holding F freezes it and previews its recorded path backward with golden arrows; holding G at the same time moves the preview forward again, and releasing F commits the selected rewind before a forgiving launch window. Added a tutorial completion screen and level timer without extending the already-finished ten-level ranked run." },
+  { version: "v0.12.0", commit: "Pending commit", date: "2026-08-16", message: "Add rewind and custom run types", description: "Replaced the level 11 placeholder with First Recall, a focused rewind tutorial with F/G timeline previews, golden path arrows, pointer controls, and release-to-commit playback. Added a pre-run challenge builder that combines objectives, constraints, selected level routes, and Time, Score, or Stars ranking metrics. Custom runs now track star requirements, deaths by hazard type, mechanic activation, route completion, splits, and separate global leaderboard categories." },
   { version: "v0.11.7", commit: "f498e91", date: "2026-08-16", message: "Move results before the cutscene", description: "Moved the completed-run results screen to immediately after level 10 so timing, splits, publishing, and quitting happen before the story cinematic. Added a large story Continue button directly below publishing that pulses and receives focus after a successful publication, then starts the rewind cutscene and leads into a frozen level 11 placeholder for the gameplay planned for v0.12.0." },
   { version: "v0.11.6", commit: "f47ded0", date: "2026-08-15", message: "Add enemy rewards and an opening route", description: "Made each defeated enemy drop one collectible star at the spot where it was stomped. Enemy stars count toward the level display, run total, star bonus, and leaderboard score, while remaining protected from repeated collection after a death. Raised Dirtbound Trail's opening floating crate so the slime can run beneath it as a faster route that skips the nearby star, while preserving the upper collectible route." },
   { version: "v0.11.5", commit: "3b2a7b1", date: "2026-08-15", message: "Remove flag-overlapping stars", description: "Removed only the five stars whose collectible areas overlapped finish-flag trigger boxes in levels 3, 5, 6, 7, and 8. Stars near flags that remain independently collectible were left untouched." },
@@ -293,6 +300,9 @@ const MUSIC_TRACKS = {
 
 const input = { left: false, right: false, jump: false, rewind: false, forwardTime: false };
 const pressed = { jump: false };
+let rewindPointerId = null;
+let rewindPointerOwnsInput = false;
+let forwardPointerId = null;
 const player = { x: 0, y: 0, vx: 0, vy: 0, grounded: false, facing: 1, coyote: 0, jumpBuffer: 0, padLaunched: false };
 let levelIndex = 0;
 let collected = [];
@@ -362,6 +372,27 @@ let highestUnlockedLevel = 0;
 let leaderboardEntries = [];
 let leaderboardRequest = 0;
 let leaderboardMetric = "time";
+const ALL_INTRO_LEVELS = Array.from({ length: INTRO_LEVEL_COUNT }, (_, index) => index);
+const RUN_OBJECTIVE_LABELS = {
+  "complete-all": "Complete all levels",
+  specific: "Complete specific levels",
+  "all-stars": "Collect all stars",
+  "all-hazards": "Die to every hazard",
+  "all-mechanics": "Activate every mechanic"
+};
+const RUN_CONSTRAINT_LABELS = {
+  none: "No constraint",
+  "no-stars": "No stars",
+  "all-stars": "All stars",
+  "all-hazards": "Every hazard",
+  "all-mechanics": "Every mechanic"
+};
+let selectedRunConfig = { objective: "complete-all", constraint: "none", metric: "time", levels: [...ALL_INTRO_LEVELS] };
+let activeRunConfig = null;
+let runLevelQueue = [];
+let runQueuePosition = 0;
+let nextLevelIndex = null;
+let runProgress = { completedLevels: new Set(), hazardDeaths: new Set(), mechanics: new Set() };
 let masterVolume = 1;
 let audioContext = null;
 let masterGain = null;
@@ -437,8 +468,9 @@ function resetBreakablePlatforms() {
   }
 }
 
-function startSpikeDeath() {
+function startSpikeDeath(hazard = "spikes") {
   deaths++;
+  recordHazardDeath(hazard);
   playSfx("death");
   deathTimer = DEATH_DURATION;
   pressed.jump = false;
@@ -508,6 +540,7 @@ function updatePressurePlates(dt) {
       Math.abs(platform.y + platform.h - (plate.y + plate.h)) < 4
     );
     const pressed = playerOnPlate || crateOnPlate;
+    if (pressed && !plate.pressed) recordMechanic("pressure-plate");
     if (pressed && currentLevel().rewindTutorial) currentLevel().rewindHintUnlocked = true;
     if (pressed !== plate.pressed) playSfx("switch", pressed ? .72 : .48);
     plate.pressed = pressed;
@@ -547,6 +580,7 @@ function movePlatformWithPlayer(platform, nextX, nextY, carryPlayer = true, reco
   platform.x = nextX;
   platform.y = nextY;
   if (wasStanding && carryPlayer) {
+    if (platform.moving) recordMechanic("moving-platform");
     player.x += platform.x - oldX;
     player.y += platform.y - oldY;
   }
@@ -668,6 +702,7 @@ function updateEnemies(dt, previousPlayerBottom) {
     if (!overlaps(playerBox(), enemy)) continue;
     const stomped = player.vy >= 0 && previousPlayerBottom <= enemy.y + 9;
     if (stomped) {
+      recordMechanic("enemy-stomp");
       enemy.alive = false;
       if (!enemy.starCollected) {
         enemy.starDropped = true;
@@ -682,7 +717,7 @@ function updateEnemies(dt, previousPlayerBottom) {
       playSfx("enemy-stomp");
       continue;
     }
-    startSpikeDeath();
+    startSpikeDeath("enemy");
     return true;
   }
   return false;
@@ -850,7 +885,7 @@ function leaderboardHeaders(includeJson = false) {
   };
 }
 
-async function loadGlobalLeaderboard(rulesetId, metric) {
+async function loadGlobalLeaderboard(rulesetId, metric, runType) {
   const rankingOrders = {
     time: "seconds.asc,stars.desc,score.desc,created_at.asc",
     stars: "stars.desc,seconds.asc,score.desc,created_at.asc",
@@ -859,6 +894,8 @@ async function loadGlobalLeaderboard(rulesetId, metric) {
   const query = new URLSearchParams({
     select: "name,game_version,seconds,stars,score,created_at",
     leaderboard_id: `eq.${rulesetId}`,
+    run_type_id: `eq.${runType}`,
+    ranking_metric: `eq.${metric}`,
     order: rankingOrders[metric] || rankingOrders.time,
     limit: "50"
   });
@@ -939,6 +976,128 @@ function unlockThrough(index) {
   highestUnlockedLevel = unlocked;
 }
 
+function resetRunProgress() {
+  runProgress = { completedLevels: new Set(), hazardDeaths: new Set(), mechanics: new Set() };
+}
+
+function runTypeId(config) {
+  const levelsPart = config.levels.map((index) => index + 1).join("-");
+  return `${config.objective}:${levelsPart}:${config.constraint}`;
+}
+
+function runTypeLabel(config) {
+  const levelDetail = config.objective === "specific" ? ` (${config.levels.map((index) => index + 1).join(", ")})` : "";
+  return `${RUN_OBJECTIVE_LABELS[config.objective]}${levelDetail} · ${RUN_CONSTRAINT_LABELS[config.constraint]}`;
+}
+
+function availableHazards(levelIndexes) {
+  const hazards = new Set(["fall"]);
+  levelIndexes.forEach((index) => {
+    const level = levels[index];
+    (level.hazards || []).forEach((hazard) => hazards.add(hazard.kind === "lava" ? "lava" : "spikes"));
+    if ((level.enemies || []).length) hazards.add("enemy");
+  });
+  return hazards;
+}
+
+function availableMechanics(levelIndexes) {
+  const mechanics = new Set();
+  levelIndexes.forEach((index) => {
+    const level = levels[index];
+    if ((level.jumpPads || []).length) mechanics.add("jump-pad");
+    if ((level.platforms || []).some((platform) => platform.moving)) mechanics.add("moving-platform");
+    if ((level.platforms || []).some((platform) => platform.pushable)) mechanics.add("crate");
+    if ((level.platforms || []).some((platform) => platform.breakable && platform.breakTrigger === "stand")) mechanics.add("crumble");
+    if ((level.platforms || []).some((platform) => platform.breakable && platform.breakTrigger === "impact")) mechanics.add("impact-block");
+    if ((level.switches || []).length) mechanics.add("switch");
+    if ((level.pressurePlates || []).length) mechanics.add("pressure-plate");
+    if ((level.enemies || []).length) mechanics.add("enemy-stomp");
+  });
+  return mechanics;
+}
+
+function routeStarTotal(levelIndexes) {
+  return levelIndexes.reduce((sum, index) => sum + levels[index].stars.length + (levels[index].enemies || []).length, 0);
+}
+
+function recordMechanic(mechanic) {
+  if (activeRunConfig) runProgress.mechanics.add(mechanic);
+}
+
+function recordHazardDeath(hazard) {
+  if (activeRunConfig) runProgress.hazardDeaths.add(hazard);
+}
+
+function runRequirementStatus(config) {
+  const missing = [];
+  const requiresStars = config.objective === "all-stars" || config.constraint === "all-stars";
+  const requiresHazards = config.objective === "all-hazards" || config.constraint === "all-hazards";
+  const requiresMechanics = config.objective === "all-mechanics" || config.constraint === "all-mechanics";
+  if (config.constraint === "no-stars" && totalStars > 0) missing.push("the no-stars constraint was broken");
+  if (requiresStars && totalStars < routeStarTotal(config.levels)) missing.push("not every star was collected");
+  if (requiresHazards) {
+    const unseen = [...availableHazards(config.levels)].filter((hazard) => !runProgress.hazardDeaths.has(hazard));
+    if (unseen.length) missing.push(`missing hazard deaths: ${unseen.join(", ")}`);
+  }
+  if (requiresMechanics) {
+    const unused = [...availableMechanics(config.levels)].filter((mechanic) => !runProgress.mechanics.has(mechanic));
+    if (unused.length) missing.push(`unused mechanics: ${unused.join(", ")}`);
+  }
+  const incomplete = config.levels.filter((index) => !runProgress.completedLevels.has(index));
+  if (incomplete.length) missing.push(`unfinished levels: ${incomplete.map((index) => index + 1).join(", ")}`);
+  return { success: missing.length === 0, missing };
+}
+
+function populateSpecificLevelChoices() {
+  specificLevelChoices.replaceChildren();
+  ALL_INTRO_LEVELS.forEach((levelIndex) => {
+    const label = document.createElement("label");
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.name = "specificLevel";
+    input.value = String(levelIndex);
+    input.checked = levelIndex === 0;
+    label.append(input, document.createTextNode(String(levelIndex + 1)));
+    specificLevelChoices.append(label);
+  });
+}
+
+function readRunSetup() {
+  const data = new FormData(runSetupForm);
+  const objective = String(data.get("runObjective") || "complete-all");
+  const constraint = String(data.get("runConstraint") || "none");
+  const metric = String(data.get("runMetric") || "time");
+  const specificLevels = data.getAll("specificLevel").map(Number).sort((a, b) => a - b);
+  const route = objective === "specific" ? specificLevels : [...ALL_INTRO_LEVELS];
+  return { objective, constraint, metric, levels: route };
+}
+
+function updateRunSetup() {
+  const config = readRunSetup();
+  specificLevelChoices.hidden = config.objective !== "specific";
+  if (config.levels.length === 0) {
+    runSetupSummary.textContent = "Choose at least one level.";
+    return;
+  }
+  runSetupSummary.textContent = `${runTypeLabel(config)} · Ranked by ${config.metric}`;
+}
+
+function openRunSetup() {
+  gameStarted = false;
+  settingsPanel.hidden = true;
+  settingsButton.setAttribute("aria-expanded", "false");
+  mainMenu.hidden = true;
+  runSetupMenu.hidden = false;
+  updateRunSetup();
+  runSetupForm.querySelector("input:checked")?.focus();
+}
+
+function closeRunSetup() {
+  runSetupMenu.hidden = true;
+  mainMenu.hidden = false;
+  playButton.focus();
+}
+
 const ROADMAP_POINTS = [
   [5, 70], [14, 35], [23, 68], [32, 30], [41, 66], [50, 34], [59, 68], [68, 30], [77, 66], [86, 34], [95, 70]
 ];
@@ -999,6 +1158,27 @@ function closeRoadmap() {
 }
 
 function startRoadmapRun(index) {
+  activeRunConfig = null;
+  runLevelQueue = [];
+  runQueuePosition = 0;
+  beginRun(index);
+}
+
+function startConfiguredRun() {
+  const config = readRunSetup();
+  if (config.levels.length === 0) {
+    runSetupSummary.textContent = "Choose at least one level before starting.";
+    return;
+  }
+  selectedRunConfig = config;
+  activeRunConfig = { ...config, levels: [...config.levels] };
+  runLevelQueue = [...config.levels];
+  runQueuePosition = 0;
+  leaderboardMetric = config.metric;
+  beginRun(runLevelQueue[0]);
+}
+
+function beginRun(index) {
   resetCutscene();
   runStartLevel = index;
   gameStarted = true;
@@ -1006,11 +1186,14 @@ function startRoadmapRun(index) {
   timerWasRunningBeforePause = false;
   levelTimerWasRunningBeforePause = false;
   levelSplits = [];
+  nextLevelIndex = null;
+  resetRunProgress();
   resetRunTimer();
   resetFinishedRun();
   loadLevel(index, false);
   ensureAudio();
   roadmapMenu.hidden = true;
+  runSetupMenu.hidden = true;
   leaderboardMenu.hidden = true;
   changelogMenu.hidden = true;
   versionsMenu.hidden = true;
@@ -1058,13 +1241,43 @@ function renderLeaderboard() {
   });
 }
 
+function leaderboardRunContext() {
+  const option = leaderboardRunType.selectedOptions[0];
+  if (option) return { id: option.value, label: option.textContent };
+  if (finishedRun?.runTypeId) return { id: finishedRun.runTypeId, label: finishedRun.runTypeLabel };
+  return { id: runTypeId(selectedRunConfig), label: runTypeLabel(selectedRunConfig) };
+}
+
+function populateLeaderboardRunTypes() {
+  const preferred = finishedRun?.runTypeId || (activeRunConfig ? runTypeId(activeRunConfig) : runTypeId(selectedRunConfig));
+  const configs = [];
+  ["complete-all", "all-stars", "all-hazards", "all-mechanics"].forEach((objective) => {
+    Object.keys(RUN_CONSTRAINT_LABELS).forEach((constraint) => {
+      configs.push({ objective, constraint, metric: "time", levels: [...ALL_INTRO_LEVELS] });
+    });
+  });
+  if (selectedRunConfig.objective === "specific") configs.push(selectedRunConfig);
+  if (activeRunConfig?.objective === "specific") configs.push(activeRunConfig);
+  const options = new Map(configs.map((config) => [runTypeId(config), runTypeLabel(config)]));
+  if (finishedRun?.runTypeId) options.set(finishedRun.runTypeId, finishedRun.runTypeLabel);
+  leaderboardRunType.replaceChildren();
+  options.forEach((label, id) => {
+    const option = document.createElement("option");
+    option.value = id;
+    option.textContent = label;
+    leaderboardRunType.append(option);
+  });
+  if (options.has(preferred)) leaderboardRunType.value = preferred;
+}
+
 async function refreshLeaderboard() {
   const request = ++leaderboardRequest;
   leaderboardEntries = [];
   leaderboardNote.textContent = "Loading scores from around the world...";
   renderLeaderboard();
   try {
-    const entries = await loadGlobalLeaderboard(leaderboardVersion.value || CURRENT_LEADERBOARD_ID, leaderboardMetric);
+    const context = leaderboardRunContext();
+    const entries = await loadGlobalLeaderboard(leaderboardVersion.value || CURRENT_LEADERBOARD_ID, leaderboardMetric, context.id);
     if (request !== leaderboardRequest) return;
     leaderboardEntries = entries;
     const metricDescriptions = {
@@ -1105,7 +1318,8 @@ function populateLeaderboardVersions() {
 
 function openLeaderboard(source) {
   leaderboardReturn = source;
-  selectLeaderboardMetric("time", false);
+  populateLeaderboardRunTypes();
+  selectLeaderboardMetric(finishedRun?.metric || activeRunConfig?.metric || selectedRunConfig.metric || "time", false);
   if (source === "pause") pauseMenu.hidden = true;
   else {
     settingsPanel.hidden = true;
@@ -1258,7 +1472,7 @@ async function publishFinishedRun() {
     return;
   }
   if (!finishedRun.eligible) {
-    publishStatus.textContent = "Only complete runs started from Dirtbound Trail can be ranked.";
+    publishStatus.textContent = finishedRun.failureReason ? `Challenge incomplete: ${finishedRun.failureReason}.` : "This practice run cannot be ranked.";
     return;
   }
   publishRunButton.disabled = true;
@@ -1274,14 +1488,17 @@ async function publishFinishedRun() {
         name,
         seconds: finishedRun.seconds,
         stars: finishedRun.stars,
-        splits: finishedRun.splits
+        splits: finishedRun.splits,
+        run_type_id: finishedRun.runTypeId,
+        ranking_metric: finishedRun.metric
       })
     });
     if (!response.ok) throw new Error(`Publish failed (${response.status})`);
     runPublished = true;
     publishStatus.textContent = "Run published to the global leaderboard.";
     continueButton.classList.add("ready");
-    continueButton.focus();
+    if (!continueButton.hidden) continueButton.focus();
+    else victoryQuitButton.focus();
   } catch {
     publishRunButton.disabled = false;
     runNameInput.disabled = false;
@@ -1297,6 +1514,7 @@ function resetFinishedRun() {
   publishRunButton.disabled = false;
   publishStatus.textContent = "";
   continueButton.classList.remove("ready");
+  continueButton.hidden = false;
   splitList.replaceChildren();
 }
 
@@ -1313,17 +1531,39 @@ function prepareAdventureResults() {
   const timeScore = Math.round((300 - seconds) * 10) / 10;
   const starBonus = totalStars * 2;
   const finalScore = Math.round((timeScore + starBonus) * 10) / 10;
-  scoreSummary.textContent = `Time ${formatRunTime(seconds)} · ${totalStars} stars (+${starBonus}) · Final score ${finalScore}`;
+  const baseSummary = `Time ${formatRunTime(seconds)} · ${totalStars} stars (+${starBonus}) · Final score ${finalScore}`;
   const introSplits = Array.from({ length: INTRO_LEVEL_COUNT }, (_, index) => levelSplits[index]);
-  const eligible = runStartLevel === 0 && introSplits.every(Number.isFinite);
-  const resultSplits = eligible ? introSplits : [...levelSplits];
-  finishedRun = { seconds, stars: totalStars, score: finalScore, splits: resultSplits, eligible };
+  if (activeRunConfig) {
+    const requirement = runRequirementStatus(activeRunConfig);
+    const resultSplits = activeRunConfig.levels.map((index) => levelSplits[index]);
+    scoreSummary.textContent = `${baseSummary} · ${requirement.success ? "Challenge complete" : "Challenge failed"}`;
+    finishedRun = {
+      seconds, stars: totalStars, score: finalScore, splits: resultSplits,
+      eligible: requirement.success && resultSplits.every(Number.isFinite),
+      metric: activeRunConfig.metric,
+      runTypeId: runTypeId(activeRunConfig),
+      runTypeLabel: runTypeLabel(activeRunConfig),
+      failureReason: requirement.missing.join("; ")
+    };
+  } else {
+    const eligible = runStartLevel === 0 && introSplits.every(Number.isFinite);
+    const resultSplits = eligible ? introSplits : [...levelSplits];
+    scoreSummary.textContent = baseSummary;
+    finishedRun = {
+      seconds, stars: totalStars, score: finalScore, splits: resultSplits, eligible,
+      metric: "time", runTypeId: "classic", runTypeLabel: "Classic adventure", failureReason: ""
+    };
+  }
   runPublished = false;
   runNameInput.value = "";
   runNameInput.disabled = false;
   publishRunButton.disabled = false;
   publishStatus.textContent = "";
-  if (!eligible) publishStatus.textContent = "Practice run: global ranking requires starting from Dirtbound Trail.";
+  if (!finishedRun.eligible) {
+    publishStatus.textContent = finishedRun.failureReason
+      ? `Not rankable: ${finishedRun.failureReason}.`
+      : "Practice run: choose a run type from Play to publish a ranking.";
+  }
   renderSplitSummary();
 }
 
@@ -1338,13 +1578,18 @@ function showRunResults() {
   quitButton.disabled = true;
   Object.assign(input, { left: false, right: false, jump: false, rewind: false, forwardTime: false });
   pressed.jump = false;
+  continueButton.hidden = Boolean(activeRunConfig && !runProgress.completedLevels.has(INTRO_LEVEL_COUNT - 1));
   continueButton.classList.toggle("ready", !finishedRun.eligible);
   if (finishedRun.eligible) runNameInput.focus();
-  else continueButton.focus();
+  else if (!continueButton.hidden) continueButton.focus();
+  else victoryQuitButton.focus();
 }
 
 function startRewindCutscene() {
   resetCutscene();
+  activeRunConfig = null;
+  runLevelQueue = [];
+  runQueuePosition = 0;
   continueButton.classList.remove("ready");
   won = false;
   cutsceneActive = true;
@@ -1452,6 +1697,9 @@ function cancelTimelinePreview() {
   }
   input.rewind = false;
   input.forwardTime = false;
+  rewindPointerId = null;
+  rewindPointerOwnsInput = false;
+  forwardPointerId = null;
 }
 
 function setKey(code, down) {
@@ -1486,6 +1734,7 @@ function activateNearbySwitch() {
   const levelSwitch = nearbySwitch();
   if (!levelSwitch) return false;
   levelSwitch.flipped = !levelSwitch.flipped;
+  recordMechanic("switch");
   playSfx("switch");
   return true;
 }
@@ -1500,6 +1749,51 @@ function switchPromptBounds(levelSwitch, time) {
   };
 }
 
+function canvasPointerPosition(event) {
+  const canvasRect = canvas.getBoundingClientRect();
+  return {
+    x: (event.clientX - canvasRect.left) * VIEW_W / canvasRect.width,
+    y: (event.clientY - canvasRect.top) * VIEW_H / canvasRect.height
+  };
+}
+
+function rewindPromptButtons() {
+  if (!currentLevel().rewindTutorial || won || !currentLevel().rewindHintUnlocked) return [];
+  const platform = tutorialRewindPlatform();
+  if (!platform) return [];
+  const controls = platform.timelinePreview
+    ? [{ kind: "rewind", label: "F  GO BACK" }, { kind: "forward", label: "G  GO FORWARD" }]
+    : [{ kind: "rewind", label: "F  REWIND" }];
+  const gap = 10;
+  const widths = controls.map((control) => control.label.length * 9 + 30);
+  const totalWidth = widths.reduce((sum, width) => sum + width, 0) + gap * (controls.length - 1);
+  let x = VIEW_W / 2 - totalWidth / 2;
+  return controls.map((control, index) => {
+    const button = { ...control, x, y: 60, w: widths[index], h: 34 };
+    x += widths[index] + gap;
+    return button;
+  });
+}
+
+function pointInsideButton(point, button) {
+  return point.x >= button.x && point.x <= button.x + button.w &&
+    point.y >= button.y && point.y <= button.y + button.h;
+}
+
+function releaseRewindPointer(event) {
+  if (event.pointerId === forwardPointerId) {
+    forwardPointerId = null;
+    input.forwardTime = false;
+  }
+  if (event.pointerId !== rewindPointerId) return;
+  rewindPointerId = null;
+  if (rewindPointerOwnsInput && input.rewind) {
+    commitTimelinePreview();
+    input.rewind = false;
+  }
+  rewindPointerOwnsInput = false;
+}
+
 canvas.addEventListener("pointerdown", (event) => {
   if (cutsceneActive) {
     event.preventDefault();
@@ -1507,16 +1801,47 @@ canvas.addEventListener("pointerdown", (event) => {
     return;
   }
   if (!gameStarted || paused || won) return;
+  const pointer = canvasPointerPosition(event);
+  const rewindControl = rewindPromptButtons().find((button) => pointInsideButton(pointer, button));
+  if (rewindControl) {
+    event.preventDefault();
+    startRunTimer();
+    canvas.setPointerCapture(event.pointerId);
+    if (rewindControl.kind === "rewind") {
+      rewindPointerOwnsInput = !input.rewind;
+      if (!input.rewind) input.rewind = beginTimelinePreview();
+      if (input.rewind) {
+        input.forwardTime = false;
+        rewindPointerId = event.pointerId;
+      }
+    } else if (input.rewind) {
+      input.forwardTime = true;
+      forwardPointerId = event.pointerId;
+    }
+    canvas.focus();
+    return;
+  }
   const levelSwitch = nearbySwitch();
   if (!levelSwitch) return;
-  const canvasRect = canvas.getBoundingClientRect();
-  const pointerX = (event.clientX - canvasRect.left) * VIEW_W / canvasRect.width;
-  const pointerY = (event.clientY - canvasRect.top) * VIEW_H / canvasRect.height;
   const prompt = switchPromptBounds(levelSwitch, performance.now());
-  if (pointerX < prompt.x || pointerX > prompt.x + prompt.w || pointerY < prompt.y || pointerY > prompt.y + prompt.h) return;
+  if (!pointInsideButton(pointer, prompt)) return;
   event.preventDefault();
   activateNearbySwitch();
   canvas.focus();
+});
+canvas.addEventListener("pointerup", releaseRewindPointer);
+canvas.addEventListener("pointercancel", releaseRewindPointer);
+canvas.addEventListener("lostpointercapture", releaseRewindPointer);
+canvas.addEventListener("pointermove", (event) => {
+  if (!gameStarted || paused || won || cutsceneActive) {
+    canvas.style.cursor = "default";
+    return;
+  }
+  const pointer = canvasPointerPosition(event);
+  const overRewindControl = rewindPromptButtons().some((button) => pointInsideButton(pointer, button));
+  const levelSwitch = nearbySwitch();
+  const overSwitchControl = levelSwitch && pointInsideButton(pointer, switchPromptBounds(levelSwitch, performance.now()));
+  canvas.style.cursor = overRewindControl || overSwitchControl ? "pointer" : "default";
 });
 
 function trackDevelopmentSequence(event) {
@@ -1573,6 +1898,7 @@ closeChangelogButton.addEventListener("click", closeChangelog);
 versionsButton.addEventListener("click", openVersions);
 closeVersionsButton.addEventListener("click", closeVersions);
 leaderboardVersion.addEventListener("change", refreshLeaderboard);
+leaderboardRunType.addEventListener("change", refreshLeaderboard);
 leaderboardMetricButtons.forEach(button => {
   button.addEventListener("click", () => selectLeaderboardMetric(button.dataset.leaderboardMetric));
 });
@@ -1770,7 +2096,17 @@ try {
 } catch { /* Use the default volume. */ }
 setVolume(volumeInput.value);
 
-playButton.addEventListener("click", openRoadmap);
+playButton.addEventListener("click", openRunSetup);
+runSetupForm.addEventListener("change", updateRunSetup);
+runSetupForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  startConfiguredRun();
+});
+practiceRoadmapButton.addEventListener("click", () => {
+  runSetupMenu.hidden = true;
+  openRoadmap();
+});
+closeRunSetupButton.addEventListener("click", closeRunSetup);
 closeRoadmapButton.addEventListener("click", closeRoadmap);
 
 settingsButton.addEventListener("click", () => {
@@ -1955,14 +2291,18 @@ function startOver() {
   timerWasRunningBeforePause = false;
   levelTimerWasRunningBeforePause = false;
   pauseMenu.hidden = true;
+  runSetupMenu.hidden = true;
   roadmapMenu.hidden = true;
   leaderboardMenu.hidden = true;
   changelogMenu.hidden = true;
   versionsMenu.hidden = true;
   levelSplits = [];
+  runQueuePosition = 0;
+  nextLevelIndex = null;
+  resetRunProgress();
   resetFinishedRun();
   resetRunTimer();
-  loadLevel(runStartLevel, false);
+  loadLevel(activeRunConfig ? activeRunConfig.levels[0] : runStartLevel, false);
   pauseButton.disabled = false;
   restartButton.disabled = false;
   restartRunButton.disabled = false;
@@ -1985,12 +2325,18 @@ function quitRun() {
   quitButton.disabled = true;
   settingsPanel.hidden = true;
   pauseMenu.hidden = true;
+  runSetupMenu.hidden = true;
   roadmapMenu.hidden = true;
   leaderboardMenu.hidden = true;
   changelogMenu.hidden = true;
   versionsMenu.hidden = true;
   settingsButton.setAttribute("aria-expanded", "false");
   levelSplits = [];
+  activeRunConfig = null;
+  runLevelQueue = [];
+  runQueuePosition = 0;
+  nextLevelIndex = null;
+  resetRunProgress();
   resetRunTimer();
   resetFinishedRun();
   loadLevel(0, false);
@@ -2022,6 +2368,7 @@ function tryPushCrate(crate, distance) {
     if (overlaps(candidate, solid)) return false;
   }
   crate.x = candidate.x;
+  recordMechanic("crate");
   return true;
 }
 
@@ -2156,8 +2503,13 @@ function updateLandingParticles(dt) {
 function updateBreakablePlatforms(dt, landedOn) {
   const platform = landedOn?.platform;
   if (platform?.breakable && platform.breakTimer === null) {
-    if (platform.breakTrigger === "stand") platform.breakTimer = .75;
-    else if (platform.breakTrigger === "impact" && landedOn.impactSpeed >= 180) platform.breakTimer = .24;
+    if (platform.breakTrigger === "stand") {
+      platform.breakTimer = .75;
+      recordMechanic("crumble");
+    } else if (platform.breakTrigger === "impact" && landedOn.impactSpeed >= 180) {
+      platform.breakTimer = .24;
+      recordMechanic("impact-block");
+    }
   }
 
   for (const candidate of currentLevel().platforms) {
@@ -2184,6 +2536,7 @@ function activateJumpPad() {
   player.coyote = 0;
   player.jumpBuffer = 0;
   player.padLaunched = true;
+  recordMechanic("jump-pad");
   playSfx("jump-pad");
   return true;
 }
@@ -2216,7 +2569,11 @@ function update(dt) {
   if (won || levelTransition > 0) {
     if (levelTransition > 0) {
       levelTransition -= dt;
-      if (levelTransition <= 0) loadLevel(levelIndex + 1);
+      if (levelTransition <= 0) {
+        const destination = nextLevelIndex ?? levelIndex + 1;
+        nextLevelIndex = null;
+        loadLevel(destination);
+      }
     }
     return;
   }
@@ -2265,11 +2622,13 @@ function update(dt) {
   const box = playerBox();
   if (player.y > VIEW_H + 100) {
     playSfx("death");
+    recordHazardDeath("fall");
     resetPlayer(true);
     return;
   }
-  if (currentLevel().hazards.some((hazard) => overlaps(box, hazard))) {
-    startSpikeDeath();
+  const touchedHazard = currentLevel().hazards.find((hazard) => overlaps(box, hazard));
+  if (touchedHazard) {
+    startSpikeDeath(touchedHazard.kind === "lava" ? "lava" : "spikes");
     return;
   }
 
@@ -2296,7 +2655,18 @@ function update(dt) {
 
   if (overlaps(box, currentLevel().finish)) {
     playSfx("flag");
-    if (currentLevel().rewindTutorial) finishRewindTutorial();
+    if (activeRunConfig) {
+      completeLevelSplit();
+      runProgress.completedLevels.add(levelIndex);
+      unlockThrough(levelIndex + 1);
+      runQueuePosition++;
+      if (runQueuePosition >= runLevelQueue.length) showRunResults();
+      else {
+        nextLevelIndex = runLevelQueue[runQueuePosition];
+        levelTransition = .65;
+      }
+    }
+    else if (currentLevel().rewindTutorial) finishRewindTutorial();
     else if (levelIndex === INTRO_LEVEL_COUNT - 1) {
       completeLevelSplit();
       showRunResults();
@@ -3217,31 +3587,24 @@ function drawRewindPathPreview(time) {
 }
 
 function drawRewindTutorialPrompt(time) {
-  if (!currentLevel().rewindTutorial || won || !currentLevel().rewindHintUnlocked) return;
+  const buttons = rewindPromptButtons();
+  if (buttons.length === 0) return;
   const platform = tutorialRewindPlatform();
-  if (!platform) return;
-  const labels = platform.timelinePreview ? ["F  GO BACK", "G  GO FORWARD"] : ["F  REWIND"];
-  const widths = labels.map((label) => label.length * 9 + 30);
-  const gap = 10;
-  const totalWidth = widths.reduce((sum, width) => sum + width, 0) + gap * (labels.length - 1);
-  let x = VIEW_W / 2 - totalWidth / 2;
-  const y = 60;
   const pulse = (Math.sin(time * .008) + 1) * .5;
   ctx.save();
   ctx.textAlign = "center";
   ctx.font = "900 13px Inter, sans-serif";
-  labels.forEach((label, index) => {
+  buttons.forEach((button, index) => {
     const active = platform.timelinePreview && (index === 1 ? input.forwardTime : !input.forwardTime);
     ctx.fillStyle = active ? "rgba(72, 52, 7, .94)" : "rgba(6, 20, 43, .88)";
     ctx.strokeStyle = active ? `rgba(255,211,77,${.78 + pulse * .22})` : "rgba(255,255,255,.28)";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(x, y, widths[index], 34, 11);
+    ctx.roundRect(button.x, button.y, button.w, button.h, 11);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = active || labels.length === 1 ? "#ffe05d" : "#dbeaf7";
-    ctx.fillText(label, x + widths[index] / 2, y + 22);
-    x += widths[index] + gap;
+    ctx.fillStyle = active || buttons.length === 1 ? "#ffe05d" : "#dbeaf7";
+    ctx.fillText(button.label, button.x + button.w / 2, button.y + 22);
   });
   ctx.restore();
 }
@@ -3286,6 +3649,7 @@ function frame(time) {
 }
 
 applyRewindMenuState();
+populateSpecificLevelChoices();
 populateLeaderboardVersions();
 loadLevel(0, false);
 requestAnimationFrame(frame);
