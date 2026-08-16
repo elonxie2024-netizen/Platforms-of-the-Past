@@ -16,10 +16,6 @@ const restartRunButton = document.querySelector("#restartRunButton");
 const quitButton = document.querySelector("#quitButton");
 const victoryQuitButton = document.querySelector("#victoryQuitButton");
 const continueButton = document.querySelector("#continueButton");
-const chapterCompleteMessage = document.querySelector("#chapterCompleteMessage");
-const rewindTutorialSummary = document.querySelector("#rewindTutorialSummary");
-const replayRewindButton = document.querySelector("#replayRewindButton");
-const rewindMenuButton = document.querySelector("#rewindMenuButton");
 const mainMenu = document.querySelector("#mainMenu");
 const playButton = document.querySelector("#playButton");
 const settingsButton = document.querySelector("#settingsButton");
@@ -67,8 +63,7 @@ const versionsList = document.querySelector("#versionsList");
 const closeVersionsButton = document.querySelector("#closeVersionsButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.12.0", commit: "Pending commit", date: "2026-08-16", message: "Add the first rewind level", description: "Replaced the level 11 placeholder with First Recall, a focused rewind tutorial. The pressure-plate-covered start sends a shuttle across a large gap. Holding F freezes it and previews its recorded path backward with golden arrows; holding G at the same time moves the preview forward again, and releasing F commits the selected rewind before a forgiving launch window. Added a tutorial completion screen and level timer without extending the already-finished ten-level ranked run." },
-  { version: "v0.11.7", commit: "f498e91", date: "2026-08-16", message: "Move results before the cutscene", description: "Moved the completed-run results screen to immediately after level 10 so timing, splits, publishing, and quitting happen before the story cinematic. Added a large story Continue button directly below publishing that pulses and receives focus after a successful publication, then starts the rewind cutscene and leads into a frozen level 11 placeholder for the gameplay planned for v0.12.0." },
+  { version: "v0.11.7", commit: "Pending commit", date: "2026-08-16", message: "Move results before the cutscene", description: "Moved the completed-run results screen to immediately after level 10 so timing, splits, publishing, and quitting happen before the story cinematic. Added a large story Continue button directly below publishing that pulses and receives focus after a successful publication, then starts the rewind cutscene and leads into a frozen level 11 placeholder for the gameplay planned for v0.12.0." },
   { version: "v0.11.6", commit: "f47ded0", date: "2026-08-15", message: "Add enemy rewards and an opening route", description: "Made each defeated enemy drop one collectible star at the spot where it was stomped. Enemy stars count toward the level display, run total, star bonus, and leaderboard score, while remaining protected from repeated collection after a death. Raised Dirtbound Trail's opening floating crate so the slime can run beneath it as a faster route that skips the nearby star, while preserving the upper collectible route." },
   { version: "v0.11.5", commit: "3b2a7b1", date: "2026-08-15", message: "Remove flag-overlapping stars", description: "Removed only the five stars whose collectible areas overlapped finish-flag trigger boxes in levels 3, 5, 6, 7, and 8. Stars near flags that remain independently collectible were left untouched." },
   { version: "v0.11.4", commit: "d5c7b63", date: "2026-08-15", message: "Refine enemy frowns", description: "Kept the red enemies' eyes and angry eyebrows, then replaced the high frown with the player's exact smile curve flipped vertically within the same mouth area." },
@@ -169,13 +164,6 @@ const C = (x, y, targetX, targetY, switchId, w = 140, h = 40, kind = "stone", re
   x, y, w, h, kind, controlled: true, switchId, targetX, targetY, baseX: x, baseY: y,
   moveProgress: 0, requiresActive, releaseDelay, releaseTimer: 0
 });
-const W = (x, y, targetX, targetY, plateId, w = 160, h = 40, kind = "stone", speed = 330) => ({
-  x, y, w, h, kind, axis: "x", rewindable: true, plateId, targetX, targetY,
-  baseX: x, baseY: y, speed, releaseDelay: 3, releaseTimer: 0,
-  motionHistory: [{ x, y, time: 0 }], timelinePreview: false,
-  previewCursor: 0, previewLatest: 0, previewAccumulator: 0,
-  timelinePlayback: [], rewindGrace: 0
-});
 const S = (x, y, id) => ({ x, y, w: 42, h: 44, id, flipped: false });
 const Q = (x, y, id, w = 72) => ({ x, y, w, h: 12, id, pressed: false, pressProgress: 0 });
 const E = (x, surfaceY, minX, maxX, direction = 1, speed = 62) => ({
@@ -252,19 +240,8 @@ const levels = [
     stars: [[350,410],[585,245],[800,315],[1015,340],[1575,300],[2135,215],[2315,305],[2835,400],[3055,350],[3415,360],[3590,335],[3950,240],[4155,250],[4825,310]], finish: R(5020,360,34,90)
   },
   {
-    name: "First Recall", width: 1450, start: [35,418], music: "level2", theme: "rewind",
-    postRun: true, rewindTutorial: true, rewindHintUnlocked: false,
-    platforms: [
-      R(0,460,440,110,"stone"),
-      W(450,420,900,420,"recall-plates"),
-      R(1070,460,380,110,"stone")
-    ],
-    pressurePlates: [
-      Q(0,448,"recall-plates",78), Q(74,448,"recall-plates",78),
-      Q(148,448,"recall-plates",78), Q(222,448,"recall-plates",78),
-      Q(296,448,"recall-plates",78), Q(370,448,"recall-plates",70)
-    ],
-    hazards: [], stars: [], finish: R(1370,370,34,90)
+    name: "Rewind Awakens", width: VIEW_W, start: [VIEW_W / 2 - PLAYER_W / 2, 390],
+    music: "level3", placeholder: true, platforms: [], hazards: [], stars: [], finish: null
   }
 ];
 
@@ -291,7 +268,7 @@ const MUSIC_TRACKS = {
   }
 };
 
-const input = { left: false, right: false, jump: false, rewind: false, forwardTime: false };
+const input = { left: false, right: false, jump: false };
 const pressed = { jump: false };
 const player = { x: 0, y: 0, vx: 0, vy: 0, grounded: false, facing: 1, coyote: 0, jumpBuffer: 0, padLaunched: false };
 let levelIndex = 0;
@@ -330,11 +307,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.12.0";
+const GAME_VERSION = "v0.11.7";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "first-rewind-v1", label: "Version 0.12.0 to 0.12.0" },
   { id: "enemy-star-drops-v1", label: "Version 0.11.6 to 0.11.7" },
   { id: "flag-star-cleanup-v1", label: "Version 0.11.5 to 0.11.5" },
   { id: "intro-ten-v1", label: "Version 0.11.0 to 0.11.4" },
@@ -347,7 +323,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
+  "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
   "v0.2.4", "v0.2.3", "v0.2.2", "v0.2.1", "v0.2.0", "v0.1.4", "v0.1.3", "v0.1.2",
@@ -387,7 +363,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -395,10 +371,8 @@ function playerBox() { return { x: player.x, y: player.y, w: PLAYER_W, h: PLAYER
 
 function linkedControlActive(platform) {
   const linkedSwitch = currentLevel().switches?.find((candidate) => candidate.id === platform.switchId);
-  const linkedPlateActive = currentLevel().pressurePlates?.some((candidate) =>
-    candidate.id === platform.switchId && candidate.pressed
-  );
-  return Boolean(linkedSwitch?.flipped || linkedPlateActive);
+  const linkedPlate = currentLevel().pressurePlates?.find((candidate) => candidate.id === platform.switchId);
+  return Boolean(linkedSwitch?.flipped || linkedPlate?.pressed);
 }
 
 function platformHasCollision(platform) {
@@ -460,25 +434,12 @@ function startSpikeDeath() {
 
 function resetLevelMotion() {
   levelMotionTime = 0;
-  if (currentLevel().rewindTutorial) currentLevel().rewindHintUnlocked = false;
   for (const levelSwitch of currentLevel().switches || []) levelSwitch.flipped = false;
   for (const plate of currentLevel().pressurePlates || []) {
     plate.pressed = false;
     plate.pressProgress = 0;
   }
   for (const platform of currentLevel().platforms) {
-    if (platform.rewindable) {
-      platform.x = platform.baseX;
-      platform.y = platform.baseY;
-      platform.releaseTimer = 0;
-      platform.timelinePreview = false;
-      platform.previewCursor = 0;
-      platform.previewLatest = 0;
-      platform.previewAccumulator = 0;
-      platform.timelinePlayback = [];
-      platform.rewindGrace = 0;
-      continue;
-    }
     if (platform.pushable) {
       platform.x = platform.baseX;
       platform.y = platform.baseY;
@@ -494,7 +455,6 @@ function resetLevelMotion() {
     platform.x = platform.baseX + (platform.axis === "x" ? offset : 0);
     platform.y = platform.baseY + (platform.axis === "y" ? offset : 0);
   }
-  for (const platform of currentLevel().platforms) resetPlatformMotionHistory(platform);
 }
 
 function updatePressurePlates(dt) {
@@ -508,7 +468,6 @@ function updatePressurePlates(dt) {
       Math.abs(platform.y + platform.h - (plate.y + plate.h)) < 4
     );
     const pressed = playerOnPlate || crateOnPlate;
-    if (pressed && currentLevel().rewindTutorial) currentLevel().rewindHintUnlocked = true;
     if (pressed !== plate.pressed) playSfx("switch", pressed ? .72 : .48);
     plate.pressed = pressed;
     const target = pressed ? 1 : 0;
@@ -518,27 +477,7 @@ function updatePressurePlates(dt) {
   }
 }
 
-function tracksMotion(platform) {
-  return Boolean(platform.rewindable || platform.controlled || platform.moving);
-}
-
-function resetPlatformMotionHistory(platform) {
-  if (!tracksMotion(platform)) return;
-  platform.motionHistory = [{ x: platform.x, y: platform.y, time: levelMotionTime }];
-  platform.motionLastRecordedAt = levelMotionTime;
-}
-
-function recordPlatformMotion(platform) {
-  if (!tracksMotion(platform)) return;
-  if (!platform.motionHistory) resetPlatformMotionHistory(platform);
-  const previous = platform.motionHistory[platform.motionHistory.length - 1];
-  const moved = !previous || Math.hypot(platform.x - previous.x, platform.y - previous.y) >= .5;
-  if (!moved || levelMotionTime - platform.motionLastRecordedAt < 1 / 30) return;
-  platform.motionHistory.push({ x: platform.x, y: platform.y, time: levelMotionTime });
-  platform.motionLastRecordedAt = levelMotionTime;
-}
-
-function movePlatformWithPlayer(platform, nextX, nextY, carryPlayer = true, recordMotion = true) {
+function movePlatformWithPlayer(platform, nextX, nextY) {
   const oldX = platform.x;
   const oldY = platform.y;
   const wasStanding = player.grounded &&
@@ -546,83 +485,15 @@ function movePlatformWithPlayer(platform, nextX, nextY, carryPlayer = true, reco
     player.x + PLAYER_W > oldX && player.x < oldX + platform.w;
   platform.x = nextX;
   platform.y = nextY;
-  if (wasStanding && carryPlayer) {
+  if (wasStanding) {
     player.x += platform.x - oldX;
     player.y += platform.y - oldY;
   }
-  if (recordMotion) recordPlatformMotion(platform);
-}
-
-function rewindPlateActive(platform) {
-  return (currentLevel().pressurePlates || []).some((plate) =>
-    plate.id === platform.plateId && plate.pressed
-  );
-}
-
-function updateTimelinePreview(platform, dt) {
-  platform.previewAccumulator += dt * 75;
-  const steps = Math.floor(platform.previewAccumulator);
-  if (steps <= 0) return;
-  platform.previewAccumulator -= steps;
-  if (input.forwardTime) {
-    platform.previewCursor = Math.min(platform.previewLatest, platform.previewCursor + steps);
-  } else {
-    platform.previewCursor = Math.max(0, platform.previewCursor - steps);
-  }
-}
-
-function updateTimelinePlayback(platform, dt) {
-  const target = platform.timelinePlayback[0];
-  if (!target) return;
-  const dx = target.x - platform.x;
-  const dy = target.y - platform.y;
-  const distance = Math.hypot(dx, dy);
-  const step = Math.min(distance, platform.speed * 2 * dt);
-  const nextX = distance <= .01 ? target.x : platform.x + dx / distance * step;
-  const nextY = distance <= .01 ? target.y : platform.y + dy / distance * step;
-  movePlatformWithPlayer(platform, nextX, nextY, false, false);
-  if (distance <= step + .01) {
-    platform.timelinePlayback.shift();
-    if (platform.timelinePlayback.length === 0) {
-      platform.rewindGrace = .85;
-      playSfx("rewind-release");
-    }
-  }
-}
-
-function updateRewindablePlatform(platform, dt) {
-  if (platform.timelinePreview) {
-    updateTimelinePreview(platform, dt);
-    return;
-  }
-  if (platform.timelinePlayback.length > 0) {
-    updateTimelinePlayback(platform, dt);
-    return;
-  }
-
-  if (rewindPlateActive(platform)) platform.releaseTimer = platform.releaseDelay;
-  else platform.releaseTimer = Math.max(0, platform.releaseTimer - dt);
-  if (platform.releaseTimer <= 0) return;
-
-  platform.rewindGrace = Math.max(0, platform.rewindGrace - dt);
-  const travelSpeed = platform.rewindGrace > 0 ? 125 : platform.speed;
-  const dx = platform.targetX - platform.x;
-  const dy = platform.targetY - platform.y;
-  const distance = Math.hypot(dx, dy);
-  if (distance <= .01) return;
-  const step = Math.min(distance, travelSpeed * dt);
-  const nextX = platform.x + dx / distance * step;
-  const nextY = platform.y + dy / distance * step;
-  movePlatformWithPlayer(platform, nextX, nextY);
 }
 
 function updateMovingPlatforms(dt) {
   levelMotionTime += dt;
   for (const platform of currentLevel().platforms) {
-    if (platform.rewindable) {
-      updateRewindablePlatform(platform, dt);
-      continue;
-    }
     if (platform.controlled) {
       if (linkedControlActive(platform)) platform.releaseTimer = platform.releaseDelay;
       else platform.releaseTimer = Math.max(0, platform.releaseTimer - dt);
@@ -724,7 +595,6 @@ function loadLevel(index, keepScore = true) {
   levelTransition = 0;
   won = false;
   message.hidden = true;
-  chapterCompleteMessage.hidden = true;
   resetLevelMotion();
   resetPlayer(false, true);
   if (timerRunning && gameStarted) beginLevelTimer();
@@ -775,13 +645,6 @@ function updateTimerHud() {
 
 function startRunTimer() {
   if (timerRunning || paused || won || !gameStarted) return;
-  if (currentLevel().postRun) {
-    if (!levelTimerRunning) {
-      levelStartedAt = performance.now() - levelElapsed * 1000;
-      levelTimerRunning = true;
-    }
-    return;
-  }
   runStartedAt = performance.now() - runElapsed * 1000;
   timerRunning = true;
   if (!levelTimerRunning) {
@@ -960,7 +823,7 @@ function renderRoadmap() {
 
   levels.forEach((level, index) => {
     const node = document.createElement("div");
-    const locked = index > highestUnlockedLevel;
+    const locked = level.placeholder || index > highestUnlockedLevel;
     node.className = `roadmap-level${locked ? " locked" : ""}`;
     node.style.left = `${ROADMAP_POINTS[index][0]}%`;
     node.style.top = `${ROADMAP_POINTS[index][1]}%`;
@@ -1133,7 +996,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -1212,13 +1075,14 @@ function updatePauseButton() {
 function setPaused(shouldPause) {
   if (!gameStarted || won || cutsceneActive || paused === shouldPause) return;
   if (shouldPause) {
-    cancelTimelinePreview();
     timerWasRunningBeforePause = timerRunning;
     levelTimerWasRunningBeforePause = levelTimerRunning;
-    if (timerRunning) finishRunTimer();
-    if (levelTimerRunning) finishLevelTimer();
+    if (timerRunning) {
+      finishRunTimer();
+      if (levelTimerRunning) finishLevelTimer();
+    }
     paused = true;
-    Object.assign(input, { left: false, right: false, jump: false, rewind: false, forwardTime: false });
+    Object.assign(input, { left: false, right: false, jump: false });
     pressed.jump = false;
     pauseMenu.hidden = false;
     restartButton.disabled = true;
@@ -1336,7 +1200,7 @@ function showRunResults() {
   restartButton.disabled = true;
   restartRunButton.disabled = true;
   quitButton.disabled = true;
-  Object.assign(input, { left: false, right: false, jump: false, rewind: false, forwardTime: false });
+  Object.assign(input, { left: false, right: false, jump: false });
   pressed.jump = false;
   continueButton.classList.toggle("ready", !finishedRun.eligible);
   if (finishedRun.eligible) runNameInput.focus();
@@ -1354,51 +1218,23 @@ function startRewindCutscene() {
   restartButton.disabled = true;
   restartRunButton.disabled = true;
   quitButton.disabled = true;
-  Object.assign(input, { left: false, right: false, jump: false, rewind: false, forwardTime: false });
+  Object.assign(input, { left: false, right: false, jump: false });
   pressed.jump = false;
 }
 
-function startRewindLevel() {
+function showLevelElevenPlaceholder() {
   resetCutscene();
   menuCustomizationUnlocked = true;
   rewindMenuAwakened = true;
   applyRewindMenuState();
   unlockThrough(INTRO_LEVEL_COUNT);
-  runStartLevel = INTRO_LEVEL_COUNT;
   loadLevel(INTRO_LEVEL_COUNT);
   won = false;
   message.hidden = true;
-  chapterCompleteMessage.hidden = true;
-  pauseButton.disabled = false;
-  restartButton.disabled = false;
-  restartRunButton.disabled = false;
-  quitButton.disabled = false;
-  updatePauseButton();
-  canvas.focus();
-}
-
-function finishRewindTutorial() {
-  completeLevelSplit();
-  won = true;
-  chapterCompleteMessage.hidden = false;
-  rewindTutorialSummary.textContent = `Level time ${formatRunTime(levelElapsed)}`;
   pauseButton.disabled = true;
   restartButton.disabled = true;
   restartRunButton.disabled = true;
-  quitButton.disabled = true;
-  Object.assign(input, { left: false, right: false, jump: false, rewind: false, forwardTime: false });
-  replayRewindButton.focus();
-}
-
-function replayRewindTutorial() {
-  chapterCompleteMessage.hidden = true;
-  won = false;
-  loadLevel(INTRO_LEVEL_COUNT);
-  pauseButton.disabled = false;
-  restartButton.disabled = false;
-  restartRunButton.disabled = false;
   quitButton.disabled = false;
-  canvas.focus();
 }
 
 function updateCutscene(dt) {
@@ -1411,65 +1247,17 @@ function updateCutscene(dt) {
     cutscenePowerPlayed = true;
     playSfx("rewind-awaken");
   }
-  if (cutsceneTime >= CUTSCENE_DURATION) startRewindLevel();
-}
-
-function tutorialRewindPlatform() {
-  return currentLevel().platforms.find((platform) => platform.rewindable) || null;
-}
-
-function beginTimelinePreview() {
-  const platform = tutorialRewindPlatform();
-  if (!currentLevel().rewindTutorial || !currentLevel().rewindHintUnlocked || !platform ||
-      platform.timelinePlayback.length > 0 || platform.motionHistory.length < 2) return false;
-  platform.timelinePreview = true;
-  platform.previewLatest = platform.motionHistory.length - 1;
-  platform.previewCursor = platform.previewLatest;
-  platform.previewAccumulator = 0;
-  playSfx("rewind-start");
-  return true;
-}
-
-function commitTimelinePreview() {
-  const platform = tutorialRewindPlatform();
-  if (!platform?.timelinePreview) return;
-  platform.timelinePreview = false;
-  const cursor = Math.max(0, Math.min(platform.previewCursor, platform.previewLatest));
-  if (cursor < platform.previewLatest) {
-    platform.timelinePlayback = platform.motionHistory.slice(cursor, platform.previewLatest).reverse();
-    platform.motionHistory = platform.motionHistory.slice(0, cursor + 1);
-    platform.motionLastRecordedAt = platform.motionHistory[platform.motionHistory.length - 1].time;
-  }
-  platform.previewAccumulator = 0;
-  input.forwardTime = false;
-}
-
-function cancelTimelinePreview() {
-  const platform = tutorialRewindPlatform();
-  if (platform?.timelinePreview) {
-    platform.timelinePreview = false;
-    platform.previewAccumulator = 0;
-  }
-  input.rewind = false;
-  input.forwardTime = false;
+  if (cutsceneTime >= CUTSCENE_DURATION) showLevelElevenPlaceholder();
 }
 
 function setKey(code, down) {
-  if (down && ["ArrowLeft", "KeyA", "ArrowRight", "KeyD", "ArrowUp", "KeyW", "Space", "KeyF", "KeyG"].includes(code)) startRunTimer();
+  if (down && ["ArrowLeft", "KeyA", "ArrowRight", "KeyD", "ArrowUp", "KeyW", "Space"].includes(code)) startRunTimer();
   if (["ArrowLeft", "KeyA"].includes(code)) input.left = down;
   if (["ArrowRight", "KeyD"].includes(code)) input.right = down;
   if (["ArrowUp", "KeyW", "Space"].includes(code)) {
     if (down && !input.jump) pressed.jump = true;
     input.jump = down;
   }
-  if (code === "KeyF") {
-    if (down && !input.rewind) input.rewind = beginTimelinePreview();
-    else if (!down && input.rewind) {
-      commitTimelinePreview();
-      input.rewind = false;
-    }
-  }
-  if (code === "KeyG") input.forwardTime = down && input.rewind;
 }
 
 function nearbySwitch() {
@@ -1503,7 +1291,7 @@ function switchPromptBounds(levelSwitch, time) {
 canvas.addEventListener("pointerdown", (event) => {
   if (cutsceneActive) {
     event.preventDefault();
-    startRewindLevel();
+    showLevelElevenPlaceholder();
     return;
   }
   if (!gameStarted || paused || won) return;
@@ -1533,12 +1321,12 @@ function trackDevelopmentSequence(event) {
 }
 
 addEventListener("keydown", (event) => {
-  if (event.target instanceof Element && event.target.matches("input, textarea, select")) return;
+  if (event.target instanceof Element && event.target.matches("input, textarea, select, button")) return;
   trackDevelopmentSequence(event);
-  if (event.target instanceof Element && event.target.matches("button")) return;
   if (!gameStarted) return;
   if (cutsceneActive) return;
-  if (["ArrowLeft", "ArrowRight", "ArrowUp", "Space", "KeyP", "KeyE", "KeyF", "KeyG"].includes(event.code)) event.preventDefault();
+  if (currentLevel().placeholder) return;
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "Space", "KeyP", "KeyE"].includes(event.code)) event.preventDefault();
   if (event.code === "KeyP" && !won) {
     if (!leaderboardMenu.hidden && leaderboardReturn === "pause") closeLeaderboard();
     else if (!changelogMenu.hidden && changelogReturn === "pause") closeChangelog();
@@ -1553,10 +1341,7 @@ addEventListener("keydown", (event) => {
   setKey(event.code, true);
 });
 addEventListener("keyup", (event) => { if (gameStarted) setKey(event.code, false); });
-addEventListener("blur", () => {
-  if (input.rewind) commitTimelinePreview();
-  Object.assign(input, { left: false, right: false, jump: false, rewind: false, forwardTime: false });
-});
+addEventListener("blur", () => Object.assign(input, { left: false, right: false, jump: false }));
 restartButton.addEventListener("click", restartLevel);
 restartRunButton.addEventListener("click", startOver);
 pauseButton.addEventListener("click", () => setPaused(!paused));
@@ -1583,8 +1368,6 @@ menuTextureButtons.forEach(button => button.addEventListener("click", () => sele
 menuBackdropButtons.forEach(button => button.addEventListener("click", () => selectMenuBackdrop(button.dataset.menuBackdrop)));
 publishRunButton.addEventListener("click", publishFinishedRun);
 continueButton.addEventListener("click", startRewindCutscene);
-replayRewindButton.addEventListener("click", replayRewindTutorial);
-rewindMenuButton.addEventListener("click", quitRun);
 runNameInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();
@@ -1723,12 +1506,6 @@ function playSfx(name, intensity = 1) {
   } else if (name === "rewind-awaken") {
     [60, 67, 72, 79, 84].forEach((note, index) => scheduleTone(midiToFrequency(note), now + index * .09, .3, "sine", .13, sfxGain));
     scheduleTone(110, now, .65, "triangle", .08, sfxGain);
-  } else if (name === "rewind-start") {
-    scheduleTone(720, now, .18, "sine", .08, sfxGain);
-    scheduleTone(420, now + .06, .22, "triangle", .075, sfxGain);
-  } else if (name === "rewind-release") {
-    scheduleTone(420, now, .1, "triangle", .065, sfxGain);
-    scheduleTone(680, now + .045, .14, "sine", .07, sfxGain);
   } else if (name === "block-break") {
     playNoise(.12, .075, 1250);
     scheduleTone(125, now, .09, "square", .07, sfxGain);
@@ -1939,6 +1716,7 @@ if (requestFullscreen && exitFullscreen) {
 document.querySelectorAll("[data-control]").forEach((button) => {
   const control = button.dataset.control;
   const set = (down) => {
+    if (currentLevel().placeholder) return;
     if (down) startRunTimer();
     if (control === "jump" && down && !input.jump) pressed.jump = true;
     input[control] = down;
@@ -1977,7 +1755,7 @@ function quitRun() {
   paused = false;
   timerWasRunningBeforePause = false;
   levelTimerWasRunningBeforePause = false;
-  Object.assign(input, { left: false, right: false, jump: false, rewind: false, forwardTime: false });
+  Object.assign(input, { left: false, right: false, jump: false });
   pressed.jump = false;
   pauseButton.disabled = true;
   restartButton.disabled = true;
@@ -2197,6 +1975,8 @@ function update(dt) {
     return;
   }
 
+  if (currentLevel().placeholder) return;
+
   updateBlockDebris(dt);
   updateLandingParticles(dt);
   updateEnemyDeathParticles(dt);
@@ -2296,13 +2076,9 @@ function update(dt) {
 
   if (overlaps(box, currentLevel().finish)) {
     playSfx("flag");
-    if (currentLevel().rewindTutorial) finishRewindTutorial();
-    else if (levelIndex === INTRO_LEVEL_COUNT - 1) {
-      completeLevelSplit();
-      showRunResults();
-    }
+    completeLevelSplit();
+    if (levelIndex === INTRO_LEVEL_COUNT - 1) showRunResults();
     else {
-      completeLevelSplit();
       unlockThrough(levelIndex + 1);
       levelTransition = .65;
     }
@@ -2332,18 +2108,17 @@ function drawSprite(index, x, y, w, h) {
 
 function drawBackground() {
   const isLavaLevel = currentLevel().theme === "lava";
-  const isRewindLevel = currentLevel().theme === "rewind";
   const gradient = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-  gradient.addColorStop(0, isLavaLevel ? "#382337" : isRewindLevel ? "#182b52" : "#5ac8fa");
-  gradient.addColorStop(.62, isLavaLevel ? "#9d493c" : isRewindLevel ? "#4887a5" : "#b9edff");
-  gradient.addColorStop(1, isLavaLevel ? "#ef9b47" : isRewindLevel ? "#b7e4e8" : "#edfaff");
+  gradient.addColorStop(0, isLavaLevel ? "#382337" : "#5ac8fa");
+  gradient.addColorStop(.62, isLavaLevel ? "#9d493c" : "#b9edff");
+  gradient.addColorStop(1, isLavaLevel ? "#ef9b47" : "#edfaff");
   ctx.fillStyle = gradient; ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-  ctx.fillStyle = isLavaLevel ? "#d7b3a34a" : isRewindLevel ? "#c7f8ff45" : "#ffffff7a";
+  ctx.fillStyle = isLavaLevel ? "#d7b3a34a" : "#ffffff7a";
   for (let i = -1; i < 7; i++) {
     const x = ((i * 230 - cameraX * .14) % 1500) - 80;
     ctx.beginPath(); ctx.ellipse(x, 125 + (i % 3) * 54, 60, 20, 0, 0, Math.PI * 2); ctx.ellipse(x + 42, 118 + (i % 3) * 54, 38, 27, 0, 0, Math.PI * 2); ctx.fill();
   }
-  ctx.fillStyle = isLavaLevel ? "#352b386e" : isRewindLevel ? "#233d5f80" : "#6798a966";
+  ctx.fillStyle = isLavaLevel ? "#352b386e" : "#6798a966";
   ctx.beginPath(); ctx.moveTo(0, 420);
   for (let x = 0; x <= VIEW_W; x += 100) ctx.lineTo(x, 330 + Math.sin((x + cameraX * .09) * .009) * 45);
   ctx.lineTo(VIEW_W, VIEW_H); ctx.lineTo(0, VIEW_H); ctx.fill();
@@ -2555,7 +2330,7 @@ function drawPlatform(p, time) {
     ctx.beginPath(); ctx.rect(x, p.y, p.w, capDepth); ctx.clip();
     drawConnectedPlatformCap(tile, x, p.y, p.w, 82);
     ctx.restore();
-    if (p.moving || p.rewindable) drawMovingPlatformMarker(p, x);
+    if (p.moving) drawMovingPlatformMarker(p, x);
     return;
   }
   const topDepth = Math.min(82, p.h);
@@ -2563,7 +2338,7 @@ function drawPlatform(p, time) {
   ctx.fillRect(x, p.y, p.w, topDepth);
   ctx.fillStyle = p.kind === "stone" ? "#aab3bb" : "#61bb3c";
   ctx.fillRect(x, p.y, p.w, Math.min(13, p.h));
-  if (p.moving || p.rewindable) drawMovingPlatformMarker(p, x);
+  if (p.moving) drawMovingPlatformMarker(p, x);
 }
 
 function drawPushableCrateMarker(crate, x) {
@@ -3168,81 +2943,32 @@ function drawCutscene(time) {
   ctx.fillRect(0, VIEW_H - 24, VIEW_W, 24);
 }
 
-function drawRewindPathPreview(time) {
-  if (!currentLevel().rewindTutorial) return;
-  const platform = tutorialRewindPlatform();
-  if (!platform?.timelinePreview) return;
-  const history = platform.motionHistory;
-  const selected = history.slice(Math.min(platform.previewCursor, platform.previewLatest), platform.previewLatest + 1);
-  if (selected.length < 2) return;
-
-  ctx.save();
-  ctx.fillStyle = "rgba(48, 35, 8, .1)";
+function drawLevelElevenPlaceholder() {
+  const background = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+  background.addColorStop(0, "#111a32");
+  background.addColorStop(1, "#080d1c");
+  ctx.fillStyle = background;
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-  ctx.translate(-cameraX, 0);
-  ctx.strokeStyle = "rgba(255, 211, 77, .82)";
-  ctx.lineWidth = 3;
-  ctx.shadowColor = "#ffd34d";
-  ctx.shadowBlur = 10;
-  ctx.beginPath();
-  selected.forEach((point, index) => {
-    const x = point.x + platform.w / 2;
-    const y = point.y + platform.h / 2;
-    if (index === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  });
-  ctx.stroke();
 
-  ctx.fillStyle = "#fff0a3";
-  ctx.shadowBlur = 7;
-  const spacing = Math.max(2, Math.floor(selected.length / 7));
-  const phase = Math.floor(time / 90) % spacing;
-  for (let index = phase + 1; index < selected.length - 1; index += spacing) {
-    const point = selected[index];
-    const neighbor = input.forwardTime ? selected[index + 1] : selected[index - 1];
-    const angle = Math.atan2(neighbor.y - point.y, neighbor.x - point.x);
-    ctx.save();
-    ctx.translate(point.x + platform.w / 2, point.y + platform.h / 2);
-    ctx.rotate(angle);
-    ctx.beginPath();
-    ctx.moveTo(9, 0);
-    ctx.lineTo(-6, -6);
-    ctx.lineTo(-3, 0);
-    ctx.lineTo(-6, 6);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  }
-  ctx.restore();
-}
-
-function drawRewindTutorialPrompt(time) {
-  if (!currentLevel().rewindTutorial || won || !currentLevel().rewindHintUnlocked) return;
-  const platform = tutorialRewindPlatform();
-  if (!platform) return;
-  const labels = platform.timelinePreview ? ["F  GO BACK", "G  GO FORWARD"] : ["F  REWIND"];
-  const widths = labels.map((label) => label.length * 9 + 30);
-  const gap = 10;
-  const totalWidth = widths.reduce((sum, width) => sum + width, 0) + gap * (labels.length - 1);
-  let x = VIEW_W / 2 - totalWidth / 2;
-  const y = 60;
-  const pulse = (Math.sin(time * .008) + 1) * .5;
   ctx.save();
-  ctx.textAlign = "center";
-  ctx.font = "900 13px Inter, sans-serif";
-  labels.forEach((label, index) => {
-    const active = platform.timelinePreview && (index === 1 ? input.forwardTime : !input.forwardTime);
-    ctx.fillStyle = active ? "rgba(72, 52, 7, .94)" : "rgba(6, 20, 43, .88)";
-    ctx.strokeStyle = active ? `rgba(255,211,77,${.78 + pulse * .22})` : "rgba(255,255,255,.28)";
-    ctx.lineWidth = 2;
+  ctx.translate(VIEW_W / 2, VIEW_H / 2 - 18);
+  ctx.strokeStyle = "rgba(111, 220, 255, .16)";
+  ctx.lineWidth = 2;
+  for (const radius of [86, 126, 166]) {
     ctx.beginPath();
-    ctx.roundRect(x, y, widths[index], 34, 11);
-    ctx.fill();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.fillStyle = active || labels.length === 1 ? "#ffe05d" : "#dbeaf7";
-    ctx.fillText(label, x + widths[index] / 2, y + 22);
-    x += widths[index] + gap;
-  });
+  }
+  ctx.fillStyle = "#8de4ff";
+  ctx.textAlign = "center";
+  ctx.font = "800 16px Inter, sans-serif";
+  ctx.fillText("LEVEL 11", 0, -34);
+  ctx.fillStyle = "#f4fbff";
+  ctx.font = "900 42px Inter, sans-serif";
+  ctx.fillText("REWIND AWAKENS", 0, 18);
+  ctx.fillStyle = "#aebed8";
+  ctx.font = "700 17px Inter, sans-serif";
+  ctx.fillText("COMING IN v0.12.0", 0, 58);
   ctx.restore();
 }
 
@@ -3252,8 +2978,11 @@ function render(time) {
     drawCutscene(time);
     return;
   }
+  if (currentLevel().placeholder) {
+    drawLevelElevenPlaceholder();
+    return;
+  }
   drawBackground();
-  drawRewindPathPreview(time);
   for (const p of currentLevel().platforms) drawPlatform(p, time);
   for (const levelSwitch of currentLevel().switches || []) drawSwitch(levelSwitch, time);
   for (const plate of currentLevel().pressurePlates || []) drawPressurePlate(plate);
@@ -3268,7 +2997,6 @@ function render(time) {
   drawEnemyDeathParticles();
   if (deathTimer > 0) drawDeathParticles();
   else drawPlayer(time);
-  drawRewindTutorialPrompt(time);
   if (levelTransition > 0) {
     ctx.fillStyle = `rgba(255,255,255,${Math.sin((.65 - levelTransition) / .65 * Math.PI) * .65})`;
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);

@@ -6,9 +6,9 @@ A browser-based platformer where the world changes across time. Run, jump, avoid
 
 No install, download, or plugins. It runs entirely in the browser.
 
-> **Development status:** The platforming prototype is playable now. Rewind is introduced in the ending cinematic, while its gameplay mechanic will be implemented later.
+> **Development status:** The platforming prototype is playable now. The first rewind mechanic is available in level 11 after the introductory adventure and awakening cinematic.
 
-**Current version:** `v0.11.7`
+**Current version:** `v0.12.0`
 
 ## How it works
 
@@ -22,7 +22,9 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Reach the flag.** Finish all ten introductory levels to complete the current adventure and see your final results.
 
-**Awaken rewind.** Completing the introductory adventure triggers a cinematic in which the slime discovers a time machine and gains its first time-travel power. Click the game screen to skip directly to the results.
+**Awaken rewind.** Completing the introductory adventure opens the results screen, followed by a cinematic in which the slime discovers a time machine and gains its first time-travel power. Click the cinematic to skip directly to level 11.
+
+**Recall a path.** In level 11, hold `F` to preview the crossing platform's actual recent movement backward. Keep holding `F` and hold `G` to move the preview forward again, then release `F` to send the platform along the selected rewind. The slime remains in the present.
 
 **Race the clock.** The speedrun timer starts with your first move or jump and continues between levels. Your final score is 300 minus your completion time in seconds, plus 2 points for every star.
 
@@ -46,6 +48,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 | --- | --- |
 | `A` / `D` or arrow keys | Move left and right |
 | `W`, Up Arrow, or Space | Jump |
+| `F` | Hold to preview backward; release to commit the rewind |
+| `G` | While holding `F`, move the rewind preview forward |
 | `E` | Flip a nearby switch |
 | `P` | Pause or resume the run |
 | `R` | Restart the current level |
@@ -63,7 +67,7 @@ The playable prototype includes:
 - A session-based level roadmap with connected numbered stages and progression locks
 - Reversible nearby switches with clickable `E - FLIP` prompts that raise or submerge linked platforms in level 7
 - A completed-run results screen after level 10 with publishing, quitting, and a prominent story Continue button that pulses after publication
-- A frozen level 11 placeholder after the cutscene, reserving the first rewind level for v0.12.0
+- A focused level 11 rewind tutorial where pressure plates send a gap-crossing platform away; hold `F` to preview backward, hold `G` with it to preview forward, then release `F` to commit the rewind
 - Thin automatic pressure plates and plate-controlled platforms in level 8, with a no-wait first shuttle and a required crate-held second bridge
 - Two patrolling red slime enemies in level 9 that reverse at ledges and obstacles, defeat the player from the side, burst into red slime pieces when stomped, and each drop a collectible star
 - A long final test in level 10 that combines floating platforms, jump pads, automatic movers, crates, switches, and pressure plates

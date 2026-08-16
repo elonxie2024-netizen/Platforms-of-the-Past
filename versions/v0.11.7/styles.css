@@ -704,11 +704,6 @@ canvas {
   color: #fff;
   background: #ffffff14;
 }
-.message #rewindMenuButton {
-  border: 1px solid #ffffff36;
-  color: #fff;
-  background: #ffffff14;
-}
 
 .split-summary {
   width: min(500px, 100%);
