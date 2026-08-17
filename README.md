@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels follow the introductory adventure and awakening cinematic.
 
-**Current version:** `v0.15.1`
+**Current version:** `v0.15.2`
 
 ## How it works
 
@@ -51,7 +51,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 | `A` / `D` or arrow keys | Move left and right |
 | `W`, Up Arrow, or Space | Jump |
 | `F` | Hold to preview backward; release to commit the rewind |
-| `G` | While holding `F`, move the rewind preview forward |
+| `G` | While holding `F`, move the rewind preview forward; release to hold its position |
 | `E` | Flip a nearby switch |
 | `P` | Pause or resume the run |
 | `R` | Restart the current level |

@@ -80,8 +80,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.15.2", commit: "Pending commit", date: "2026-08-17", message: "Make rewind selection hold its position", description: "Changed timeline adjustment so releasing G keeps the chosen rewind point fixed instead of immediately drifting backward again. Paused golden path markers now remain visually still until the selection moves or the rewind is committed." },
-  { version: "v0.15.1", commit: "b4947b9", date: "2026-08-17", message: "Fix the rewind final exam", description: "Made restored breakable blocks remain stable after rewind, raised the final exam's middle wall so restoring its cracked block is required, and made the finish require all three placed exam stars rather than allowing an enemy's bonus star to replace one." },
+  { version: "v0.15.1", commit: "Pending commit", date: "2026-08-17", message: "Fix the rewind final exam", description: "Made restored breakable blocks remain stable after rewind, raised the final exam's middle wall so restoring its cracked block is required, and made the finish require all three placed exam stars rather than allowing an enemy's bonus star to replace one." },
   { version: "v0.15.0", commit: "dbae81f", date: "2026-08-17", message: "Complete the rewind chapter", description: "Added four focused rewind levels. Patrol Recall makes a red slime's recorded patrol activate a pressure plate, Second Chance restores a broken block's earlier state, Crossed Signals makes a plate-controlled platform resume its present instruction after retracing its path, and Rewind Final Exam combines those established rules into one longer challenge." },
   { version: "v0.14.5", commit: "885eec3", date: "2026-08-17", message: "Add dangerous rewind level", description: "Added Last Second as level 16. A platform sinks toward lava while carrying the slime past a required star, forcing the player to use its descent and rewind it back to safety before it reaches the hazard." },
   { version: "v0.14.4", commit: "18d5ff4", date: "2026-08-17", message: "Add play mode selection", description: "Changed Play to open a dedicated mode choice. Custom run leads to the challenge builder, Roadmap leads directly to level selection, and each screen's Back button returns to the mode choice." },
@@ -199,14 +198,14 @@ const W = (x, y, targetX, targetY, plateId, w = 160, h = 40, kind = "stone", spe
   x, y, w, h, kind, axis: "x", rewindable: true, plateId, targetX, targetY,
   baseX: x, baseY: y, speed, releaseDelay: 3, releaseTimer: 0,
   motionHistory: [{ x, y, time: 0 }], timelinePreview: false,
-  previewCursor: 0, previewLatest: 0, previewAccumulator: 0, previewPaused: false,
+  previewCursor: 0, previewLatest: 0, previewAccumulator: 0,
   timelinePlayback: [], rewindGrace: 0, timelineLocked: false,
   ...options
 });
 const K = (x, y, w = 60, h = 60) => ({
   ...P(x, y, w, h), rewindableManual: true,
   motionHistory: [{ x, y, time: 0 }], timelinePreview: false,
-  previewCursor: 0, previewLatest: 0, previewAccumulator: 0, previewPaused: false,
+  previewCursor: 0, previewLatest: 0, previewAccumulator: 0,
   timelinePlayback: [], rewindGrace: 0, timelineLocked: false, speed: 330
 });
 const S = (x, y, id) => ({ x, y, w: 42, h: 44, id, flipped: false });
@@ -219,7 +218,7 @@ const E = (x, surfaceY, minX, maxX, direction = 1, speed = 62) => ({
 const ER = (x, surfaceY, minX, maxX, direction = 1, speed = 62, options = {}) => ({
   ...E(x, surfaceY, minX, maxX, direction, speed), rewindableEnemy: true,
   motionHistory: [], timelinePreview: false, previewCursor: 0, previewLatest: 0,
-  previewAccumulator: 0, previewPaused: false, timelinePlayback: [], rewindGrace: 0, speed,
+  previewAccumulator: 0, timelinePlayback: [], rewindGrace: 0, speed,
   ...options
 });
 const levels = [
@@ -507,11 +506,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.15.2";
+const GAME_VERSION = "v0.15.1";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "rewind-hold-v1", label: "Version 0.15.2 to 0.15.2" },
   { id: "rewind-final-fix-v1", label: "Version 0.15.1 to 0.15.1" },
   { id: "rewind-final-v1", label: "Version 0.15.0 to 0.15.0" },
   { id: "dangerous-rewind-v1", label: "Version 0.14.5 to 0.14.5" },
@@ -532,7 +530,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -596,7 +594,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -624,7 +622,6 @@ function resetEnemies(resetRewards = false) {
     enemy.previewCursor = 0;
     enemy.previewLatest = 0;
     enemy.previewAccumulator = 0;
-    enemy.previewPaused = false;
     enemy.timelinePlayback = [];
     enemy.stopped = false;
     enemy.starDropped = false;
@@ -694,7 +691,6 @@ function resetLevelMotion() {
       platform.previewCursor = 0;
       platform.previewLatest = 0;
       platform.previewAccumulator = 0;
-      platform.previewPaused = false;
       platform.timelinePlayback = [];
       platform.rewindGrace = 0;
       platform.timelineLocked = false;
@@ -728,7 +724,6 @@ function resetLevelMotion() {
     enemy.previewCursor = 0;
     enemy.previewLatest = 0;
     enemy.previewAccumulator = 0;
-    enemy.previewPaused = false;
     enemy.timelinePlayback = [];
     resetPlatformMotionHistory(enemy);
   }
@@ -826,7 +821,6 @@ function rewindPlateActive(platform) {
 }
 
 function updateTimelinePreview(platform, dt) {
-  if (platform.previewPaused && !input.forwardTime) return;
   platform.previewAccumulator += dt * 75;
   const steps = Math.floor(platform.previewAccumulator);
   if (steps <= 0) return;
@@ -1657,7 +1651,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -1981,19 +1975,11 @@ function previewedTimelineObjects() {
   return currentTimelineObjects().filter((platform) => platform.timelinePreview);
 }
 
-function setTimelinePreviewPaused(paused) {
-  previewedTimelineObjects().forEach((platform) => {
-    platform.previewPaused = paused;
-    platform.previewAccumulator = 0;
-  });
-}
-
 function prepareTimelinePreview(platform) {
   platform.timelinePreview = true;
   platform.previewLatest = platform.motionHistory.length - 1;
   platform.previewCursor = platform.previewLatest;
   platform.previewAccumulator = 0;
-  platform.previewPaused = false;
 }
 
 function beginTimelinePreview() {
@@ -2029,7 +2015,6 @@ function commitTimelinePreview() {
       platform.motionLastRecordedAt = platform.motionHistory[platform.motionHistory.length - 1].time;
     }
     platform.previewAccumulator = 0;
-    platform.previewPaused = false;
   });
   rewindFieldPreview = null;
   input.forwardTime = false;
@@ -2039,7 +2024,6 @@ function cancelTimelinePreview() {
   previewedTimelineObjects().forEach((platform) => {
     platform.timelinePreview = false;
     platform.previewAccumulator = 0;
-    platform.previewPaused = false;
   });
   rewindFieldPreview = null;
   input.rewind = false;
@@ -2064,15 +2048,7 @@ function setKey(code, down) {
       input.rewind = false;
     }
   }
-  if (code === "KeyG") {
-    if (down && input.rewind) {
-      if (!input.forwardTime) setTimelinePreviewPaused(false);
-      input.forwardTime = true;
-    } else {
-      if (input.forwardTime) setTimelinePreviewPaused(true);
-      input.forwardTime = false;
-    }
-  }
+  if (code === "KeyG") input.forwardTime = down && input.rewind;
 }
 
 function nearbySwitch() {
@@ -2139,7 +2115,6 @@ function releaseRewindPointer(event) {
   if (event.pointerId === forwardPointerId) {
     forwardPointerId = null;
     input.forwardTime = false;
-    setTimelinePreviewPaused(true);
   }
   if (event.pointerId !== rewindPointerId) return;
   rewindPointerId = null;
@@ -2167,12 +2142,10 @@ canvas.addEventListener("pointerdown", (event) => {
       rewindPointerOwnsInput = !input.rewind;
       if (!input.rewind) input.rewind = beginTimelinePreview();
       if (input.rewind) {
-        setTimelinePreviewPaused(false);
         input.forwardTime = false;
         rewindPointerId = event.pointerId;
       }
     } else if (input.rewind) {
-      setTimelinePreviewPaused(false);
       input.forwardTime = true;
       forwardPointerId = event.pointerId;
     }
@@ -4026,7 +3999,7 @@ function drawRewindPathPreview(time) {
         ctx.fillStyle = "rgba(255, 211, 77, .16)";
         ctx.lineWidth = 3;
         ctx.setLineDash([9, 7]);
-        ctx.lineDashOffset = platform.previewPaused ? 0 : -time * .03;
+        ctx.lineDashOffset = -time * .03;
         ctx.beginPath();
         ctx.roundRect(restoredState.x, restoredState.y, platform.w, platform.h, 8);
         ctx.fill();
@@ -4050,15 +4023,9 @@ function drawRewindPathPreview(time) {
     ctx.fillStyle = "#fff0a3";
     ctx.shadowBlur = 7;
     const spacing = Math.max(2, Math.floor(selected.length / 7));
-    const phase = platform.previewPaused ? 0 : Math.floor(time / 90) % spacing;
+    const phase = Math.floor(time / 90) % spacing;
     for (let index = phase + 1; index < selected.length - 1; index += spacing) {
       const point = selected[index];
-      if (platform.previewPaused) {
-        ctx.beginPath();
-        ctx.arc(point.x + platform.w / 2, point.y + platform.h / 2, 4, 0, Math.PI * 2);
-        ctx.fill();
-        continue;
-      }
       const neighbor = input.forwardTime ? selected[index + 1] : selected[index - 1];
       const angle = Math.atan2(neighbor.y - point.y, neighbor.x - point.x);
       ctx.save();
@@ -4086,8 +4053,7 @@ function drawRewindTutorialPrompt(time) {
   ctx.textAlign = "center";
   ctx.font = "900 13px Inter, sans-serif";
   buttons.forEach((button, index) => {
-    const active = platform.timelinePreview && !platform.previewPaused &&
-      (index === 1 ? input.forwardTime : !input.forwardTime);
+    const active = platform.timelinePreview && (index === 1 ? input.forwardTime : !input.forwardTime);
     ctx.fillStyle = active ? "rgba(72, 52, 7, .94)" : "rgba(6, 20, 43, .88)";
     ctx.strokeStyle = active ? `rgba(255,211,77,${.78 + pulse * .22})` : "rgba(255,255,255,.28)";
     ctx.lineWidth = 2;
