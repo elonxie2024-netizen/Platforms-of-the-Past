@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels follow the introductory adventure and awakening cinematic.
 
-**Current version:** `v0.15.3`
+**Current version:** `v0.16.0`
 
 ## How it works
 
@@ -24,7 +24,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Awaken rewind.** Completing the introductory adventure opens the results screen, followed by a cinematic in which the slime discovers a time machine and gains its first time-travel power. Click the cinematic to skip directly to level 11.
 
-**Recall a path.** Starting in level 11, hold `F` to preview an object's actual recent movement backward. Keep holding `F` and hold `G` to move the preview forward again, then release `F` to send the object along the selected rewind. Later levels use rewind to ride platforms, recall pushed crates and enemies, restore broken blocks, stop midway through recorded history, and position a field that selects multiple objects. The slime remains in the present.
+**Recall a path.** Starting in level 11, hold `F` to preview actual recent history backward. Keep holding `F` and hold `G` to move the preview forward again, then release `F` to commit. Pushable crates always record where the player moves them, breakable blocks record whether they still exist, and enemies record both their patrol and whether they are alive. After the rewind field is introduced, it remains available in later levels and rewinds every eligible object it reaches. The slime and collected rewards remain in the present.
 
 **Race the clock.** The speedrun timer starts with your first move or jump and continues between levels. Your final score is 300 minus your completion time in seconds, plus 2 points for every star.
 
@@ -70,7 +70,7 @@ The playable prototype includes:
 - A custom run builder with mix-and-match objectives, constraints, specific level routes, and leaderboard metrics
 - Reversible nearby switches with clickable `E - FLIP` prompts that raise or submerge linked platforms in level 7
 - A completed-run results screen after level 10 with publishing, quitting, and a prominent story Continue button that pulses after publication
-- Ten focused rewind levels that progress from recalling one moving platform to rewinding enemies and object states, resolving conflicting controls, and completing a combined final exam
+- Ten focused rewind levels built on a consistent history system for moving platforms, player-pushed crates, breakable blocks, and enemies
 - Thin automatic pressure plates and plate-controlled platforms in level 8, with a no-wait first shuttle and a required crate-held second bridge
 - Two patrolling red slime enemies in level 9 that reverse at ledges and obstacles, defeat the player from the side, burst into red slime pieces when stomped, and each drop a collectible star
 - A long final test in level 10 that combines floating platforms, jump pads, automatic movers, crates, switches, and pressure plates

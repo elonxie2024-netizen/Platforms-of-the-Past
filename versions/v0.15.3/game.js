@@ -80,8 +80,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.16.0", commit: "Pending commit", date: "2026-08-17", message: "Turn rewind into a consistent world system", description: "Made every pushable crate, breakable block, and enemy maintain dynamic movement and state history throughout rewind levels. Optional crate movement can now be undone, destroyed blocks consistently return, and defeated enemies rewind back to life while collected rewards remain owned. The rewind field now persists after its introduction and targets eligible objects dynamically." },
-  { version: "v0.15.3", commit: "1a8162d", date: "2026-08-17", message: "Fix the Level 18 freeze", description: "Initialized rewind playback state for cracked blocks so Second Chance and the final exam continue updating normally as soon as they load. Added a defensive playback check for rewindable state objects." },
+  { version: "v0.15.3", commit: "Pending commit", date: "2026-08-17", message: "Fix the Level 18 freeze", description: "Initialized rewind playback state for cracked blocks so Second Chance and the final exam continue updating normally as soon as they load. Added a defensive playback check for rewindable state objects." },
   { version: "v0.15.2", commit: "d122a2d", date: "2026-08-17", message: "Make rewind selection hold its position", description: "Changed timeline adjustment so releasing G keeps the chosen rewind point fixed instead of immediately drifting backward again. Paused golden path markers now remain visually still until the selection moves or the rewind is committed." },
   { version: "v0.15.1", commit: "b4947b9", date: "2026-08-17", message: "Fix the rewind final exam", description: "Made restored breakable blocks remain stable after rewind, raised the final exam's middle wall so restoring its cracked block is required, and made the finish require all three placed exam stars rather than allowing an enemy's bonus star to replace one." },
   { version: "v0.15.0", commit: "dbae81f", date: "2026-08-17", message: "Complete the rewind chapter", description: "Added four focused rewind levels. Patrol Recall makes a red slime's recorded patrol activate a pressure plate, Second Chance restores a broken block's earlier state, Crossed Signals makes a plate-controlled platform resume its present instruction after retracing its path, and Rewind Final Exam combines those established rules into one longer challenge." },
@@ -183,15 +182,10 @@ const CUTSCENE_DURATION = 10.4;
 const INTRO_LEVEL_COUNT = 10;
 
 const R = (x, y, w, h, kind = "grass") => ({ x, y, w, h, kind });
-const P = (x, y, w = 60, h = 60) => ({
-  x, y, w, h, kind: "crate", pushable: true, baseX: x, baseY: y,
-  rewindableManual: true, motionHistory: [], timelinePreview: false,
-  previewCursor: 0, previewLatest: 0, previewAccumulator: 0, previewPaused: false,
-  timelinePlayback: [], rewindGrace: 0, timelineLocked: false, speed: 330
-});
+const P = (x, y, w = 60, h = 60) => ({ x, y, w, h, kind: "crate", pushable: true, baseX: x, baseY: y });
 const B = (x, y, trigger, material = "stone", w = 110, h = 54, options = {}) => ({
   x, y, w, h, kind: "breakable-block", material,
-  breakable: true, breakTrigger: trigger, broken: false, breakTimer: null, rewindableState: true,
+  breakable: true, breakTrigger: trigger, broken: false, breakTimer: null,
   motionHistory: [], timelinePreview: false, previewCursor: 0, previewLatest: 0,
   previewAccumulator: 0, previewPaused: false, timelinePlayback: [], speed: 260,
   ...options
@@ -222,10 +216,8 @@ const S = (x, y, id) => ({ x, y, w: 42, h: 44, id, flipped: false });
 const Q = (x, y, id, w = 72, options = {}) => ({ x, y, w, h: 12, id, pressed: false, pressProgress: 0, ...options });
 const E = (x, surfaceY, minX, maxX, direction = 1, speed = 62) => ({
   x, y: surfaceY - PLAYER_H, w: PLAYER_W, h: PLAYER_H, minX, maxX, speed,
-  direction, baseX: x, baseDirection: direction, alive: true, rewindableEnemy: true,
-  starDropped: false, starCollected: false, starX: x + PLAYER_W / 2, starY: surfaceY - PLAYER_H / 2,
-  motionHistory: [], timelinePreview: false, previewCursor: 0, previewLatest: 0,
-  previewAccumulator: 0, previewPaused: false, timelinePlayback: [], rewindGrace: 0
+  direction, baseX: x, baseDirection: direction, alive: true,
+  starDropped: false, starCollected: false, starX: x + PLAYER_W / 2, starY: surfaceY - PLAYER_H / 2
 });
 const ER = (x, surfaceY, minX, maxX, direction = 1, speed = 62, options = {}) => ({
   ...E(x, surfaceY, minX, maxX, direction, speed), rewindableEnemy: true,
@@ -418,8 +410,7 @@ const levels = [
   },
   {
     name: "Crossed Signals", width: 1500, start: [55,448], music: "level3", theme: "lava",
-    postRun: true, rewindChapter: true, rewindTutorial: true, rewindField: true,
-    rewindFieldRadius: 400, rewindFieldOffset: 180, rewindHintUnlocked: false,
+    postRun: true, rewindChapter: true, rewindTutorial: true, rewindHintUnlocked: false,
     platforms: [
       R(0,490,520,80,"stone"), P(220,430),
       W(600,430,980,430,"signal-plate",170,40,"stone",290),
@@ -519,11 +510,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.16.0";
+const GAME_VERSION = "v0.15.3";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "systemic-rewind-v1", label: "Version 0.16.0 to 0.16.0" },
   { id: "rewind-state-fix-v1", label: "Version 0.15.3 to 0.15.3" },
   { id: "rewind-hold-v1", label: "Version 0.15.2 to 0.15.2" },
   { id: "rewind-final-fix-v1", label: "Version 0.15.1 to 0.15.1" },
@@ -546,7 +536,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -610,7 +600,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -700,10 +690,6 @@ function resetLevelMotion() {
     plate.pressProgress = 0;
   }
   for (const platform of currentLevel().platforms) {
-    if (platform.breakable) {
-      platform.broken = false;
-      platform.breakTimer = null;
-    }
     if (platform.rewindable || platform.rewindableManual) {
       platform.x = platform.baseX;
       platform.y = platform.baseY;
@@ -796,10 +782,7 @@ function currentTimelineObjects() {
 function timelineSnapshot(object) {
   return {
     x: object.x, y: object.y, time: levelMotionTime,
-    ...(object.rewindableEnemy ? {
-      direction: object.direction, alive: object.alive, stopped: object.stopped,
-      starDropped: object.starDropped, starX: object.starX, starY: object.starY
-    } : {}),
+    ...(object.rewindableEnemy ? { direction: object.direction, alive: object.alive, stopped: object.stopped } : {}),
     ...(object.rewindableState ? { broken: object.broken, breakTimer: object.breakTimer } : {})
   };
 }
@@ -821,7 +804,6 @@ function recordPlatformMotion(platform, force = false) {
   if (!force && !moved && !stateChanged && !enemyChanged) return;
   if (!force && levelMotionTime - platform.motionLastRecordedAt < 1 / 30) return;
   platform.motionHistory.push(timelineSnapshot(platform));
-  if (platform.motionHistory.length > 900) platform.motionHistory.shift();
   platform.motionLastRecordedAt = levelMotionTime;
 }
 
@@ -883,9 +865,6 @@ function updateTimelinePlayback(platform, dt) {
       if (typeof target.direction === "number") platform.direction = target.direction;
       if (typeof target.alive === "boolean") platform.alive = target.alive;
       platform.stopped = Boolean(target.stopped);
-      platform.starDropped = !platform.starCollected && Boolean(target.starDropped);
-      if (typeof target.starX === "number") platform.starX = target.starX;
-      if (typeof target.starY === "number") platform.starY = target.starY;
     }
     if (platform.rewindableState && typeof target.broken === "boolean") {
       platform.broken = target.broken;
@@ -992,11 +971,12 @@ function updateMovingPlatforms(dt) {
 
 function updateEnemies(dt, previousPlayerBottom) {
   for (const [enemyIndex, enemy] of (currentLevel().enemies || []).entries()) {
+    if (!enemy.alive) continue;
     if (enemy.timelinePreview) {
       updateTimelinePreview(enemy, dt);
     } else if (enemy.timelinePlayback?.length > 0) {
       updateTimelinePlayback(enemy, dt);
-    } else if (enemy.alive && !enemy.stopped) {
+    } else if (!enemy.stopped) {
       const nextX = enemy.x + enemy.direction * enemy.speed * dt;
       const candidate = { x: nextX, y: enemy.y, w: enemy.w, h: enemy.h };
       const reachedBoundary = nextX < enemy.minX || nextX > enemy.maxX;
@@ -1014,8 +994,6 @@ function updateEnemies(dt, previousPlayerBottom) {
       }
     }
 
-    if (!enemy.alive) continue;
-
     if (!overlaps(playerBox(), enemy)) continue;
     const stomped = player.vy >= 0 && previousPlayerBottom <= enemy.y + 9;
     if (stomped) {
@@ -1026,7 +1004,6 @@ function updateEnemies(dt, previousPlayerBottom) {
         enemy.starX = enemy.x + enemy.w / 2;
         enemy.starY = enemy.y + enemy.h / 2;
       }
-      recordPlatformMotion(enemy, true);
       createEnemyDeathParticles(enemy);
       player.y = enemy.y - PLAYER_H;
       player.vy = -JUMP_SPEED * .48;
@@ -1684,7 +1661,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -2023,18 +2000,6 @@ function prepareTimelinePreview(platform) {
   platform.previewPaused = false;
 }
 
-function levelUsesRewindField() {
-  return Boolean(currentLevel().rewindField || (currentLevel().rewindChapter && levelIndex >= 14));
-}
-
-function rewindFieldAnchor() {
-  const offset = currentLevel().rewindFieldOffset || 0;
-  return {
-    x: player.x + PLAYER_W / 2 + (player.facing || 1) * offset,
-    y: player.y + PLAYER_H / 2
-  };
-}
-
 function beginTimelinePreview() {
   if (!currentLevel().rewindTutorial) return false;
   const candidates = currentTimelineObjects().filter((platform) =>
@@ -2042,21 +2007,17 @@ function beginTimelinePreview() {
   );
   if (candidates.length === 0) return false;
 
-  if (levelUsesRewindField()) {
-    const { x: centerX, y: centerY } = rewindFieldAnchor();
-    const radius = currentLevel().rewindFieldRadius || 340;
+  if (currentLevel().rewindField) {
+    const centerX = player.x + PLAYER_W / 2;
+    const centerY = player.y + PLAYER_H / 2;
+    const radius = currentLevel().rewindFieldRadius;
     const targets = candidates.filter((platform) =>
       Math.hypot(platform.x + platform.w / 2 - centerX, platform.y + platform.h / 2 - centerY) <= radius
     );
     rewindFieldPreview = { x: centerX, y: centerY, radius, targets };
     targets.forEach(prepareTimelinePreview);
   } else {
-    const mostRecent = candidates.reduce((latest, candidate) => {
-      const candidateTime = candidate.motionHistory.at(-1)?.time ?? -Infinity;
-      const latestTime = latest.motionHistory.at(-1)?.time ?? -Infinity;
-      return candidateTime > latestTime ? candidate : latest;
-    });
-    prepareTimelinePreview(mostRecent);
+    prepareTimelinePreview(candidates[0]);
   }
   playSfx("rewind-start");
   return true;
@@ -4021,11 +3982,10 @@ function drawCutscene(time) {
 function drawRewindPathPreview(time) {
   if (!currentLevel().rewindTutorial) return;
   const platforms = previewedTimelineObjects();
-  const fieldAnchor = rewindFieldAnchor();
-  const field = rewindFieldPreview || (levelUsesRewindField() ? {
-    x: fieldAnchor.x,
-    y: fieldAnchor.y,
-    radius: currentLevel().rewindFieldRadius || 340,
+  const field = rewindFieldPreview || (currentLevel().rewindField ? {
+    x: player.x + PLAYER_W / 2,
+    y: player.y + PLAYER_H / 2,
+    radius: currentLevel().rewindFieldRadius,
     idle: true
   } : null);
   if (platforms.length === 0 && !field) return;
@@ -4077,26 +4037,6 @@ function drawRewindPathPreview(time) {
         ctx.stroke();
         ctx.restore();
       }
-    }
-    if (platform.rewindableEnemy && !platform.alive && selected[0].alive) {
-      const restoredState = selected[0];
-      ctx.save();
-      ctx.globalAlpha = .62;
-      ctx.fillStyle = "#e85b61";
-      ctx.strokeStyle = "#ffe05d";
-      ctx.lineWidth = 3;
-      ctx.setLineDash([7, 6]);
-      ctx.beginPath();
-      ctx.roundRect(restoredState.x - 2, restoredState.y + 8, platform.w + 4, platform.h - 8, 9);
-      ctx.fill();
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = "#4b1721";
-      ctx.beginPath();
-      ctx.arc(restoredState.x + 10, restoredState.y + 22, 2.3, 0, Math.PI * 2);
-      ctx.arc(restoredState.x + 21, restoredState.y + 22, 2.3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
     }
     ctx.strokeStyle = "rgba(255, 211, 77, .82)";
     ctx.lineWidth = 3;
