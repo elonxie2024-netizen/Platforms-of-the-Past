@@ -22,10 +22,6 @@ const replayRewindButton = document.querySelector("#replayRewindButton");
 const rewindMenuButton = document.querySelector("#rewindMenuButton");
 const mainMenu = document.querySelector("#mainMenu");
 const playButton = document.querySelector("#playButton");
-const playChoiceMenu = document.querySelector("#playChoiceMenu");
-const customRunButton = document.querySelector("#customRunButton");
-const roadmapChoiceButton = document.querySelector("#roadmapChoiceButton");
-const closePlayChoiceButton = document.querySelector("#closePlayChoiceButton");
 const settingsButton = document.querySelector("#settingsButton");
 const settingsPanel = document.querySelector("#settingsPanel");
 const volumeInput = document.querySelector("#volumeInput");
@@ -73,12 +69,12 @@ const runSetupMenu = document.querySelector("#runSetupMenu");
 const runSetupForm = document.querySelector("#runSetupForm");
 const specificLevelChoices = document.querySelector("#specificLevelChoices");
 const runSetupSummary = document.querySelector("#runSetupSummary");
+const practiceRoadmapButton = document.querySelector("#practiceRoadmapButton");
 const closeRunSetupButton = document.querySelector("#closeRunSetupButton");
 const leaderboardRunType = document.querySelector("#leaderboardRunType");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.14.4", commit: "Pending commit", date: "2026-08-17", message: "Add play mode selection", description: "Changed Play to open a dedicated mode choice. Custom run leads to the challenge builder, Roadmap leads directly to level selection, and each screen's Back button returns to the mode choice." },
-  { version: "v0.14.3", commit: "6cc5ee9", date: "2026-08-17", message: "Clarify the temporary ending", description: "Replaced the temporary rewind ending's fantasy-style wording with a direct completion message that clearly says all currently available rewind levels are finished." },
+  { version: "v0.14.3", commit: "Pending commit", date: "2026-08-17", message: "Clarify the temporary ending", description: "Replaced the temporary rewind ending's fantasy-style wording with a direct completion message that clearly says all currently available rewind levels are finished." },
   { version: "v0.14.2", commit: "94579fd", date: "2026-08-17", message: "Correct moving-platform arrows", description: "Changed platform markers to describe their real motion path. Horizontal platforms show left and right arrows, vertical platforms show up and down arrows, and paths that change on both axes display all four directions." },
   { version: "v0.14.1", commit: "e1a2416", date: "2026-08-17", message: "Add rewind fields", description: "Added Field Selection as level 15. Holding rewind now creates a visible field anchored at the slime's position and previews every recorded object inside it at once, while leaving objects beyond its edge untouched. The level requires placing the field to restore two missing bridge sections without rewinding the useful third platform." },
   { version: "v0.14.0", commit: "a734baa", date: "2026-08-17", message: "Expand the rewind chapter", description: "Added three focused rewind levels. Echo Descent teaches riding a platform back up its recorded path, Crate Recall makes a pushed crate retrace its movement to solve a pressure-plate route, and Halfway Home requires ending a rewind partway through a multi-position journey. Later lessons reuse the established F and G controls without step-by-step labels." },
@@ -419,11 +415,11 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.14.4";
+const GAME_VERSION = "v0.14.3";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "rewind-field-v1", label: "Version 0.14.1 to 0.14.4" },
+  { id: "rewind-field-v1", label: "Version 0.14.1 to 0.14.3" },
   { id: "rewind-chapter-v2", label: "Version 0.14.0 to 0.14.0" },
   { id: "hazard-instance-runs-v1", label: "Version 0.13.2 to 0.13.2" },
   { id: "custom-runs-v1", label: "Version 0.13.0 to 0.13.1" },
@@ -440,7 +436,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
+  "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
   "v0.2.4", "v0.2.3", "v0.2.2", "v0.2.1", "v0.2.0", "v0.1.4", "v0.1.3", "v0.1.2",
@@ -501,7 +497,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -1205,27 +1201,11 @@ function updateRunSetup() {
   runSetupSummary.textContent = `${runTypeLabel(config)} · Ranked by ${config.metric}`;
 }
 
-function openPlayChoice() {
-  gameStarted = false;
-  settingsPanel.hidden = true;
-  settingsButton.setAttribute("aria-expanded", "false");
-  mainMenu.hidden = true;
-  playChoiceMenu.hidden = false;
-  customRunButton.focus();
-}
-
-function closePlayChoice() {
-  playChoiceMenu.hidden = true;
-  mainMenu.hidden = false;
-  playButton.focus();
-}
-
 function openRunSetup() {
   gameStarted = false;
   settingsPanel.hidden = true;
   settingsButton.setAttribute("aria-expanded", "false");
   mainMenu.hidden = true;
-  playChoiceMenu.hidden = true;
   runSetupMenu.hidden = false;
   updateRunSetup();
   runSetupForm.querySelector("input:checked")?.focus();
@@ -1233,8 +1213,8 @@ function openRunSetup() {
 
 function closeRunSetup() {
   runSetupMenu.hidden = true;
-  playChoiceMenu.hidden = false;
-  customRunButton.focus();
+  mainMenu.hidden = false;
+  playButton.focus();
 }
 
 const ROADMAP_POINTS = [
@@ -1286,7 +1266,6 @@ function openRoadmap() {
   settingsPanel.hidden = true;
   settingsButton.setAttribute("aria-expanded", "false");
   mainMenu.hidden = true;
-  playChoiceMenu.hidden = true;
   renderRoadmap();
   roadmapMenu.hidden = false;
   levelRoadmap.querySelector("button:not(:disabled)")?.focus();
@@ -1294,8 +1273,8 @@ function openRoadmap() {
 
 function closeRoadmap() {
   roadmapMenu.hidden = true;
-  playChoiceMenu.hidden = false;
-  roadmapChoiceButton.focus();
+  mainMenu.hidden = false;
+  playButton.focus();
 }
 
 function startRoadmapRun(index) {
@@ -1333,7 +1312,6 @@ function beginRun(index) {
   resetFinishedRun();
   loadLevel(index, false);
   ensureAudio();
-  playChoiceMenu.hidden = true;
   roadmapMenu.hidden = true;
   runSetupMenu.hidden = true;
   leaderboardMenu.hidden = true;
@@ -1489,7 +1467,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -2262,14 +2240,15 @@ try {
 } catch { /* Use the default volume. */ }
 setVolume(volumeInput.value);
 
-playButton.addEventListener("click", openPlayChoice);
-customRunButton.addEventListener("click", openRunSetup);
-roadmapChoiceButton.addEventListener("click", openRoadmap);
-closePlayChoiceButton.addEventListener("click", closePlayChoice);
+playButton.addEventListener("click", openRunSetup);
 runSetupForm.addEventListener("change", updateRunSetup);
 runSetupForm.addEventListener("submit", (event) => {
   event.preventDefault();
   startConfiguredRun();
+});
+practiceRoadmapButton.addEventListener("click", () => {
+  runSetupMenu.hidden = true;
+  openRoadmap();
 });
 closeRunSetupButton.addEventListener("click", closeRunSetup);
 closeRoadmapButton.addEventListener("click", closeRoadmap);
@@ -2456,7 +2435,6 @@ function startOver() {
   timerWasRunningBeforePause = false;
   levelTimerWasRunningBeforePause = false;
   pauseMenu.hidden = true;
-  playChoiceMenu.hidden = true;
   runSetupMenu.hidden = true;
   roadmapMenu.hidden = true;
   leaderboardMenu.hidden = true;
@@ -2491,7 +2469,6 @@ function quitRun() {
   quitButton.disabled = true;
   settingsPanel.hidden = true;
   pauseMenu.hidden = true;
-  playChoiceMenu.hidden = true;
   runSetupMenu.hidden = true;
   roadmapMenu.hidden = true;
   leaderboardMenu.hidden = true;

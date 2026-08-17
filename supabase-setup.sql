@@ -11,7 +11,7 @@ create table if not exists public.leaderboard_rulesets (
 
 insert into public.leaderboard_rulesets (id, label, accepted_versions)
 values
-  ('rewind-field-v1', 'Version 0.14.1 to 0.14.3', array['v0.14.1', 'v0.14.2', 'v0.14.3']),
+  ('rewind-field-v1', 'Version 0.14.1 to 0.14.4', array['v0.14.1', 'v0.14.2', 'v0.14.3', 'v0.14.4']),
   ('rewind-chapter-v2', 'Version 0.14.0 to 0.14.0', array['v0.14.0']),
   ('hazard-instance-runs-v1', 'Version 0.13.2 to 0.13.2', array['v0.13.2']),
   ('custom-runs-v1', 'Version 0.13.0 to 0.13.1', array['v0.13.0', 'v0.13.1']),

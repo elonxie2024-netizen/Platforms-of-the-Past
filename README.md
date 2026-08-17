@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Five rewind levels follow the introductory adventure and awakening cinematic.
 
-**Current version:** `v0.14.3`
+**Current version:** `v0.14.4`
 
 ## How it works
 
@@ -38,7 +38,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Follow development.** Open the changelog from the main menu or pause menu to read every version and Git commit in the game's history.
 
-**Choose your route.** Play opens the run builder, which also links to a practice roadmap. Completed levels and the next challenge can be replayed there, while future practice levels remain locked until reached. Refreshing or selecting Restart session begins again from Dirtbound Trail.
+**Choose your route.** Play lets you choose Custom run or Roadmap. Custom run opens the challenge builder, while Roadmap lets you replay completed levels and your next unlocked challenge. Refreshing or selecting Restart session begins again from Dirtbound Trail.
 
 **Build a run.** Before starting, combine an objective, a constraint, and a leaderboard metric. Run objectives include completing the full introduction or selected levels, collecting every star, dying once to every placed hazard, and activating every available mechanic. Falls are not placed hazards and do not count. Rankings are separated by challenge and can use Time, Score, or Stars.
 
