@@ -74,8 +74,7 @@ const closeRunSetupButton = document.querySelector("#closeRunSetupButton");
 const leaderboardRunType = document.querySelector("#leaderboardRunType");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.14.1", commit: "Pending commit", date: "2026-08-17", message: "Add rewind fields", description: "Added Field Selection as level 15. Holding rewind now creates a visible field anchored at the slime's position and previews every recorded object inside it at once, while leaving objects beyond its edge untouched. The level requires placing the field to restore two missing bridge sections without rewinding the useful third platform." },
-  { version: "v0.14.0", commit: "a734baa", date: "2026-08-17", message: "Expand the rewind chapter", description: "Added three focused rewind levels. Echo Descent teaches riding a platform back up its recorded path, Crate Recall makes a pushed crate retrace its movement to solve a pressure-plate route, and Halfway Home requires ending a rewind partway through a multi-position journey. Later lessons reuse the established F and G controls without step-by-step labels." },
+  { version: "v0.14.0", commit: "Pending commit", date: "2026-08-17", message: "Expand the rewind chapter", description: "Added three focused rewind levels. Echo Descent teaches riding a platform back up its recorded path, Crate Recall makes a pushed crate retrace its movement to solve a pressure-plate route, and Halfway Home requires ending a rewind partway through a multi-position journey. Later lessons reuse the established F and G controls without step-by-step labels." },
   { version: "v0.13.2", commit: "50845fc", date: "2026-08-16", message: "Require every placed hazard", description: "Changed every-hazard challenges to require a death from each actual placed spike, lava section, or enemy rather than one death per general hazard type. Repeated deaths to the same hazard count once, and falling is not a placed hazard and never counts." },
   { version: "v0.13.1", commit: "82f51b6", date: "2026-08-16", message: "Fix run builder access", description: "Corrected the displayed version and script cache key so Play reliably opens the custom run builder. Separated the v0.13.0 run-type release from the v0.12.0 rewind changelog and preserved both as playable versions." },
   { version: "v0.13.0", commit: "cff2f5f", date: "2026-08-16", message: "Add custom run types", description: "Added a pre-run challenge builder that combines objectives, constraints, selected level routes, and Time, Score, or Stars ranking metrics. Custom runs track star requirements, deaths by hazard type, mechanic activation, route completion, splits, and separate global leaderboard categories." },
@@ -322,28 +321,6 @@ const levels = [
       R(820,300,500,270,"stone")
     ],
     hazards: [], stars: [[695,300]], finish: R(1235,210,34,90)
-  },
-  {
-    name: "Field Selection", width: 1600, start: [55,388], music: "level2", theme: "rewind",
-    postRun: true, rewindChapter: true, rewindTutorial: true, rewindField: true,
-    rewindFieldRadius: 340, rewindHintUnlocked: false,
-    platforms: [
-      R(0,430,620,140,"stone"),
-      W(650,390,650,520,null,130,40,"stone",260, {
-        autoStart: true, resumeAfterRewind: false,
-        motionPath: [{ x: 650, y: 390 }, { x: 650, y: 520 }], pathIndex: 1
-      }),
-      W(800,350,800,520,null,130,40,"stone",260, {
-        autoStart: true, resumeAfterRewind: false,
-        motionPath: [{ x: 800, y: 350 }, { x: 800, y: 520 }], pathIndex: 1
-      }),
-      W(980,520,980,320,null,150,40,"stone",260, {
-        autoStart: true, resumeAfterRewind: false,
-        motionPath: [{ x: 980, y: 520 }, { x: 980, y: 320 }], pathIndex: 1
-      }),
-      R(1190,390,410,180,"stone")
-    ],
-    hazards: [], stars: [[1055,270]], finish: R(1515,300,34,90)
   }
 ];
 
@@ -375,7 +352,6 @@ const pressed = { jump: false };
 let rewindPointerId = null;
 let rewindPointerOwnsInput = false;
 let forwardPointerId = null;
-let rewindFieldPreview = null;
 const player = { x: 0, y: 0, vx: 0, vy: 0, grounded: false, facing: 1, coyote: 0, jumpBuffer: 0, padLaunched: false };
 let levelIndex = 0;
 let collected = [];
@@ -413,11 +389,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.14.1";
+const GAME_VERSION = "v0.14.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "rewind-field-v1", label: "Version 0.14.1 to 0.14.1" },
   { id: "rewind-chapter-v2", label: "Version 0.14.0 to 0.14.0" },
   { id: "hazard-instance-runs-v1", label: "Version 0.13.2 to 0.13.2" },
   { id: "custom-runs-v1", label: "Version 0.13.0 to 0.13.1" },
@@ -434,7 +409,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
+  "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
   "v0.2.4", "v0.2.3", "v0.2.2", "v0.2.1", "v0.2.0", "v0.1.4", "v0.1.3", "v0.1.2",
@@ -495,7 +470,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -569,7 +544,6 @@ function startSpikeDeath(hazardId = null) {
 
 function resetLevelMotion() {
   levelMotionTime = 0;
-  rewindFieldPreview = null;
   if (currentLevel().rewindTutorial) currentLevel().rewindHintUnlocked = false;
   for (const levelSwitch of currentLevel().switches || []) levelSwitch.flipped = false;
   for (const plate of currentLevel().pressurePlates || []) {
@@ -1216,8 +1190,8 @@ function closeRunSetup() {
 }
 
 const ROADMAP_POINTS = [
-  [4, 70], [10.5, 35], [17, 68], [23.5, 30], [30, 66], [36.5, 34], [43, 68], [49.5, 30],
-  [56, 66], [62.5, 34], [69, 68], [75.5, 30], [82, 66], [88.5, 34], [95, 70]
+  [4, 70], [11, 35], [18, 68], [25, 30], [32, 66], [39, 34], [46, 68],
+  [53, 30], [60, 66], [67, 34], [74, 68], [81, 30], [88, 66], [95, 34]
 ];
 
 function renderRoadmap() {
@@ -1465,7 +1439,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -1778,65 +1752,41 @@ function updateCutscene(dt) {
 }
 
 function tutorialRewindPlatform() {
-  return currentLevel().platforms.find((platform) => platform.timelinePreview) ||
-    currentLevel().platforms.find((platform) => isTimelineObject(platform)) || null;
+  return currentLevel().platforms.find((platform) => isTimelineObject(platform)) || null;
 }
 
-function previewedTimelineObjects() {
-  return currentLevel().platforms.filter((platform) => platform.timelinePreview);
-}
-
-function prepareTimelinePreview(platform) {
+function beginTimelinePreview() {
+  const platform = tutorialRewindPlatform();
+  if (!currentLevel().rewindTutorial || !platform ||
+      platform.timelinePlayback.length > 0 || platform.motionHistory.length < 2) return false;
   platform.timelinePreview = true;
   platform.previewLatest = platform.motionHistory.length - 1;
   platform.previewCursor = platform.previewLatest;
   platform.previewAccumulator = 0;
-}
-
-function beginTimelinePreview() {
-  if (!currentLevel().rewindTutorial) return false;
-  const candidates = currentLevel().platforms.filter((platform) =>
-    isTimelineObject(platform) && platform.timelinePlayback.length === 0 && platform.motionHistory.length >= 2
-  );
-  if (candidates.length === 0) return false;
-
-  if (currentLevel().rewindField) {
-    const centerX = player.x + PLAYER_W / 2;
-    const centerY = player.y + PLAYER_H / 2;
-    const radius = currentLevel().rewindFieldRadius;
-    const targets = candidates.filter((platform) =>
-      Math.hypot(platform.x + platform.w / 2 - centerX, platform.y + platform.h / 2 - centerY) <= radius
-    );
-    rewindFieldPreview = { x: centerX, y: centerY, radius, targets };
-    targets.forEach(prepareTimelinePreview);
-  } else {
-    prepareTimelinePreview(candidates[0]);
-  }
   playSfx("rewind-start");
   return true;
 }
 
 function commitTimelinePreview() {
-  previewedTimelineObjects().forEach((platform) => {
-    platform.timelinePreview = false;
-    const cursor = Math.max(0, Math.min(platform.previewCursor, platform.previewLatest));
-    if (cursor < platform.previewLatest) {
-      platform.timelinePlayback = platform.motionHistory.slice(cursor, platform.previewLatest).reverse();
-      platform.motionHistory = platform.motionHistory.slice(0, cursor + 1);
-      platform.motionLastRecordedAt = platform.motionHistory[platform.motionHistory.length - 1].time;
-    }
-    platform.previewAccumulator = 0;
-  });
-  rewindFieldPreview = null;
+  const platform = tutorialRewindPlatform();
+  if (!platform?.timelinePreview) return;
+  platform.timelinePreview = false;
+  const cursor = Math.max(0, Math.min(platform.previewCursor, platform.previewLatest));
+  if (cursor < platform.previewLatest) {
+    platform.timelinePlayback = platform.motionHistory.slice(cursor, platform.previewLatest).reverse();
+    platform.motionHistory = platform.motionHistory.slice(0, cursor + 1);
+    platform.motionLastRecordedAt = platform.motionHistory[platform.motionHistory.length - 1].time;
+  }
+  platform.previewAccumulator = 0;
   input.forwardTime = false;
 }
 
 function cancelTimelinePreview() {
-  previewedTimelineObjects().forEach((platform) => {
+  const platform = tutorialRewindPlatform();
+  if (platform?.timelinePreview) {
     platform.timelinePreview = false;
     platform.previewAccumulator = 0;
-  });
-  rewindFieldPreview = null;
+  }
   input.rewind = false;
   input.forwardTime = false;
   rewindPointerId = null;
@@ -3690,81 +3640,49 @@ function drawCutscene(time) {
 
 function drawRewindPathPreview(time) {
   if (!currentLevel().rewindTutorial) return;
-  const platforms = previewedTimelineObjects();
-  const field = rewindFieldPreview || (currentLevel().rewindField ? {
-    x: player.x + PLAYER_W / 2,
-    y: player.y + PLAYER_H / 2,
-    radius: currentLevel().rewindFieldRadius,
-    idle: true
-  } : null);
-  if (platforms.length === 0 && !field) return;
+  const platform = tutorialRewindPlatform();
+  if (!platform?.timelinePreview) return;
+  const history = platform.motionHistory;
+  const selected = history.slice(Math.min(platform.previewCursor, platform.previewLatest), platform.previewLatest + 1);
+  if (selected.length < 2) return;
 
   ctx.save();
-  if (platforms.length > 0) {
-    ctx.fillStyle = "rgba(48, 35, 8, .1)";
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-  }
+  ctx.fillStyle = "rgba(48, 35, 8, .1)";
+  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
   ctx.translate(-cameraX, 0);
-  if (field) {
-    const pulse = (Math.sin(time * .008) + 1) * .5;
-    const gradient = ctx.createRadialGradient(
-      field.x, field.y, field.radius * .2,
-      field.x, field.y, field.radius
-    );
-    gradient.addColorStop(0, field.idle ? "rgba(255, 222, 92, .025)" : "rgba(255, 222, 92, .08)");
-    gradient.addColorStop(1, "rgba(255, 211, 77, .01)");
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(field.x, field.y, field.radius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = field.idle
-      ? `rgba(255, 220, 91, ${.18 + pulse * .06})`
-      : `rgba(255, 220, 91, ${.62 + pulse * .22})`;
-    ctx.lineWidth = field.idle ? 2 : 3;
-    ctx.setLineDash([10, 9]);
-    ctx.lineDashOffset = -time * .03;
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  platforms.forEach((platform) => {
-    const history = platform.motionHistory;
-    const selected = history.slice(Math.min(platform.previewCursor, platform.previewLatest), platform.previewLatest + 1);
-    if (selected.length < 2) return;
-    ctx.strokeStyle = "rgba(255, 211, 77, .82)";
-    ctx.lineWidth = 3;
-    ctx.shadowColor = "#ffd34d";
-    ctx.shadowBlur = 10;
-    ctx.beginPath();
-    selected.forEach((point, index) => {
-      const x = point.x + platform.w / 2;
-      const y = point.y + platform.h / 2;
-      if (index === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-
-    ctx.fillStyle = "#fff0a3";
-    ctx.shadowBlur = 7;
-    const spacing = Math.max(2, Math.floor(selected.length / 7));
-    const phase = Math.floor(time / 90) % spacing;
-    for (let index = phase + 1; index < selected.length - 1; index += spacing) {
-      const point = selected[index];
-      const neighbor = input.forwardTime ? selected[index + 1] : selected[index - 1];
-      const angle = Math.atan2(neighbor.y - point.y, neighbor.x - point.x);
-      ctx.save();
-      ctx.translate(point.x + platform.w / 2, point.y + platform.h / 2);
-      ctx.rotate(angle);
-      ctx.beginPath();
-      ctx.moveTo(9, 0);
-      ctx.lineTo(-6, -6);
-      ctx.lineTo(-3, 0);
-      ctx.lineTo(-6, 6);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-    }
+  ctx.strokeStyle = "rgba(255, 211, 77, .82)";
+  ctx.lineWidth = 3;
+  ctx.shadowColor = "#ffd34d";
+  ctx.shadowBlur = 10;
+  ctx.beginPath();
+  selected.forEach((point, index) => {
+    const x = point.x + platform.w / 2;
+    const y = point.y + platform.h / 2;
+    if (index === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
   });
+  ctx.stroke();
+
+  ctx.fillStyle = "#fff0a3";
+  ctx.shadowBlur = 7;
+  const spacing = Math.max(2, Math.floor(selected.length / 7));
+  const phase = Math.floor(time / 90) % spacing;
+  for (let index = phase + 1; index < selected.length - 1; index += spacing) {
+    const point = selected[index];
+    const neighbor = input.forwardTime ? selected[index + 1] : selected[index - 1];
+    const angle = Math.atan2(neighbor.y - point.y, neighbor.x - point.x);
+    ctx.save();
+    ctx.translate(point.x + platform.w / 2, point.y + platform.h / 2);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(9, 0);
+    ctx.lineTo(-6, -6);
+    ctx.lineTo(-3, 0);
+    ctx.lineTo(-6, 6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
   ctx.restore();
 }
 
