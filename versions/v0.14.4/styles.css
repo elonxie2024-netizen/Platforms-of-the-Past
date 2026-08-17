@@ -497,46 +497,6 @@ canvas {
   cursor: pointer;
 }
 
-.developer-panel {
-  position: absolute;
-  z-index: 7;
-  top: 58px;
-  right: 14px;
-  display: grid;
-  gap: 7px;
-  min-width: 126px;
-  padding: 28px 10px 10px;
-  border: 1px solid #8de4ff66;
-  border-radius: 14px;
-  background: #07142be8;
-  box-shadow: 0 12px 28px #0006;
-}
-.developer-panel[hidden] { display: none; }
-.developer-panel button {
-  border: 1px solid #ffffff35;
-  border-radius: 10px;
-  padding: 8px 12px;
-  color: #dff6ff;
-  background: #174467;
-  font-weight: 850;
-  cursor: pointer;
-}
-.developer-panel #flightToggleButton[aria-pressed="true"] { color: #17233b; background: #ffe05d; }
-.developer-panel .developer-panel-close {
-  position: absolute;
-  top: 4px;
-  right: 5px;
-  width: 25px;
-  height: 25px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  color: #b8cbe2;
-  background: transparent;
-  font-size: 1.15rem;
-  line-height: 1;
-}
-
 .play-choice-panel { width: min(650px, 100%); }
 .play-choice-actions {
   width: 100%;

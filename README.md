@@ -6,9 +6,9 @@ A browser-based platformer where the world changes across time. Run, jump, avoid
 
 No install, download, or plugins. It runs entirely in the browser.
 
-> **Development status:** The platforming prototype is playable now. Five rewind levels follow the introductory adventure and awakening cinematic.
+> **Development status:** The platforming prototype is playable now. Six rewind levels follow the introductory adventure and awakening cinematic.
 
-**Current version:** `v0.14.4`
+**Current version:** `v0.14.5`
 
 ## How it works
 
@@ -70,7 +70,7 @@ The playable prototype includes:
 - A custom run builder with mix-and-match objectives, constraints, specific level routes, and leaderboard metrics
 - Reversible nearby switches with clickable `E - FLIP` prompts that raise or submerge linked platforms in level 7
 - A completed-run results screen after level 10 with publishing, quitting, and a prominent story Continue button that pulses after publication
-- Five focused rewind levels: recall a gap-crossing platform, ride a descending platform back upward, rewind a pushed crate, stop an object midway through its recorded path, and position a field to select multiple objects
+- Six focused rewind levels, culminating in a sinking platform that must be used and rewound away from lava before it reaches the hazard
 - Thin automatic pressure plates and plate-controlled platforms in level 8, with a no-wait first shuttle and a required crate-held second bridge
 - Two patrolling red slime enemies in level 9 that reverse at ledges and obstacles, defeat the player from the side, burst into red slime pieces when stomped, and each drop a collectible star
 - A long final test in level 10 that combines floating platforms, jump pads, automatic movers, crates, switches, and pressure plates

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#11182d">
   <title>Platforms of the Past</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <main class="game-shell">
@@ -39,7 +39,7 @@
       </button>
       <div id="mainMenu" class="main-menu">
         <div class="menu-panel">
-          <p class="menu-version">v0.14.5</p>
+          <p class="menu-version">v0.14.4</p>
           <h2>Platforms of the Past</h2>
           <div class="menu-stage" role="img" aria-label="A green slime endlessly jumping between two grassy platforms">
             <div class="menu-sun" aria-hidden="true"></div>
@@ -196,10 +196,6 @@
           <button id="closeChangelogButton" type="button">Back</button>
         </div>
       </div>
-      <div id="developerPanel" class="developer-panel" hidden>
-        <button id="closeDeveloperPanelButton" class="developer-panel-close" type="button" aria-label="Close developer panel">&times;</button>
-        <button id="flightToggleButton" type="button" aria-pressed="false">Fly: Off</button>
-      </div>
       <canvas id="game" width="960" height="540" tabindex="0" aria-label="Platform game. Move with A and D or the arrow keys. Jump with W, Up Arrow, or Space. Hold F to preview rewind, hold G to move the preview forward, and release F to commit."></canvas>
       <div id="message" class="message" hidden>
         <p class="eyebrow">Adventure complete</p>
@@ -243,6 +239,6 @@
 
     <p class="instructions"><strong>Move</strong> A / D or arrows <span aria-hidden="true">&bull;</span> <strong>Jump</strong> W / Up / Space <span aria-hidden="true">&bull;</span> <strong>Interact</strong> E <span aria-hidden="true">&bull;</span> <strong>Pause</strong> P <span aria-hidden="true">&bull;</span> <strong>Restart level</strong> R <span aria-hidden="true">&bull;</span> <strong>Restart run</strong> T</p>
   </main>
-  <script src="game.js?v=0.14.5"></script>
+  <script src="./game.js?v=0.14.4"></script>
 </body>
 </html>
