@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels follow the introductory adventure and awakening cinematic.
 
-**Current version:** `v0.15.2`
+**Current version:** `v0.15.3`
 
 ## How it works
 
