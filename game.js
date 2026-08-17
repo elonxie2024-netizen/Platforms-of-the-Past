@@ -80,7 +80,8 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.14.5", commit: "Pending commit", date: "2026-08-17", message: "Add dangerous rewind level", description: "Added Last Second as level 16. A platform sinks toward lava while carrying the slime past a required star, forcing the player to use its descent and rewind it back to safety before it reaches the hazard." },
+  { version: "v0.15.0", commit: "Pending commit", date: "2026-08-17", message: "Complete the rewind chapter", description: "Added four focused rewind levels. Patrol Recall makes a red slime's recorded patrol activate a pressure plate, Second Chance restores a broken block's earlier state, Crossed Signals makes a plate-controlled platform resume its present instruction after retracing its path, and Rewind Final Exam combines those established rules into one longer challenge." },
+  { version: "v0.14.5", commit: "885eec3", date: "2026-08-17", message: "Add dangerous rewind level", description: "Added Last Second as level 16. A platform sinks toward lava while carrying the slime past a required star, forcing the player to use its descent and rewind it back to safety before it reaches the hazard." },
   { version: "v0.14.4", commit: "18d5ff4", date: "2026-08-17", message: "Add play mode selection", description: "Changed Play to open a dedicated mode choice. Custom run leads to the challenge builder, Roadmap leads directly to level selection, and each screen's Back button returns to the mode choice." },
   { version: "v0.14.3", commit: "6cc5ee9", date: "2026-08-17", message: "Clarify the temporary ending", description: "Replaced the temporary rewind ending's fantasy-style wording with a direct completion message that clearly says all currently available rewind levels are finished." },
   { version: "v0.14.2", commit: "94579fd", date: "2026-08-17", message: "Correct moving-platform arrows", description: "Changed platform markers to describe their real motion path. Horizontal platforms show left and right arrows, vertical platforms show up and down arrows, and paths that change on both axes display all four directions." },
@@ -179,9 +180,10 @@ const INTRO_LEVEL_COUNT = 10;
 
 const R = (x, y, w, h, kind = "grass") => ({ x, y, w, h, kind });
 const P = (x, y, w = 60, h = 60) => ({ x, y, w, h, kind: "crate", pushable: true, baseX: x, baseY: y });
-const B = (x, y, trigger, material = "stone", w = 110, h = 54) => ({
+const B = (x, y, trigger, material = "stone", w = 110, h = 54, options = {}) => ({
   x, y, w, h, kind: "breakable-block", material,
-  breakable: true, breakTrigger: trigger, broken: false, breakTimer: null
+  breakable: true, breakTrigger: trigger, broken: false, breakTimer: null,
+  ...options
 });
 const F = (x, y, material = "stone", w = 110, h = 54) => ({ x, y, w, h, kind: "floating-block", material });
 const M = (x, y, w, h, axis, range, speed, phase = 0, kind = "stone") => ({
@@ -206,11 +208,17 @@ const K = (x, y, w = 60, h = 60) => ({
   timelinePlayback: [], rewindGrace: 0, timelineLocked: false, speed: 330
 });
 const S = (x, y, id) => ({ x, y, w: 42, h: 44, id, flipped: false });
-const Q = (x, y, id, w = 72) => ({ x, y, w, h: 12, id, pressed: false, pressProgress: 0 });
+const Q = (x, y, id, w = 72, options = {}) => ({ x, y, w, h: 12, id, pressed: false, pressProgress: 0, ...options });
 const E = (x, surfaceY, minX, maxX, direction = 1, speed = 62) => ({
   x, y: surfaceY - PLAYER_H, w: PLAYER_W, h: PLAYER_H, minX, maxX, speed,
   direction, baseX: x, baseDirection: direction, alive: true,
   starDropped: false, starCollected: false, starX: x + PLAYER_W / 2, starY: surfaceY - PLAYER_H / 2
+});
+const ER = (x, surfaceY, minX, maxX, direction = 1, speed = 62, options = {}) => ({
+  ...E(x, surfaceY, minX, maxX, direction, speed), rewindableEnemy: true,
+  motionHistory: [], timelinePreview: false, previewCursor: 0, previewLatest: 0,
+  previewAccumulator: 0, timelinePlayback: [], rewindGrace: 0, speed,
+  ...options
 });
 const levels = [
   {
@@ -368,6 +376,66 @@ const levels = [
     ],
     hazards: [R(300,500,350,70,"lava")],
     stars: [[430,442]], finish: R(1265,240,34,90)
+  },
+  {
+    name: "Patrol Recall", width: 1450, start: [55,448], music: "level1", theme: "rewind",
+    postRun: true, rewindChapter: true, rewindTutorial: true, rewindHintUnlocked: false,
+    requiredStars: 1,
+    platforms: [
+      R(0,490,520,80,"stone"),
+      C(650,520,650,420,"enemy-gate",180,40,"stone",false,0),
+      R(940,430,510,140,"stone")
+    ],
+    pressurePlates: [Q(395,478,"enemy-gate",72,{ enemyOnly: true })],
+    enemies: [ER(400,490,120,500,1,68,{ stopAtBoundary: true })],
+    hazards: [R(520,490,420,80,"lava")],
+    stars: [[740,372]], finish: R(1370,340,34,90)
+  },
+  {
+    name: "Second Chance", width: 1450, start: [55,318], music: "level2", theme: "rewind",
+    postRun: true, rewindChapter: true, rewindTutorial: true, rewindHintUnlocked: false,
+    requiredStars: 1,
+    platforms: [
+      R(0,360,400,210,"stone"),
+      B(400,360,"stand","grass",120,54,{ rewindableState: true, speed: 260 }),
+      R(350,490,300,80,"stone"),
+      R(650,330,800,240,"stone")
+    ],
+    hazards: [], stars: [[460,445]], finish: R(1370,240,34,90)
+  },
+  {
+    name: "Crossed Signals", width: 1500, start: [55,448], music: "level3", theme: "lava",
+    postRun: true, rewindChapter: true, rewindTutorial: true, rewindHintUnlocked: false,
+    platforms: [
+      R(0,490,520,80,"stone"), P(220,430),
+      W(600,430,980,430,"signal-plate",170,40,"stone",290),
+      R(1120,390,380,180,"stone")
+    ],
+    pressurePlates: [Q(105,478,"signal-plate",90,{ crateOnly: true })],
+    hazards: [R(520,490,600,80,"lava")],
+    stars: [[1205,345]], finish: R(1420,300,34,90)
+  },
+  {
+    name: "Rewind Final Exam", width: 3000, start: [55,448], music: "level3", theme: "lava",
+    postRun: true, rewindChapter: true, rewindTutorial: true, rewindField: true,
+    rewindFieldRadius: 360, rewindHintUnlocked: false, requiredStars: 3,
+    platforms: [
+      R(0,490,520,80,"stone"),
+      C(650,520,650,420,"exam-enemy",180,40,"stone",false,0),
+      R(940,430,360,140,"stone"),
+      B(1300,430,"stand","grass",120,54,{ rewindableState: true, speed: 260 }),
+      R(1240,520,300,50,"stone"),
+      R(1540,390,510,180,"stone"), P(1780,330),
+      W(2130,430,2510,430,"exam-signal",170,40,"stone",290),
+      R(2650,390,350,180,"stone")
+    ],
+    pressurePlates: [
+      Q(395,478,"exam-enemy",72,{ enemyOnly: true }),
+      Q(1645,378,"exam-signal",90,{ crateOnly: true })
+    ],
+    enemies: [ER(400,490,120,500,1,68,{ stopAtBoundary: true })],
+    hazards: [R(520,490,420,80,"lava"), R(2050,490,600,80,"lava")],
+    stars: [[740,372],[1360,475],[2570,378]], finish: R(2920,300,34,90)
   }
 ];
 
@@ -437,10 +505,11 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.14.5";
+const GAME_VERSION = "v0.15.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
+  { id: "rewind-final-v1", label: "Version 0.15.0 to 0.15.0" },
   { id: "dangerous-rewind-v1", label: "Version 0.14.5 to 0.14.5" },
   { id: "rewind-field-v1", label: "Version 0.14.1 to 0.14.4" },
   { id: "rewind-chapter-v2", label: "Version 0.14.0 to 0.14.0" },
@@ -459,6 +528,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
+  "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -546,8 +616,15 @@ function resetEnemies(resetRewards = false) {
     enemy.x = enemy.baseX;
     enemy.direction = enemy.baseDirection;
     enemy.alive = true;
+    enemy.timelinePreview = false;
+    enemy.previewCursor = 0;
+    enemy.previewLatest = 0;
+    enemy.previewAccumulator = 0;
+    enemy.timelinePlayback = [];
+    enemy.stopped = false;
     enemy.starDropped = false;
     if (resetRewards) enemy.starCollected = false;
+    if (enemy.rewindableEnemy) resetPlatformMotionHistory(enemy);
   }
 }
 
@@ -635,6 +712,19 @@ function resetLevelMotion() {
     platform.y = platform.baseY + (platform.axis === "y" ? offset : 0);
   }
   for (const platform of currentLevel().platforms) resetPlatformMotionHistory(platform);
+  for (const enemy of currentLevel().enemies || []) {
+    if (!enemy.rewindableEnemy) continue;
+    enemy.x = enemy.baseX;
+    enemy.direction = enemy.baseDirection;
+    enemy.alive = true;
+    enemy.stopped = false;
+    enemy.timelinePreview = false;
+    enemy.previewCursor = 0;
+    enemy.previewLatest = 0;
+    enemy.previewAccumulator = 0;
+    enemy.timelinePlayback = [];
+    resetPlatformMotionHistory(enemy);
+  }
 }
 
 function updatePressurePlates(dt) {
@@ -647,7 +737,13 @@ function updatePressurePlates(dt) {
       platform.x + platform.w > plate.x + 4 && platform.x < plate.x + plate.w - 4 &&
       Math.abs(platform.y + platform.h - (plate.y + plate.h)) < 4
     );
-    const pressed = playerOnPlate || crateOnPlate;
+    const enemyOnPlate = (currentLevel().enemies || []).some((enemy) =>
+      enemy.alive && enemy.x + enemy.w > plate.x + 4 && enemy.x < plate.x + plate.w - 4 &&
+      Math.abs(enemy.y + enemy.h - (plate.y + plate.h)) < 4
+    );
+    const pressed = plate.enemyOnly ? enemyOnPlate
+      : plate.crateOnly ? crateOnPlate
+        : playerOnPlate || crateOnPlate || enemyOnPlate;
     if (pressed && !plate.pressed) recordMechanic("pressure-plate");
     if (pressed && currentLevel().showRewindHintOnPlate) currentLevel().rewindHintUnlocked = true;
     if (pressed !== plate.pressed) playSfx("switch", pressed ? .72 : .48);
@@ -660,26 +756,43 @@ function updatePressurePlates(dt) {
 }
 
 function tracksMotion(platform) {
-  return Boolean(platform.rewindable || platform.rewindableManual || platform.controlled || platform.moving);
+  return Boolean(platform.rewindable || platform.rewindableManual || platform.rewindableEnemy ||
+    platform.rewindableState || platform.controlled || platform.moving);
 }
 
 function isTimelineObject(platform) {
-  return Boolean(platform.rewindable || platform.rewindableManual);
+  return Boolean(platform.rewindable || platform.rewindableManual || platform.rewindableEnemy || platform.rewindableState);
+}
+
+function currentTimelineObjects() {
+  return [...currentLevel().platforms, ...(currentLevel().enemies || [])].filter(isTimelineObject);
+}
+
+function timelineSnapshot(object) {
+  return {
+    x: object.x, y: object.y, time: levelMotionTime,
+    ...(object.rewindableEnemy ? { direction: object.direction, alive: object.alive, stopped: object.stopped } : {}),
+    ...(object.rewindableState ? { broken: object.broken, breakTimer: object.breakTimer } : {})
+  };
 }
 
 function resetPlatformMotionHistory(platform) {
   if (!tracksMotion(platform)) return;
-  platform.motionHistory = [{ x: platform.x, y: platform.y, time: levelMotionTime }];
+  platform.motionHistory = [timelineSnapshot(platform)];
   platform.motionLastRecordedAt = levelMotionTime;
 }
 
-function recordPlatformMotion(platform) {
+function recordPlatformMotion(platform, force = false) {
   if (!tracksMotion(platform)) return;
   if (!platform.motionHistory) resetPlatformMotionHistory(platform);
   const previous = platform.motionHistory[platform.motionHistory.length - 1];
   const moved = !previous || Math.hypot(platform.x - previous.x, platform.y - previous.y) >= .5;
-  if (!moved || levelMotionTime - platform.motionLastRecordedAt < 1 / 30) return;
-  platform.motionHistory.push({ x: platform.x, y: platform.y, time: levelMotionTime });
+  const stateChanged = platform.rewindableState && previous?.broken !== platform.broken;
+  const enemyChanged = platform.rewindableEnemy &&
+    (previous?.alive !== platform.alive || previous?.stopped !== platform.stopped);
+  if (!force && !moved && !stateChanged && !enemyChanged) return;
+  if (!force && levelMotionTime - platform.motionLastRecordedAt < 1 / 30) return;
+  platform.motionHistory.push(timelineSnapshot(platform));
   platform.motionLastRecordedAt = levelMotionTime;
 }
 
@@ -723,11 +836,28 @@ function updateTimelinePlayback(platform, dt) {
   const dx = target.x - platform.x;
   const dy = target.y - platform.y;
   const distance = Math.hypot(dx, dy);
-  const step = Math.min(distance, platform.speed * 2 * dt);
+  const step = Math.min(distance, (platform.speed || 260) * 2 * dt);
   const nextX = distance <= .01 ? target.x : platform.x + dx / distance * step;
   const nextY = distance <= .01 ? target.y : platform.y + dy / distance * step;
-  movePlatformWithPlayer(platform, nextX, nextY, Boolean(platform.carryDuringRewind), false);
+  if (platform.rewindableEnemy) {
+    platform.x = nextX;
+    platform.y = nextY;
+  } else if (platform.rewindableState) {
+    platform.x = nextX;
+    platform.y = nextY;
+  } else {
+    movePlatformWithPlayer(platform, nextX, nextY, Boolean(platform.carryDuringRewind), false);
+  }
   if (distance <= step + .01) {
+    if (platform.rewindableEnemy) {
+      if (typeof target.direction === "number") platform.direction = target.direction;
+      if (typeof target.alive === "boolean") platform.alive = target.alive;
+      platform.stopped = Boolean(target.stopped);
+    }
+    if (platform.rewindableState && typeof target.broken === "boolean") {
+      platform.broken = target.broken;
+      platform.breakTimer = target.broken ? 0 : null;
+    }
     platform.timelinePlayback.shift();
     if (platform.timelinePlayback.length === 0) {
       platform.rewindGrace = .85;
@@ -830,17 +960,26 @@ function updateMovingPlatforms(dt) {
 function updateEnemies(dt, previousPlayerBottom) {
   for (const [enemyIndex, enemy] of (currentLevel().enemies || []).entries()) {
     if (!enemy.alive) continue;
-    const nextX = enemy.x + enemy.direction * enemy.speed * dt;
-    const candidate = { x: nextX, y: enemy.y, w: enemy.w, h: enemy.h };
-    const reachedBoundary = nextX < enemy.minX || nextX > enemy.maxX;
-    const blocked = currentLevel().platforms.some((platform) =>
-      platformHasCollision(platform) && overlaps(candidate, platform)
-    );
-    if (reachedBoundary || blocked) {
-      enemy.direction *= -1;
-      enemy.x = Math.max(enemy.minX, Math.min(enemy.maxX, enemy.x));
-    } else {
-      enemy.x = nextX;
+    if (enemy.timelinePreview) {
+      updateTimelinePreview(enemy, dt);
+    } else if (enemy.timelinePlayback?.length > 0) {
+      updateTimelinePlayback(enemy, dt);
+    } else if (!enemy.stopped) {
+      const nextX = enemy.x + enemy.direction * enemy.speed * dt;
+      const candidate = { x: nextX, y: enemy.y, w: enemy.w, h: enemy.h };
+      const reachedBoundary = nextX < enemy.minX || nextX > enemy.maxX;
+      const blocked = currentLevel().platforms.some((platform) =>
+        platformHasCollision(platform) && overlaps(candidate, platform)
+      );
+      if (reachedBoundary || blocked) {
+        if (enemy.stopAtBoundary) enemy.stopped = true;
+        else enemy.direction *= -1;
+        enemy.x = Math.max(enemy.minX, Math.min(enemy.maxX, enemy.x));
+        recordPlatformMotion(enemy, true);
+      } else {
+        enemy.x = nextX;
+        recordPlatformMotion(enemy);
+      }
     }
 
     if (!overlaps(playerBox(), enemy)) continue;
@@ -1259,8 +1398,8 @@ function closeRunSetup() {
 }
 
 const ROADMAP_POINTS = [
-  [4, 70], [10, 35], [16, 68], [22, 30], [28, 66], [34, 34], [40, 68], [46, 30],
-  [52, 66], [58, 34], [64, 68], [70, 30], [76, 66], [82, 34], [88, 70], [95, 35]
+  [5, 25], [15, 25], [25, 25], [35, 25], [45, 25], [55, 25], [65, 25], [75, 25], [85, 25], [95, 25],
+  [95, 72], [85, 72], [75, 72], [65, 72], [55, 72], [45, 72], [35, 72], [25, 72], [15, 72], [5, 72]
 ];
 
 function renderRoadmap() {
@@ -1826,12 +1965,12 @@ function updateCutscene(dt) {
 }
 
 function tutorialRewindPlatform() {
-  return currentLevel().platforms.find((platform) => platform.timelinePreview) ||
-    currentLevel().platforms.find((platform) => isTimelineObject(platform)) || null;
+  return currentTimelineObjects().find((platform) => platform.timelinePreview) ||
+    currentTimelineObjects()[0] || null;
 }
 
 function previewedTimelineObjects() {
-  return currentLevel().platforms.filter((platform) => platform.timelinePreview);
+  return currentTimelineObjects().filter((platform) => platform.timelinePreview);
 }
 
 function prepareTimelinePreview(platform) {
@@ -1843,7 +1982,7 @@ function prepareTimelinePreview(platform) {
 
 function beginTimelinePreview() {
   if (!currentLevel().rewindTutorial) return false;
-  const candidates = currentLevel().platforms.filter((platform) =>
+  const candidates = currentTimelineObjects().filter((platform) =>
     isTimelineObject(platform) && platform.timelinePlayback.length === 0 && platform.motionHistory.length >= 2
   );
   if (candidates.length === 0) return false;
@@ -2746,6 +2885,7 @@ function updateBreakablePlatforms(dt, landedOn) {
     if (candidate.breakTimer > 0) continue;
     candidate.broken = true;
     candidate.breakTimer = 0;
+    if (candidate.rewindableState) recordPlatformMotion(candidate, true);
     const standingOnBlock = player.x + PLAYER_W > candidate.x && player.x < candidate.x + candidate.w &&
       Math.abs(player.y + PLAYER_H - candidate.y) < 2;
     if (standingOnBlock) player.grounded = false;
@@ -3848,6 +3988,22 @@ function drawRewindPathPreview(time) {
     const history = platform.motionHistory;
     const selected = history.slice(Math.min(platform.previewCursor, platform.previewLatest), platform.previewLatest + 1);
     if (selected.length < 2) return;
+    if (platform.rewindableState) {
+      const restoredState = selected[0];
+      if (restoredState.broken === false) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(255, 224, 93, .95)";
+        ctx.fillStyle = "rgba(255, 211, 77, .16)";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([9, 7]);
+        ctx.lineDashOffset = -time * .03;
+        ctx.beginPath();
+        ctx.roundRect(restoredState.x, restoredState.y, platform.w, platform.h, 8);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
     ctx.strokeStyle = "rgba(255, 211, 77, .82)";
     ctx.lineWidth = 3;
     ctx.shadowColor = "#ffd34d";
