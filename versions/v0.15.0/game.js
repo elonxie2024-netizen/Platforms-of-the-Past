@@ -80,8 +80,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.15.1", commit: "Pending commit", date: "2026-08-17", message: "Fix the rewind final exam", description: "Made restored breakable blocks remain stable after rewind, raised the final exam's middle wall so restoring its cracked block is required, and made the finish require all three placed exam stars rather than allowing an enemy's bonus star to replace one." },
-  { version: "v0.15.0", commit: "dbae81f", date: "2026-08-17", message: "Complete the rewind chapter", description: "Added four focused rewind levels. Patrol Recall makes a red slime's recorded patrol activate a pressure plate, Second Chance restores a broken block's earlier state, Crossed Signals makes a plate-controlled platform resume its present instruction after retracing its path, and Rewind Final Exam combines those established rules into one longer challenge." },
+  { version: "v0.15.0", commit: "Pending commit", date: "2026-08-17", message: "Complete the rewind chapter", description: "Added four focused rewind levels. Patrol Recall makes a red slime's recorded patrol activate a pressure plate, Second Chance restores a broken block's earlier state, Crossed Signals makes a plate-controlled platform resume its present instruction after retracing its path, and Rewind Final Exam combines those established rules into one longer challenge." },
   { version: "v0.14.5", commit: "885eec3", date: "2026-08-17", message: "Add dangerous rewind level", description: "Added Last Second as level 16. A platform sinks toward lava while carrying the slime past a required star, forcing the player to use its descent and rewind it back to safety before it reaches the hazard." },
   { version: "v0.14.4", commit: "18d5ff4", date: "2026-08-17", message: "Add play mode selection", description: "Changed Play to open a dedicated mode choice. Custom run leads to the challenge builder, Roadmap leads directly to level selection, and each screen's Back button returns to the mode choice." },
   { version: "v0.14.3", commit: "6cc5ee9", date: "2026-08-17", message: "Clarify the temporary ending", description: "Replaced the temporary rewind ending's fantasy-style wording with a direct completion message that clearly says all currently available rewind levels are finished." },
@@ -419,20 +418,20 @@ const levels = [
   {
     name: "Rewind Final Exam", width: 3000, start: [55,448], music: "level3", theme: "lava",
     postRun: true, rewindChapter: true, rewindTutorial: true, rewindField: true,
-    rewindFieldRadius: 360, rewindHintUnlocked: false, requiredLevelStars: 3,
+    rewindFieldRadius: 360, rewindHintUnlocked: false, requiredStars: 3,
     platforms: [
       R(0,490,520,80,"stone"),
       C(650,520,650,420,"exam-enemy",180,40,"stone",false,0),
       R(940,430,360,140,"stone"),
       B(1300,430,"stand","grass",120,54,{ rewindableState: true, speed: 260 }),
       R(1240,520,300,50,"stone"),
-      R(1540,330,510,240,"stone"), P(1780,270),
+      R(1540,390,510,180,"stone"), P(1780,330),
       W(2130,430,2510,430,"exam-signal",170,40,"stone",290),
       R(2650,390,350,180,"stone")
     ],
     pressurePlates: [
       Q(395,478,"exam-enemy",72,{ enemyOnly: true }),
-      Q(1645,318,"exam-signal",90,{ crateOnly: true })
+      Q(1645,378,"exam-signal",90,{ crateOnly: true })
     ],
     enemies: [ER(400,490,120,500,1,68,{ stopAtBoundary: true })],
     hazards: [R(520,490,420,80,"lava"), R(2050,490,600,80,"lava")],
@@ -506,11 +505,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.15.1";
+const GAME_VERSION = "v0.15.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "rewind-final-fix-v1", label: "Version 0.15.1 to 0.15.1" },
   { id: "rewind-final-v1", label: "Version 0.15.0 to 0.15.0" },
   { id: "dangerous-rewind-v1", label: "Version 0.14.5 to 0.14.5" },
   { id: "rewind-field-v1", label: "Version 0.14.1 to 0.14.4" },
@@ -530,7 +528,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.15.1", "v0.15.0",
+  "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -594,7 +592,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -925,7 +923,7 @@ function updateMovingPlatforms(dt) {
   levelMotionTime += dt;
   for (const platform of currentLevel().platforms) {
     if (isTimelineObject(platform)) {
-      if (platform.rewindableManual || platform.rewindableState) {
+      if (platform.rewindableManual) {
         if (platform.timelinePreview) updateTimelinePreview(platform, dt);
         else if (platform.timelinePlayback.length > 0) updateTimelinePlayback(platform, dt);
         continue;
@@ -1651,7 +1649,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -3025,9 +3023,8 @@ function update(dt) {
     updateHud();
   }
 
-  const collectedLevelStars = collected.filter(Boolean).length;
-  const finishRequirementMet = (!currentLevel().requiredStars || currentLevelStarCount() >= currentLevel().requiredStars) &&
-    (!currentLevel().requiredLevelStars || collectedLevelStars >= currentLevel().requiredLevelStars);
+  const finishRequirementMet = !currentLevel().requiredStars ||
+    currentLevelStarCount() >= currentLevel().requiredStars;
   if (finishRequirementMet && overlaps(box, currentLevel().finish)) {
     playSfx("flag");
     if (activeRunConfig) {
