@@ -80,8 +80,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.17.0", commit: "Pending commit", date: "2026-08-18", message: "Begin the Echo Chapter", description: "Added First Echo as level 21 and introduced deterministic action echoes. C records the slime's movement, jumps, and interactions, then spawns a looping cyan echo that obeys current platforms, walls, pressure plates, and switches; V removes it. The first puzzle uses an echo and the player on separate pressure plates to raise the final gate." },
-  { version: "v0.16.1", commit: "26479de", date: "2026-08-17", message: "Fix roadmap rewind timing", description: "Made standalone rewind-section runs launched from the roadmap start both the run timer and level timer on the player's first input. The run clock now persists through the remaining rewind levels and stops at the current endpoint." },
+  { version: "v0.16.1", commit: "Pending commit", date: "2026-08-17", message: "Fix roadmap rewind timing", description: "Made standalone rewind-section runs launched from the roadmap start both the run timer and level timer on the player's first input. The run clock now persists through the remaining rewind levels and stops at the current endpoint." },
   { version: "v0.16.0", commit: "361a241", date: "2026-08-17", message: "Turn rewind into a consistent world system", description: "Made every pushable crate, breakable block, and enemy maintain dynamic movement and state history throughout rewind levels. Optional crate movement can now be undone, destroyed blocks consistently return, and defeated enemies rewind back to life while collected rewards remain owned. The rewind field now persists after its introduction and targets eligible objects dynamically." },
   { version: "v0.15.3", commit: "1a8162d", date: "2026-08-17", message: "Fix the Level 18 freeze", description: "Initialized rewind playback state for cracked blocks so Second Chance and the final exam continue updating normally as soon as they load. Added a defensive playback check for rewindable state objects." },
   { version: "v0.15.2", commit: "d122a2d", date: "2026-08-17", message: "Make rewind selection hold its position", description: "Changed timeline adjustment so releasing G keeps the chosen rewind point fixed instead of immediately drifting backward again. Paused golden path markers now remain visually still until the selection moves or the rewind is committed." },
@@ -452,19 +451,6 @@ const levels = [
     enemies: [ER(400,490,120,500,1,68,{ stopAtBoundary: true })],
     hazards: [R(520,490,420,80,"lava"), R(2050,490,600,80,"lava")],
     stars: [[740,372],[1360,475],[2570,378]], finish: R(2920,300,34,90)
-  },
-  {
-    name: "First Echo", width: 1160, start: [55,448], music: "level2", theme: "rewind",
-    postRun: true, echoChapter: true, echoTutorial: true,
-    platforms: [
-      R(0,490,1160,80,"stone"),
-      {
-        ...C(800,190,800,55,"echo-gate",90,288,"stone",false,.95),
-        requiredPlateIds: ["echo-a", "echo-b"]
-      }
-    ],
-    pressurePlates: [Q(275,478,"echo-a",110), Q(620,478,"echo-b",470)],
-    hazards: [], stars: [], finish: R(1050,400,34,90)
   }
 ];
 
@@ -498,8 +484,6 @@ let rewindPointerOwnsInput = false;
 let forwardPointerId = null;
 let rewindFieldPreview = null;
 const player = { x: 0, y: 0, vx: 0, vy: 0, grounded: false, facing: 1, coyote: 0, jumpBuffer: 0, padLaunched: false };
-let echoRecording = null;
-let echo = null;
 let levelIndex = 0;
 let collected = [];
 let totalStars = 0;
@@ -537,11 +521,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.17.0";
+const GAME_VERSION = "v0.16.1";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "first-echo-v1", label: "Version 0.17.0 to 0.17.0" },
   { id: "roadmap-rewind-timing-v1", label: "Version 0.16.1 to 0.16.1" },
   { id: "systemic-rewind-v1", label: "Version 0.16.0 to 0.16.0" },
   { id: "rewind-state-fix-v1", label: "Version 0.15.3 to 0.15.3" },
@@ -566,7 +549,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -630,18 +613,13 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
 function playerBox() { return { x: player.x, y: player.y, w: PLAYER_W, h: PLAYER_H }; }
 
 function linkedControlActive(platform) {
-  if (platform.requiredPlateIds?.length) {
-    return platform.requiredPlateIds.every((id) =>
-      currentLevel().pressurePlates?.some((plate) => plate.id === id && plate.pressed)
-    );
-  }
   const linkedSwitch = currentLevel().switches?.find((candidate) => candidate.id === platform.switchId);
   const linkedPlateActive = currentLevel().pressurePlates?.some((candidate) =>
     candidate.id === platform.switchId && candidate.pressed
@@ -673,7 +651,6 @@ function resetEnemies(resetRewards = false) {
 }
 
 function resetPlayer(countDeath = false, resetEnemyRewards = false) {
-  if (countDeath) clearEchoState();
   if (countDeath) deaths++;
   resetBreakablePlatforms();
   resetEnemies(resetEnemyRewards);
@@ -695,7 +672,6 @@ function resetBreakablePlatforms() {
 }
 
 function startSpikeDeath(hazardId = null) {
-  clearEchoState();
   deaths++;
   if (hazardId) recordHazardDeath(hazardId);
   playSfx("death");
@@ -718,7 +694,6 @@ function startSpikeDeath(hazardId = null) {
 }
 
 function resetLevelMotion() {
-  clearEchoState();
   levelMotionTime = 0;
   rewindFieldPreview = null;
   if (currentLevel().rewindTutorial) currentLevel().rewindHintUnlocked = false;
@@ -794,12 +769,9 @@ function updatePressurePlates(dt) {
       enemy.alive && enemy.x + enemy.w > plate.x + 4 && enemy.x < plate.x + plate.w - 4 &&
       Math.abs(enemy.y + enemy.h - (plate.y + plate.h)) < 4
     );
-    const echoOnPlate = Boolean(echo?.grounded) &&
-      echo.x + PLAYER_W > plate.x + 4 && echo.x < plate.x + plate.w - 4 &&
-      Math.abs(echo.y + PLAYER_H - (plate.y + plate.h)) < 4;
     const pressed = plate.enemyOnly ? enemyOnPlate
       : plate.crateOnly ? crateOnPlate
-        : playerOnPlate || crateOnPlate || enemyOnPlate || echoOnPlate;
+        : playerOnPlate || crateOnPlate || enemyOnPlate;
     if (pressed && !plate.pressed) recordMechanic("pressure-plate");
     if (pressed && currentLevel().showRewindHintOnPlate) currentLevel().rewindHintUnlocked = true;
     if (pressed !== plate.pressed) playSfx("switch", pressed ? .72 : .48);
@@ -862,19 +834,12 @@ function movePlatformWithPlayer(platform, nextX, nextY, carryPlayer = true, reco
   const wasStanding = player.grounded &&
     Math.abs(player.y + PLAYER_H - oldY) < 3 &&
     player.x + PLAYER_W > oldX && player.x < oldX + platform.w;
-  const echoWasStanding = echo?.grounded &&
-    Math.abs(echo.y + PLAYER_H - oldY) < 3 &&
-    echo.x + PLAYER_W > oldX && echo.x < oldX + platform.w;
   platform.x = nextX;
   platform.y = nextY;
   if (wasStanding && carryPlayer) {
     if (platform.moving) recordMechanic("moving-platform");
     player.x += platform.x - oldX;
     player.y += platform.y - oldY;
-  }
-  if (echoWasStanding) {
-    echo.x += platform.x - oldX;
-    echo.y += platform.y - oldY;
   }
   if (recordMotion) recordPlatformMotion(platform);
 }
@@ -1471,9 +1436,8 @@ function closeRunSetup() {
 }
 
 const ROADMAP_POINTS = [
-  [5, 17], [15, 17], [25, 17], [35, 17], [45, 17], [55, 17], [65, 17], [75, 17], [85, 17], [95, 17],
-  [95, 50], [85, 50], [75, 50], [65, 50], [55, 50], [45, 50], [35, 50], [25, 50], [15, 50], [5, 50],
-  [5, 83], [15, 83], [25, 83], [35, 83], [45, 83], [55, 83], [65, 83], [75, 83], [85, 83], [95, 83]
+  [5, 25], [15, 25], [25, 25], [35, 25], [45, 25], [55, 25], [65, 25], [75, 25], [85, 25], [95, 25],
+  [95, 72], [85, 72], [75, 72], [65, 72], [55, 72], [45, 72], [35, 72], [25, 72], [15, 72], [5, 72]
 ];
 
 function renderRoadmap() {
@@ -1725,7 +1689,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -2135,84 +2099,6 @@ function cancelTimelinePreview() {
   forwardPointerId = null;
 }
 
-function levelSupportsEcho() {
-  return Boolean(currentLevel().echoChapter);
-}
-
-function echoActorState(actor) {
-  return {
-    x: actor.x, y: actor.y, vx: actor.vx, vy: actor.vy,
-    grounded: actor.grounded, facing: actor.facing,
-    coyote: actor.coyote, jumpBuffer: actor.jumpBuffer,
-    padLaunched: actor.padLaunched
-  };
-}
-
-function clearEchoState() {
-  echoRecording = null;
-  echo = null;
-}
-
-function beginEchoRecording() {
-  if (!levelSupportsEcho()) return false;
-  echo = null;
-  echoRecording = { start: echoActorState(player), frames: [], pendingInteract: false };
-  playSfx("switch", .62);
-  return true;
-}
-
-function finishEchoRecording() {
-  if (!echoRecording) return false;
-  if (echoRecording.frames.length === 0) {
-    echoRecording.frames.push({ left: false, right: false, jump: false, jumpPressed: false, interact: false });
-  }
-  echo = {
-    ...echoRecording.start,
-    start: { ...echoRecording.start },
-    frames: echoRecording.frames.map((frame) => ({ ...frame })),
-    cursor: 0
-  };
-  echoRecording = null;
-  playSfx("rewind-release");
-  return true;
-}
-
-function toggleEchoRecording() {
-  if (!levelSupportsEcho()) return false;
-  return echoRecording ? finishEchoRecording() : beginEchoRecording();
-}
-
-function destroyEcho() {
-  if (!echo) return false;
-  echo = null;
-  playSfx("switch", .45);
-  return true;
-}
-
-function captureEchoFrame() {
-  if (!echoRecording) return;
-  echoRecording.frames.push({
-    left: input.left,
-    right: input.right,
-    jump: input.jump,
-    jumpPressed: pressed.jump,
-    interact: echoRecording.pendingInteract
-  });
-  echoRecording.pendingInteract = false;
-}
-
-function resetEchoLoop() {
-  if (!echo) return;
-  Object.assign(echo, echo.start, { cursor: 0 });
-  echo.x = Math.max(0, Math.min(currentLevel().width - PLAYER_W, echo.x));
-  for (const solid of currentLevel().platforms) {
-    if (!platformHasCollision(solid) || !overlaps({ x: echo.x, y: echo.y, w: PLAYER_W, h: PLAYER_H }, solid)) continue;
-    echo.y = solid.y - PLAYER_H;
-    echo.vy = 0;
-    echo.grounded = true;
-  }
-}
-
 function setKey(code, down) {
   if (down && ["ArrowLeft", "KeyA", "ArrowRight", "KeyD", "ArrowUp", "KeyW", "Space", "ArrowDown", "KeyS", "KeyF", "KeyG"].includes(code)) startRunTimer();
   if (["ArrowLeft", "KeyA"].includes(code)) input.left = down;
@@ -2240,18 +2126,18 @@ function setKey(code, down) {
   }
 }
 
-function nearbySwitch(actor = player) {
-  if (!actor.grounded) return null;
-  const playerCenter = actor.x + PLAYER_W / 2;
-  const playerFeet = actor.y + PLAYER_H;
+function nearbySwitch() {
+  if (!player.grounded) return null;
+  const playerCenter = player.x + PLAYER_W / 2;
+  const playerFeet = player.y + PLAYER_H;
   return (currentLevel().switches || []).find((levelSwitch) =>
     Math.abs(playerCenter - (levelSwitch.x + levelSwitch.w / 2)) <= 72 &&
     Math.abs(playerFeet - (levelSwitch.y + levelSwitch.h)) <= 8
   ) || null;
 }
 
-function activateNearbySwitch(actor = player) {
-  const levelSwitch = nearbySwitch(actor);
+function activateNearbySwitch() {
+  const levelSwitch = nearbySwitch();
   if (!levelSwitch) return false;
   levelSwitch.flipped = !levelSwitch.flipped;
   recordMechanic("switch");
@@ -2295,21 +2181,6 @@ function rewindPromptButtons() {
   });
 }
 
-function echoPromptButtons() {
-  if (!currentLevel().echoTutorial || won) return [];
-  const controls = [{ kind: "record", label: echoRecording ? "C  SPAWN ECHO" : "C  RECORD" }];
-  if (echo) controls.push({ kind: "destroy", label: "V  DESTROY ECHO" });
-  const gap = 10;
-  const widths = controls.map((control) => control.label.length * 9 + 30);
-  const totalWidth = widths.reduce((sum, width) => sum + width, 0) + gap * (controls.length - 1);
-  let x = VIEW_W / 2 - totalWidth / 2;
-  return controls.map((control, index) => {
-    const button = { ...control, x, y: 60, w: widths[index], h: 34 };
-    x += widths[index] + gap;
-    return button;
-  });
-}
-
 function pointInsideButton(point, button) {
   return point.x >= button.x && point.x <= button.x + button.w &&
     point.y >= button.y && point.y <= button.y + button.h;
@@ -2338,15 +2209,6 @@ canvas.addEventListener("pointerdown", (event) => {
   }
   if (!gameStarted || paused || won) return;
   const pointer = canvasPointerPosition(event);
-  const echoControl = echoPromptButtons().find((button) => pointInsideButton(pointer, button));
-  if (echoControl) {
-    event.preventDefault();
-    startRunTimer();
-    if (echoControl.kind === "record") toggleEchoRecording();
-    else destroyEcho();
-    canvas.focus();
-    return;
-  }
   const rewindControl = rewindPromptButtons().find((button) => pointInsideButton(pointer, button));
   if (rewindControl) {
     event.preventDefault();
@@ -2385,11 +2247,10 @@ canvas.addEventListener("pointermove", (event) => {
     return;
   }
   const pointer = canvasPointerPosition(event);
-  const overEchoControl = echoPromptButtons().some((button) => pointInsideButton(pointer, button));
   const overRewindControl = rewindPromptButtons().some((button) => pointInsideButton(pointer, button));
   const levelSwitch = nearbySwitch();
   const overSwitchControl = levelSwitch && pointInsideButton(pointer, switchPromptBounds(levelSwitch, performance.now()));
-  canvas.style.cursor = overEchoControl || overRewindControl || overSwitchControl ? "pointer" : "default";
+  canvas.style.cursor = overRewindControl || overSwitchControl ? "pointer" : "default";
 });
 
 function trackDevelopmentSequence(event) {
@@ -2416,33 +2277,29 @@ function toggleDeveloperPanel() {
   if (!gameStarted || cutsceneActive) return;
   developerPanel.hidden = !developerPanel.hidden;
   if (!developerPanel.hidden) flightToggleButton.focus();
-  else {
-    setFlightEnabled(false);
-    canvas.focus();
-  }
+  else canvas.focus();
 }
 
 function trackLevelDeveloperSequence(event) {
-  if (!gameStarted || cutsceneActive || event.repeat || event.key.length !== 1) return false;
+  if (!gameStarted || cutsceneActive || event.repeat || event.key.length !== 1) return;
   const sequence = [101, 103, 103, 101, 115, 116];
   const key = event.key.toLowerCase().charCodeAt(0);
   levelDeveloperSequencePosition = key === sequence[levelDeveloperSequencePosition]
     ? levelDeveloperSequencePosition + 1
     : key === sequence[0] ? 1 : 0;
-  if (levelDeveloperSequencePosition !== sequence.length) return false;
+  if (levelDeveloperSequencePosition !== sequence.length) return;
   levelDeveloperSequencePosition = 0;
   toggleDeveloperPanel();
-  return true;
 }
 
 addEventListener("keydown", (event) => {
   if (event.target instanceof Element && event.target.matches("input, textarea, select")) return;
   trackDevelopmentSequence(event);
-  if (trackLevelDeveloperSequence(event)) return;
+  trackLevelDeveloperSequence(event);
   if (event.target instanceof Element && event.target.matches("button")) return;
   if (!gameStarted) return;
   if (cutsceneActive) return;
-  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "KeyP", "KeyE", "KeyF", "KeyG", "KeyC", "KeyV"].includes(event.code)) event.preventDefault();
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "KeyP", "KeyE", "KeyF", "KeyG"].includes(event.code)) event.preventDefault();
   if (event.code === "KeyP" && !won) {
     if (!leaderboardMenu.hidden && leaderboardReturn === "pause") closeLeaderboard();
     else if (!changelogMenu.hidden && changelogReturn === "pause") closeChangelog();
@@ -2450,19 +2307,7 @@ addEventListener("keydown", (event) => {
     return;
   }
   if (paused) return;
-  if (event.code === "KeyC" && !event.repeat) {
-    startRunTimer();
-    toggleEchoRecording();
-    return;
-  }
-  if (event.code === "KeyV" && !event.repeat) {
-    destroyEcho();
-    return;
-  }
-  if (event.code === "KeyE" && !event.repeat) {
-    if (echoRecording) echoRecording.pendingInteract = true;
-    activateNearbySwitch();
-  }
+  if (event.code === "KeyE") activateNearbySwitch();
   if (event.code === "KeyR") restartLevel();
   if (event.code === "KeyT") startOver();
   if (event.code === "Enter" && won) startRewindCutscene();
@@ -2488,7 +2333,6 @@ pauseChangelogButton.addEventListener("click", () => openChangelog("pause"));
 closeChangelogButton.addEventListener("click", closeChangelog);
 closeDeveloperPanelButton.addEventListener("click", () => {
   developerPanel.hidden = true;
-  setFlightEnabled(false);
   canvas.focus();
 });
 flightToggleButton.addEventListener("click", () => {
@@ -2965,10 +2809,6 @@ function restartSession() {
   quitRun();
 }
 
-function actorBox(actor) {
-  return { x: actor.x, y: actor.y, w: PLAYER_W, h: PLAYER_H };
-}
-
 function tryPushCrate(crate, distance) {
   const candidate = { x: crate.x + distance, y: crate.y, w: crate.w, h: crate.h };
   if (candidate.x < 0 || candidate.x + candidate.w > currentLevel().width) return false;
@@ -2983,62 +2823,54 @@ function tryPushCrate(crate, distance) {
   return true;
 }
 
-function moveActorAndCollideX(actor, dt, allowPush = true) {
-  const distance = actor.vx * dt;
-  actor.x += distance;
-  const box = actorBox(actor);
+function moveAndCollideX(dt) {
+  const distance = player.vx * dt;
+  player.x += distance;
+  const box = playerBox();
   for (const solid of currentLevel().platforms) {
     if (!platformHasCollision(solid)) continue;
     if (!overlaps(box, solid)) continue;
-    const feet = actor.y + PLAYER_H;
-    const approachingTop = actor.vy >= 0 && actor.y < solid.y &&
+    const feet = player.y + PLAYER_H;
+    const approachingTop = player.vy >= 0 && player.y < solid.y &&
       feet <= solid.y + PLATFORM_TOP_GRACE;
     if (approachingTop) continue;
-    if (solid.pushable && allowPush) {
-      if (distance > 0 && actor.x < solid.x) {
-        const pushDistance = actor.x + PLAYER_W - solid.x;
-        if (tryPushCrate(solid, pushDistance)) { box.x = actor.x; continue; }
-      } else if (distance < 0 && actor.x + PLAYER_W > solid.x + solid.w) {
-        const pushDistance = actor.x - (solid.x + solid.w);
-        if (tryPushCrate(solid, pushDistance)) { box.x = actor.x; continue; }
+    if (solid.pushable) {
+      if (distance > 0 && player.x < solid.x) {
+        const pushDistance = player.x + PLAYER_W - solid.x;
+        if (tryPushCrate(solid, pushDistance)) { box.x = player.x; continue; }
+      } else if (distance < 0 && player.x + PLAYER_W > solid.x + solid.w) {
+        const pushDistance = player.x - (solid.x + solid.w);
+        if (tryPushCrate(solid, pushDistance)) { box.x = player.x; continue; }
       }
     }
-    if (actor.vx > 0) actor.x = solid.x - PLAYER_W;
-    else if (actor.vx < 0) actor.x = solid.x + solid.w;
-    actor.vx = 0;
-    box.x = actor.x;
+    if (player.vx > 0) player.x = solid.x - PLAYER_W;
+    else if (player.vx < 0) player.x = solid.x + solid.w;
+    player.vx = 0;
+    box.x = player.x;
   }
-}
-
-function moveActorAndCollideY(actor, dt) {
-  actor.y += actor.vy * dt;
-  actor.grounded = false;
-  let landedOn = null;
-  const box = actorBox(actor);
-  for (const solid of currentLevel().platforms) {
-    if (!platformHasCollision(solid)) continue;
-    if (!overlaps(box, solid)) continue;
-    if (actor.vy > 0) {
-      const impactSpeed = actor.vy;
-      const surface = solid.material || solid.kind;
-      const landingKind = surface === "crate" ? "crate" : surface === "grass" ? "grass" : "stone";
-      landedOn = { platform: solid, kind: landingKind, impactSpeed, intensity: Math.max(.45, Math.min(1, impactSpeed / 700)) };
-      actor.y = solid.y - PLAYER_H;
-      actor.grounded = true;
-    }
-    else if (actor.vy < 0) actor.y = solid.y + solid.h;
-    actor.vy = 0;
-    box.y = actor.y;
-  }
-  return landedOn;
-}
-
-function moveAndCollideX(dt) {
-  moveActorAndCollideX(player, dt);
 }
 
 function moveAndCollideY(dt) {
-  return moveActorAndCollideY(player, dt);
+  player.y += player.vy * dt;
+  player.grounded = false;
+  let landedOn = null;
+  const box = playerBox();
+  for (const solid of currentLevel().platforms) {
+    if (!platformHasCollision(solid)) continue;
+    if (!overlaps(box, solid)) continue;
+    if (player.vy > 0) {
+      const impactSpeed = player.vy;
+      const surface = solid.material || solid.kind;
+      const landingKind = surface === "crate" ? "crate" : surface === "grass" ? "grass" : "stone";
+      landedOn = { platform: solid, kind: landingKind, impactSpeed, intensity: Math.max(.45, Math.min(1, impactSpeed / 700)) };
+      player.y = solid.y - PLAYER_H;
+      player.grounded = true;
+    }
+    else if (player.vy < 0) player.y = solid.y + solid.h;
+    player.vy = 0;
+    box.y = player.y;
+  }
+  return landedOn;
 }
 
 function createBlockDebris(platform) {
@@ -3119,17 +2951,15 @@ function updateLandingParticles(dt) {
   landingParticles = landingParticles.filter((particle) => particle.life > 0);
 }
 
-function updateBreakablePlatforms(dt, ...landings) {
-  for (const landedOn of landings) {
-    const platform = landedOn?.platform;
-    if (platform?.breakable && platform.breakTimer === null) {
-      if (platform.breakTrigger === "stand") {
-        platform.breakTimer = .75;
-        recordMechanic("crumble");
-      } else if (platform.breakTrigger === "impact" && landedOn.impactSpeed >= 180) {
-        platform.breakTimer = .24;
-        recordMechanic("impact-block");
-      }
+function updateBreakablePlatforms(dt, landedOn) {
+  const platform = landedOn?.platform;
+  if (platform?.breakable && platform.breakTimer === null) {
+    if (platform.breakTrigger === "stand") {
+      platform.breakTimer = .75;
+      recordMechanic("crumble");
+    } else if (platform.breakTrigger === "impact" && landedOn.impactSpeed >= 180) {
+      platform.breakTimer = .24;
+      recordMechanic("impact-block");
     }
   }
 
@@ -3161,56 +2991,6 @@ function activateJumpPad() {
   recordMechanic("jump-pad");
   playSfx("jump-pad");
   return true;
-}
-
-function activateEchoJumpPad() {
-  if (!echo || echo.vy < 0) return false;
-  const pad = currentLevel().jumpPads?.find((candidate) => overlaps(actorBox(echo), candidate));
-  if (!pad) return false;
-  echo.y = pad.y - PLAYER_H;
-  echo.vy = -JUMP_PAD_SPEED;
-  echo.grounded = false;
-  echo.coyote = 0;
-  echo.jumpBuffer = 0;
-  echo.padLaunched = true;
-  return true;
-}
-
-function updateEcho(dt) {
-  if (!echo || echo.frames.length === 0) return null;
-  if (echo.cursor >= echo.frames.length) resetEchoLoop();
-  const frame = echo.frames[echo.cursor++];
-  const direction = Number(frame.right) - Number(frame.left);
-  const acceleration = echo.grounded ? GROUND_ACCEL : AIR_ACCEL;
-  if (direction) {
-    echo.vx += direction * acceleration * dt;
-    echo.vx = Math.max(-RUN_SPEED, Math.min(RUN_SPEED, echo.vx));
-    echo.facing = direction;
-  } else {
-    const drag = FRICTION * dt;
-    echo.vx = Math.abs(echo.vx) <= drag ? 0 : echo.vx - Math.sign(echo.vx) * drag;
-  }
-
-  if (frame.jumpPressed) echo.jumpBuffer = JUMP_BUFFER;
-  else echo.jumpBuffer = Math.max(0, echo.jumpBuffer - dt);
-  echo.coyote = echo.grounded ? COYOTE_TIME : Math.max(0, echo.coyote - dt);
-  if (echo.jumpBuffer > 0 && echo.coyote > 0) {
-    echo.vy = -JUMP_SPEED;
-    echo.grounded = false;
-    echo.coyote = 0;
-    echo.jumpBuffer = 0;
-  }
-  if (!frame.jump && echo.vy < -220 && !echo.padLaunched) echo.vy += GRAVITY * 1.55 * dt;
-  echo.vy = Math.min(echo.vy + GRAVITY * dt, 900);
-
-  moveActorAndCollideX(echo, dt, Boolean(currentLevel().echoCanPushCrates));
-  const landedOn = moveActorAndCollideY(echo, dt);
-  const padActivated = activateEchoJumpPad();
-  if (landedOn && !padActivated) echo.padLaunched = false;
-  echo.x = Math.max(0, Math.min(currentLevel().width - PLAYER_W, echo.x));
-  if (frame.interact) activateNearbySwitch(echo);
-  if (echo.y > VIEW_H + 100) resetEchoLoop();
-  return landedOn;
 }
 
 function update(dt) {
@@ -3250,7 +3030,6 @@ function update(dt) {
     return;
   }
 
-  captureEchoFrame();
   updatePressurePlates(dt);
   updateMovingPlatforms(dt);
 
@@ -3290,6 +3069,7 @@ function update(dt) {
 
   moveAndCollideX(dt);
   const landedOn = moveAndCollideY(dt);
+  updateBreakablePlatforms(dt, landedOn);
   if (!wasGrounded && landedOn) {
     createLandingParticles(landedOn);
     playSfx(`land-${landedOn.kind}`, landedOn.intensity);
@@ -3297,8 +3077,6 @@ function update(dt) {
   const padActivated = activateJumpPad();
   if (landedOn && !padActivated) player.padLaunched = false;
   player.x = Math.max(0, Math.min(currentLevel().width - PLAYER_W, player.x));
-  const echoLandedOn = updateEcho(dt);
-  updateBreakablePlatforms(dt, landedOn, echoLandedOn);
 
   if (updateEnemies(dt, previousPlayerBottom)) return;
   const box = playerBox();
@@ -3336,9 +3114,8 @@ function update(dt) {
   }
 
   const collectedLevelStars = collected.filter(Boolean).length;
-  const finishRequirementMet = flightEnabled ||
-    ((!currentLevel().requiredStars || currentLevelStarCount() >= currentLevel().requiredStars) &&
-      (!currentLevel().requiredLevelStars || collectedLevelStars >= currentLevel().requiredLevelStars));
+  const finishRequirementMet = (!currentLevel().requiredStars || currentLevelStarCount() >= currentLevel().requiredStars) &&
+    (!currentLevel().requiredLevelStars || collectedLevelStars >= currentLevel().requiredLevelStars);
   if (finishRequirementMet && overlaps(box, currentLevel().finish)) {
     playSfx("flag");
     if (activeRunConfig) {
@@ -3352,7 +3129,7 @@ function update(dt) {
         levelTransition = .65;
       }
     }
-    else if (currentLevel().rewindChapter || currentLevel().echoChapter) {
+    else if (currentLevel().rewindChapter) {
       if (levelIndex === levels.length - 1) finishRewindTutorial();
       else {
         completeLevelSplit();
@@ -3926,18 +3703,6 @@ function drawPlayer(time) {
   });
 }
 
-function drawEcho(time) {
-  if (!echo) return;
-  ctx.save();
-  ctx.globalAlpha = .74;
-  ctx.shadowColor = "#77e8ff";
-  ctx.shadowBlur = 12;
-  drawSlimeCharacter(echo, time, {
-    body: "#66d9d2", outline: "#287b91", highlight: "#c0fff5", face: "#173d4a"
-  });
-  ctx.restore();
-}
-
 function drawEnemies(time) {
   for (const enemy of currentLevel().enemies || []) {
     if (!enemy.alive) continue;
@@ -4418,28 +4183,6 @@ function drawRewindTutorialPrompt(time) {
   ctx.restore();
 }
 
-function drawEchoTutorialPrompt(time) {
-  const buttons = echoPromptButtons();
-  if (buttons.length === 0) return;
-  const pulse = (Math.sin(time * .008) + 1) * .5;
-  ctx.save();
-  ctx.textAlign = "center";
-  ctx.font = "900 13px Inter, sans-serif";
-  buttons.forEach((button) => {
-    const active = button.kind === "record" && Boolean(echoRecording);
-    ctx.fillStyle = active ? "rgba(20, 78, 89, .96)" : "rgba(6, 20, 43, .88)";
-    ctx.strokeStyle = active ? `rgba(119,232,255,${.78 + pulse * .22})` : "rgba(255,255,255,.28)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.roundRect(button.x, button.y, button.w, button.h, 11);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = active ? "#c0fff5" : "#dbeaf7";
-    ctx.fillText(button.label, button.x + button.w / 2, button.y + 22);
-  });
-  ctx.restore();
-}
-
 function render(time) {
   ctx.clearRect(0, 0, VIEW_W, VIEW_H);
   if (cutsceneActive) {
@@ -4454,7 +4197,6 @@ function render(time) {
   for (const pad of currentLevel().jumpPads || []) drawJumpPad(pad, time);
   for (const h of currentLevel().hazards) drawHazard(h, time);
   drawEnemies(time);
-  drawEcho(time);
   currentLevel().stars.forEach(([x, y], i) => drawStar(x, y, i, time));
   drawEnemyStars(time);
   drawFlag(currentLevel().finish);
@@ -4464,7 +4206,6 @@ function render(time) {
   if (deathTimer > 0) drawDeathParticles();
   else drawPlayer(time);
   drawRewindTutorialPrompt(time);
-  drawEchoTutorialPrompt(time);
   if (levelTransition > 0) {
     ctx.fillStyle = `rgba(255,255,255,${Math.sin((.65 - levelTransition) / .65 * Math.PI) * .65})`;
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);

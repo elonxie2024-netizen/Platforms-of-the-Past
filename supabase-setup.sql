@@ -11,6 +11,7 @@ create table if not exists public.leaderboard_rulesets (
 
 insert into public.leaderboard_rulesets (id, label, accepted_versions)
 values
+  ('first-echo-v1', 'Version 0.17.0 to 0.17.0', array['v0.17.0']),
   ('roadmap-rewind-timing-v1', 'Version 0.16.1 to 0.16.1', array['v0.16.1']),
   ('systemic-rewind-v1', 'Version 0.16.0 to 0.16.0', array['v0.16.0']),
   ('rewind-state-fix-v1', 'Version 0.15.3 to 0.15.3', array['v0.15.3']),
