@@ -80,8 +80,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.16.1", commit: "Pending commit", date: "2026-08-17", message: "Fix roadmap rewind timing", description: "Made standalone rewind-section runs launched from the roadmap start both the run timer and level timer on the player's first input. The run clock now persists through the remaining rewind levels and stops at the current endpoint." },
-  { version: "v0.16.0", commit: "361a241", date: "2026-08-17", message: "Turn rewind into a consistent world system", description: "Made every pushable crate, breakable block, and enemy maintain dynamic movement and state history throughout rewind levels. Optional crate movement can now be undone, destroyed blocks consistently return, and defeated enemies rewind back to life while collected rewards remain owned. The rewind field now persists after its introduction and targets eligible objects dynamically." },
+  { version: "v0.16.0", commit: "Pending commit", date: "2026-08-17", message: "Turn rewind into a consistent world system", description: "Made every pushable crate, breakable block, and enemy maintain dynamic movement and state history throughout rewind levels. Optional crate movement can now be undone, destroyed blocks consistently return, and defeated enemies rewind back to life while collected rewards remain owned. The rewind field now persists after its introduction and targets eligible objects dynamically." },
   { version: "v0.15.3", commit: "1a8162d", date: "2026-08-17", message: "Fix the Level 18 freeze", description: "Initialized rewind playback state for cracked blocks so Second Chance and the final exam continue updating normally as soon as they load. Added a defensive playback check for rewindable state objects." },
   { version: "v0.15.2", commit: "d122a2d", date: "2026-08-17", message: "Make rewind selection hold its position", description: "Changed timeline adjustment so releasing G keeps the chosen rewind point fixed instead of immediately drifting backward again. Paused golden path markers now remain visually still until the selection moves or the rewind is committed." },
   { version: "v0.15.1", commit: "b4947b9", date: "2026-08-17", message: "Fix the rewind final exam", description: "Made restored breakable blocks remain stable after rewind, raised the final exam's middle wall so restoring its cracked block is required, and made the finish require all three placed exam stars rather than allowing an enemy's bonus star to replace one." },
@@ -477,7 +476,7 @@ const MUSIC_TRACKS = {
   }
 };
 
-const input = { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false };
+const input = { left: false, right: false, jump: false, rewind: false, forwardTime: false };
 const pressed = { jump: false };
 let rewindPointerId = null;
 let rewindPointerOwnsInput = false;
@@ -512,7 +511,6 @@ let levelElapsed = 0;
 let levelTimerRunning = false;
 let levelSplits = [];
 let runStartLevel = 0;
-let countPostRunInRunTimer = false;
 let paused = false;
 let timerWasRunningBeforePause = false;
 let levelTimerWasRunningBeforePause = false;
@@ -521,11 +519,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.16.1";
+const GAME_VERSION = "v0.16.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "roadmap-rewind-timing-v1", label: "Version 0.16.1 to 0.16.1" },
   { id: "systemic-rewind-v1", label: "Version 0.16.0 to 0.16.0" },
   { id: "rewind-state-fix-v1", label: "Version 0.15.3 to 0.15.3" },
   { id: "rewind-hold-v1", label: "Version 0.15.2 to 0.15.2" },
@@ -549,7 +546,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -613,7 +610,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -1131,7 +1128,7 @@ function updateTimerHud() {
 
 function startRunTimer() {
   if (timerRunning || paused || won || !gameStarted) return;
-  if (currentLevel().postRun && !countPostRunInRunTimer) {
+  if (currentLevel().postRun) {
     if (!levelTimerRunning) {
       levelStartedAt = performance.now() - levelElapsed * 1000;
       levelTimerRunning = true;
@@ -1500,7 +1497,6 @@ function startRoadmapRun(index) {
   activeRunConfig = null;
   runLevelQueue = [];
   runQueuePosition = 0;
-  countPostRunInRunTimer = index >= INTRO_LEVEL_COUNT;
   beginRun(index);
 }
 
@@ -1514,7 +1510,6 @@ function startConfiguredRun() {
   activeRunConfig = { ...config, levels: [...config.levels] };
   runLevelQueue = [...config.levels];
   runQueuePosition = 0;
-  countPostRunInRunTimer = true;
   leaderboardMetric = config.metric;
   beginRun(runLevelQueue[0]);
 }
@@ -1689,7 +1684,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -1774,7 +1769,7 @@ function setPaused(shouldPause) {
     if (timerRunning) finishRunTimer();
     if (levelTimerRunning) finishLevelTimer();
     paused = true;
-    Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
+    Object.assign(input, { left: false, right: false, jump: false, rewind: false, forwardTime: false });
     pressed.jump = false;
     pauseMenu.hidden = false;
     restartButton.disabled = true;
@@ -1918,7 +1913,7 @@ function showRunResults() {
   restartButton.disabled = true;
   restartRunButton.disabled = true;
   quitButton.disabled = true;
-  Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
+  Object.assign(input, { left: false, right: false, jump: false, rewind: false, forwardTime: false });
   pressed.jump = false;
   continueButton.hidden = Boolean(activeRunConfig && !runProgress.completedLevels.has(INTRO_LEVEL_COUNT - 1));
   continueButton.classList.toggle("ready", !finishedRun.eligible);
@@ -1944,7 +1939,7 @@ function startRewindCutscene() {
   restartButton.disabled = true;
   restartRunButton.disabled = true;
   quitButton.disabled = true;
-  Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
+  Object.assign(input, { left: false, right: false, jump: false, rewind: false, forwardTime: false });
   pressed.jump = false;
 }
 
@@ -1954,7 +1949,6 @@ function startRewindLevel() {
   rewindMenuAwakened = true;
   applyRewindMenuState();
   unlockThrough(INTRO_LEVEL_COUNT);
-  countPostRunInRunTimer = false;
   runStartLevel = INTRO_LEVEL_COUNT;
   loadLevel(INTRO_LEVEL_COUNT);
   won = false;
@@ -1970,7 +1964,6 @@ function startRewindLevel() {
 
 function finishRewindTutorial() {
   completeLevelSplit();
-  if (countPostRunInRunTimer) finishRunTimer();
   won = true;
   chapterCompleteMessage.hidden = false;
   rewindTutorialSummary.textContent = `Level time ${formatRunTime(levelElapsed)}`;
@@ -1978,7 +1971,7 @@ function finishRewindTutorial() {
   restartButton.disabled = true;
   restartRunButton.disabled = true;
   quitButton.disabled = true;
-  Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
+  Object.assign(input, { left: false, right: false, jump: false, rewind: false, forwardTime: false });
   replayRewindButton.focus();
 }
 
@@ -2100,10 +2093,9 @@ function cancelTimelinePreview() {
 }
 
 function setKey(code, down) {
-  if (down && ["ArrowLeft", "KeyA", "ArrowRight", "KeyD", "ArrowUp", "KeyW", "Space", "ArrowDown", "KeyS", "KeyF", "KeyG"].includes(code)) startRunTimer();
+  if (down && ["ArrowLeft", "KeyA", "ArrowRight", "KeyD", "ArrowUp", "KeyW", "Space", "KeyF", "KeyG"].includes(code)) startRunTimer();
   if (["ArrowLeft", "KeyA"].includes(code)) input.left = down;
   if (["ArrowRight", "KeyD"].includes(code)) input.right = down;
-  if (["ArrowDown", "KeyS"].includes(code)) input.down = down;
   if (["ArrowUp", "KeyW", "Space"].includes(code)) {
     if (down && !input.jump) pressed.jump = true;
     input.jump = down;
@@ -2299,7 +2291,7 @@ addEventListener("keydown", (event) => {
   if (event.target instanceof Element && event.target.matches("button")) return;
   if (!gameStarted) return;
   if (cutsceneActive) return;
-  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "KeyP", "KeyE", "KeyF", "KeyG"].includes(event.code)) event.preventDefault();
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "Space", "KeyP", "KeyE", "KeyF", "KeyG"].includes(event.code)) event.preventDefault();
   if (event.code === "KeyP" && !won) {
     if (!leaderboardMenu.hidden && leaderboardReturn === "pause") closeLeaderboard();
     else if (!changelogMenu.hidden && changelogReturn === "pause") closeChangelog();
@@ -2316,7 +2308,7 @@ addEventListener("keydown", (event) => {
 addEventListener("keyup", (event) => { if (gameStarted) setKey(event.code, false); });
 addEventListener("blur", () => {
   if (input.rewind) commitTimelinePreview();
-  Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
+  Object.assign(input, { left: false, right: false, jump: false, rewind: false, forwardTime: false });
 });
 restartButton.addEventListener("click", restartLevel);
 restartRunButton.addEventListener("click", startOver);
@@ -2335,10 +2327,7 @@ closeDeveloperPanelButton.addEventListener("click", () => {
   developerPanel.hidden = true;
   canvas.focus();
 });
-flightToggleButton.addEventListener("click", () => {
-  setFlightEnabled(!flightEnabled);
-  canvas.focus();
-});
+flightToggleButton.addEventListener("click", () => setFlightEnabled(!flightEnabled));
 versionsButton.addEventListener("click", openVersions);
 closeVersionsButton.addEventListener("click", closeVersions);
 leaderboardVersion.addEventListener("change", refreshLeaderboard);
@@ -2756,7 +2745,6 @@ function startOver() {
 }
 
 function quitRun() {
-  countPostRunInRunTimer = false;
   resetCutscene();
   developerPanel.hidden = true;
   setFlightEnabled(false);
@@ -2765,7 +2753,7 @@ function quitRun() {
   paused = false;
   timerWasRunningBeforePause = false;
   levelTimerWasRunningBeforePause = false;
-  Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
+  Object.assign(input, { left: false, right: false, jump: false, rewind: false, forwardTime: false });
   pressed.jump = false;
   pauseButton.disabled = true;
   restartButton.disabled = true;
@@ -3046,23 +3034,17 @@ function update(dt) {
     player.vx = Math.abs(player.vx) <= drag ? 0 : player.vx - Math.sign(player.vx) * drag;
   }
 
-  if (flightEnabled) {
-    pressed.jump = false;
-    player.jumpBuffer = 0;
-    player.coyote = 0;
+  if (pressed.jump) { player.jumpBuffer = JUMP_BUFFER; pressed.jump = false; }
+  else player.jumpBuffer = Math.max(0, player.jumpBuffer - dt);
+  player.coyote = player.grounded ? COYOTE_TIME : Math.max(0, player.coyote - dt);
+
+  if (player.jumpBuffer > 0 && player.coyote > 0) {
+    player.vy = -JUMP_SPEED;
     player.grounded = false;
-    player.padLaunched = false;
-    player.vy = (Number(input.down) - Number(input.jump)) * RUN_SPEED;
-  } else {
-    if (pressed.jump) { player.jumpBuffer = JUMP_BUFFER; pressed.jump = false; }
-    else player.jumpBuffer = Math.max(0, player.jumpBuffer - dt);
-    player.coyote = player.grounded ? COYOTE_TIME : Math.max(0, player.coyote - dt);
-    if (player.jumpBuffer > 0 && player.coyote > 0) {
-      player.vy = -JUMP_SPEED;
-      player.grounded = false;
-      player.coyote = 0;
-      player.jumpBuffer = 0;
-    }
+    player.coyote = 0;
+    player.jumpBuffer = 0;
+  }
+  if (!flightEnabled) {
     if (!input.jump && player.vy < -220 && !player.padLaunched) player.vy += GRAVITY * 1.55 * dt;
     player.vy = Math.min(player.vy + GRAVITY * dt, 900);
   }
