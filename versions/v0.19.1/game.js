@@ -84,8 +84,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.19.2", commit: "Pending commit", date: "2026-08-19", message: "Close Echo Chapter shortcuts", description: "Attached moving spike strips to the tops of level 24 and 25's vertical gates so they cannot be used as unintended stepping stones. Rebuilt level 26 as a longer four-platform plate-controlled crossing with minimal release grace, requiring the echo to keep the pressure plate active for the full route." },
-  { version: "v0.19.1", commit: "17f8a92", date: "2026-08-18", message: "Preview echo recordings", description: "Split echo creation into recording, route preview, and creation stages. After recording stops, the world holds at the endpoint while a golden outline marks the echo's starting position and animated directional arrows trace its actual recorded path; pressing C again creates the echo." },
+  { version: "v0.19.1", commit: "Pending commit", date: "2026-08-18", message: "Preview echo recordings", description: "Split echo creation into recording, route preview, and creation stages. After recording stops, the world holds at the endpoint while a golden outline marks the echo's starting position and animated directional arrows trace its actual recorded path; pressing C again creates the echo." },
   { version: "v0.19.0", commit: "64b80e7", date: "2026-08-18", message: "Complete the Echo Chapter", description: "Added a Rewind Chapter completion screen and echo-unlock time-machine cinematic between levels 20 and 21. Added Cargo Loop, Safe Interval, Echo Assembly, and Echo Final Exam as levels 27 through 30, combining echoes with stable crate pushing, enemy timing, switches, pressure plates, moving platforms, hazards, and multi-section synthesis puzzles." },
   { version: "v0.18.0", commit: "d92b36f", date: "2026-08-18", message: "Expand the Echo Chapter", description: "Added five Echo Chapter levels from Next Time Around through Echo Rhythm. The new puzzles teach repeated loop timing, recorded momentary switch pulses, sequential moving weight across three plates, crossing echo schedules, and forgiving coordination across moving platforms." },
   { version: "v0.17.0", commit: "77874ee", date: "2026-08-18", message: "Begin the Echo Chapter", description: "Added First Echo as level 21 and introduced deterministic action echoes. C records the slime's movement, jumps, and interactions, then spawns a looping cyan echo that obeys current platforms, walls, pressure plates, and switches; V removes it. The first puzzle uses an echo and the player on separate pressure plates to raise the final gate." },
@@ -231,9 +230,6 @@ const K = (x, y, w = 60, h = 60) => ({
 });
 const S = (x, y, id, options = {}) => ({ x, y, w: 42, h: 44, id, flipped: false, activeTimer: 0, ...options });
 const Q = (x, y, id, w = 72, options = {}) => ({ x, y, w, h: 12, id, pressed: false, pressProgress: 0, ...options });
-const A = (platformId, offsetX = 0, offsetY = -18, w = 72, h = 18) => ({
-  x: 0, y: 0, w, h, kind: "attached-spikes", platformId, offsetX, offsetY
-});
 const E = (x, surfaceY, minX, maxX, direction = 1, speed = 62) => ({
   x, y: surfaceY - PLAYER_H, w: PLAYER_W, h: PLAYER_H, minX, maxX, speed,
   direction, baseX: x, baseDirection: direction, alive: true, rewindableEnemy: true,
@@ -514,7 +510,7 @@ const levels = [
       Q(275,478,"sequence-a",155), Q(585,478,"sequence-b",155), Q(895,478,"sequence-c",155)
     ],
     jumpPads: [R(1120,470,64,20,"jump-pad")],
-    hazards: [A("sequence-a"), A("sequence-b"), A("sequence-c")], stars: [], finish: R(145,210,34,90)
+    hazards: [], stars: [], finish: R(145,210,34,90)
   },
   {
     name: "Crossing Paths", width: 1500, start: [90,448], music: "level1", theme: "rewind",
@@ -527,21 +523,19 @@ const levels = [
     ],
     pressurePlates: [Q(1010,478,"cross-a",170), Q(300,478,"cross-b",170)],
     jumpPads: [R(5,470,60,20,"jump-pad")],
-    hazards: [A("cross-a",0,-18,76), A("cross-b",0,-18,76)], stars: [], finish: R(1410,240,34,90)
+    hazards: [], stars: [], finish: R(1410,240,34,90)
   },
   {
-    name: "Echo Rhythm", width: 1540, start: [55,448], music: "level3", theme: "lava",
+    name: "Echo Rhythm", width: 1320, start: [55,448], music: "level3", theme: "lava",
     postRun: true, echoChapter: true,
     platforms: [
-      R(0,490,420,80,"stone"),
-      C(470,535,470,420,"rhythm-plate",130,38,"stone",false,.08),
-      C(665,535,665,370,"rhythm-plate",130,38,"stone",false,.08),
-      C(860,535,860,420,"rhythm-plate",130,38,"stone",false,.08),
-      C(1055,535,1055,350,"rhythm-plate",130,38,"stone",false,.08),
-      R(1250,450,290,120,"stone")
+      R(0,490,450,80,"stone"),
+      C(500,535,500,405,"rhythm-plate",155,38,"stone",false,1.15),
+      C(735,535,735,345,"rhythm-plate",155,38,"stone",false,1.15),
+      R(980,450,340,120,"stone")
     ],
     pressurePlates: [Q(220,478,"rhythm-plate",145)],
-    hazards: [R(420,500,830,70,"lava")], stars: [], finish: R(1460,360,34,90)
+    hazards: [R(450,500,530,70,"lava")], stars: [], finish: R(1240,360,34,90)
   },
   {
     name: "Cargo Loop", width: 1500, start: [55,448], music: "level1", theme: "rewind",
@@ -690,11 +684,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.19.2";
+const GAME_VERSION = "v0.19.1";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "echo-shortcut-fix-v1", label: "Version 0.19.2 to 0.19.2" },
   { id: "echo-route-preview-v1", label: "Version 0.19.1 to 0.19.1" },
   { id: "echo-final-v1", label: "Version 0.19.0 to 0.19.0" },
   { id: "echo-chapter-timing-v1", label: "Version 0.18.0 to 0.18.0" },
@@ -723,7 +716,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -787,22 +780,11 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
 function playerBox() { return { x: player.x, y: player.y, w: PLAYER_W, h: PLAYER_H }; }
-
-function resolvedHazard(hazard) {
-  if (!hazard.platformId) return hazard;
-  const platform = currentLevel().platforms.find((candidate) => candidate.switchId === hazard.platformId);
-  if (!platform) return hazard;
-  return {
-    ...hazard,
-    x: platform.x + hazard.offsetX,
-    y: platform.y + hazard.offsetY
-  };
-}
 
 function linkedControlActive(platform) {
   if (platform.requiredPlateIds?.length) {
@@ -1905,7 +1887,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -3601,7 +3583,7 @@ function update(dt) {
     resetPlayer(true);
     return;
   }
-  const touchedHazardIndex = currentLevel().hazards.findIndex((hazard) => overlaps(box, resolvedHazard(hazard)));
+  const touchedHazardIndex = currentLevel().hazards.findIndex((hazard) => overlaps(box, hazard));
   const touchedHazard = currentLevel().hazards[touchedHazardIndex];
   if (touchedHazard) {
     startSpikeDeath(`${levelIndex}:hazard:${touchedHazardIndex}`);
@@ -4957,7 +4939,7 @@ function render(time) {
   for (const levelSwitch of currentLevel().switches || []) drawSwitch(levelSwitch, time);
   for (const plate of currentLevel().pressurePlates || []) drawPressurePlate(plate);
   for (const pad of currentLevel().jumpPads || []) drawJumpPad(pad, time);
-  for (const h of currentLevel().hazards) drawHazard(resolvedHazard(h), time);
+  for (const h of currentLevel().hazards) drawHazard(h, time);
   drawEchoRoutePreview(time);
   drawEnemies(time);
   drawEcho(time);
