@@ -20,10 +20,6 @@ const chapterCompleteMessage = document.querySelector("#chapterCompleteMessage")
 const rewindTutorialSummary = document.querySelector("#rewindTutorialSummary");
 const replayRewindButton = document.querySelector("#replayRewindButton");
 const rewindMenuButton = document.querySelector("#rewindMenuButton");
-const echoChapterMessage = document.querySelector("#echoChapterMessage");
-const echoChapterSummary = document.querySelector("#echoChapterSummary");
-const echoContinueButton = document.querySelector("#echoContinueButton");
-const echoMenuButton = document.querySelector("#echoMenuButton");
 const mainMenu = document.querySelector("#mainMenu");
 const playButton = document.querySelector("#playButton");
 const playChoiceMenu = document.querySelector("#playChoiceMenu");
@@ -84,8 +80,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.19.0", commit: "Pending commit", date: "2026-08-18", message: "Complete the Echo Chapter", description: "Added a Rewind Chapter completion screen and echo-unlock time-machine cinematic between levels 20 and 21. Added Cargo Loop, Safe Interval, Echo Assembly, and Echo Final Exam as levels 27 through 30, combining echoes with stable crate pushing, enemy timing, switches, pressure plates, moving platforms, hazards, and multi-section synthesis puzzles." },
-  { version: "v0.18.0", commit: "d92b36f", date: "2026-08-18", message: "Expand the Echo Chapter", description: "Added five Echo Chapter levels from Next Time Around through Echo Rhythm. The new puzzles teach repeated loop timing, recorded momentary switch pulses, sequential moving weight across three plates, crossing echo schedules, and forgiving coordination across moving platforms." },
+  { version: "v0.18.0", commit: "Pending commit", date: "2026-08-18", message: "Expand the Echo Chapter", description: "Added five Echo Chapter levels from Next Time Around through Echo Rhythm. The new puzzles teach repeated loop timing, recorded momentary switch pulses, sequential moving weight across three plates, crossing echo schedules, and forgiving coordination across moving platforms." },
   { version: "v0.17.0", commit: "77874ee", date: "2026-08-18", message: "Begin the Echo Chapter", description: "Added First Echo as level 21 and introduced deterministic action echoes. C records the slime's movement, jumps, and interactions, then spawns a looping cyan echo that obeys current platforms, walls, pressure plates, and switches; V removes it. The first puzzle uses an echo and the player on separate pressure plates to raise the final gate." },
   { version: "v0.16.1", commit: "26479de", date: "2026-08-17", message: "Fix roadmap rewind timing", description: "Made standalone rewind-section runs launched from the roadmap start both the run timer and level timer on the player's first input. The run clock now persists through the remaining rewind levels and stops at the current endpoint." },
   { version: "v0.16.0", commit: "361a241", date: "2026-08-17", message: "Turn rewind into a consistent world system", description: "Made every pushable crate, breakable block, and enemy maintain dynamic movement and state history throughout rewind levels. Optional crate movement can now be undone, destroyed blocks consistently return, and defeated enemies rewind back to life while collected rewards remain owned. The rewind field now persists after its introduction and targets eligible objects dynamically." },
@@ -188,7 +183,6 @@ const JUMP_BUFFER = 0.12;
 const PLATFORM_TOP_GRACE = 10;
 const DEATH_DURATION = 0.42;
 const CUTSCENE_DURATION = 10.4;
-const ECHO_CUTSCENE_DURATION = 9.2;
 const INTRO_LEVEL_COUNT = 10;
 
 const R = (x, y, w, h, kind = "grass") => ({ x, y, w, h, kind });
@@ -535,80 +529,6 @@ const levels = [
     ],
     pressurePlates: [Q(220,478,"rhythm-plate",145)],
     hazards: [R(450,500,530,70,"lava")], stars: [], finish: R(1240,360,34,90)
-  },
-  {
-    name: "Cargo Loop", width: 1500, start: [55,448], music: "level1", theme: "rewind",
-    postRun: true, echoChapter: true, echoCanPushCrates: true,
-    platforms: [
-      R(0,490,900,80,"stone"), R(120,330,250,40,"stone"),
-      P(560,430), C(650,280,650,35,"cargo-release",58,210,"stone"),
-      R(820,300,80,270,"stone"),
-      C(930,540,930,410,"cargo-lock",260,40,"stone",false,.8),
-      R(1240,390,260,180,"stone")
-    ],
-    pressurePlates: [Q(205,318,"cargo-release",92), Q(700,478,"cargo-lock",112,{ crateOnly: true })],
-    hazards: [R(900,500,340,70,"lava")], stars: [], finish: R(1410,300,34,90)
-  },
-  {
-    name: "Safe Interval", width: 1580, start: [55,448], music: "level2", theme: "lava",
-    postRun: true, echoChapter: true,
-    platforms: [
-      R(0,490,1580,80,"stone"),
-      C(560,540,560,380,"safe-window",620,40,"stone",false,.9)
-    ],
-    pressurePlates: [Q(245,478,"safe-window",150)],
-    enemies: [E(910,490,610,1120,1,92)],
-    hazards: Array.from({ length: 10 }, (_, index) => R(520 + index * 68,472,68,18)),
-    stars: [], finish: R(1490,400,34,90)
-  },
-  {
-    name: "Echo Assembly", width: 2450, start: [55,448], music: "level3", theme: "rewind",
-    postRun: true, echoChapter: true,
-    platforms: [
-      R(0,490,790,80,"stone"), P(520,430),
-      C(820,430,1130,430,"assembly-pulse",180,40,"stone",false,.55),
-      R(1300,490,250,80,"stone"),
-      C(1470,300,1470,75,"assembly-step",64,190,"stone",false,.7),
-      C(1570,540,1570,420,"assembly-crate",260,40,"stone",false,.85),
-      M(1900,385,150,40,"y",65,1.15,-Math.PI/2,"stone"),
-      R(2150,390,300,180,"stone")
-    ],
-    switches: [S(90,446,"assembly-pulse",{ momentary: true, pulseDuration: 1.15 })],
-    pressurePlates: [Q(300,478,"assembly-step",145), Q(675,478,"assembly-crate",100,{ crateOnly: true })],
-    hazards: [R(790,500,510,70,"lava"), R(1550,500,600,70,"lava")],
-    stars: [], finish: R(2370,300,34,90)
-  },
-  {
-    name: "Echo Final Exam", width: 4300, start: [55,448], music: "level3", theme: "lava",
-    postRun: true, echoChapter: true, echoCanPushCrates: true,
-    platforms: [
-      R(0,490,780,80,"stone"),
-      { ...C(690,205,690,45,"exam-a",70,285,"stone",false,.85), requiredPlateIds: ["exam-a","exam-b"] },
-      R(780,490,220,80,"stone"),
-      C(1020,430,1360,430,"exam-pulse",180,40,"stone",false,.55),
-      R(1540,490,560,80,"stone"), P(1770,430),
-      C(2030,280,2030,35,"exam-cargo-release",58,210,"stone"),
-      C(2130,540,2130,410,"exam-cargo-lock",270,40,"stone",false,.8),
-      R(2450,490,520,80,"stone"),
-      C(2740,490,2740,315,"exam-safe",58,175,"stone",false,.7),
-      C(3000,540,3000,405,"exam-rhythm",170,40,"stone",false,1),
-      C(3230,540,3230,345,"exam-rhythm",170,40,"stone",false,1),
-      R(3470,450,300,120,"stone"),
-      M(3830,390,150,40,"y",60,1.2,-Math.PI/2,"stone"),
-      R(4050,390,250,180,"stone")
-    ],
-    switches: [S(840,446,"exam-pulse",{ momentary: true, pulseDuration: 1.1 })],
-    pressurePlates: [
-      Q(210,478,"exam-a",115), Q(505,478,"exam-b",185),
-      Q(1635,478,"exam-cargo-release",100), Q(2075,478,"exam-cargo-lock",105,{ crateOnly: true }),
-      Q(2540,478,"exam-safe",130), Q(2840,478,"exam-rhythm",120)
-    ],
-    enemies: [E(2820,490,2460,2940,1,88)],
-    hazards: [
-      R(1000,500,540,70,"lava"), R(2100,500,350,70,"lava"),
-      R(2970,500,500,70,"lava"), R(3770,500,280,70,"lava")
-    ],
-    stars: [], finish: R(4220,300,34,90)
   }
 ];
 
@@ -664,7 +584,6 @@ let cutsceneActive = false;
 let cutsceneTime = 0;
 let cutsceneZapPlayed = false;
 let cutscenePowerPlayed = false;
-let cutsceneKind = "rewind";
 let runStartedAt = 0;
 let runElapsed = 0;
 let timerRunning = false;
@@ -682,11 +601,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.19.0";
+const GAME_VERSION = "v0.18.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "echo-final-v1", label: "Version 0.19.0 to 0.19.0" },
   { id: "echo-chapter-timing-v1", label: "Version 0.18.0 to 0.18.0" },
   { id: "first-echo-v1", label: "Version 0.17.0 to 0.17.0" },
   { id: "roadmap-rewind-timing-v1", label: "Version 0.16.1 to 0.16.1" },
@@ -713,7 +631,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -777,7 +695,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -1274,7 +1192,6 @@ function loadLevel(index, keepScore = true) {
   won = false;
   message.hidden = true;
   chapterCompleteMessage.hidden = true;
-  echoChapterMessage.hidden = true;
   resetLevelMotion();
   resetPlayer(false, true);
   if (timerRunning && gameStarted) beginLevelTimer();
@@ -1884,7 +1801,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -2124,7 +2041,6 @@ function showRunResults() {
 
 function startRewindCutscene() {
   resetCutscene();
-  cutsceneKind = "rewind";
   developerPanel.hidden = true;
   setFlightEnabled(false);
   levelDeveloperSequencePosition = 0;
@@ -2142,54 +2058,6 @@ function startRewindCutscene() {
   quitButton.disabled = true;
   Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
   pressed.jump = false;
-}
-
-function showEchoChapterResults() {
-  completeLevelSplit();
-  if (countPostRunInRunTimer) finishRunTimer();
-  won = true;
-  echoChapterSummary.textContent = `Level time ${formatRunTime(levelElapsed)}`;
-  echoChapterMessage.hidden = false;
-  pauseButton.disabled = true;
-  restartButton.disabled = true;
-  restartRunButton.disabled = true;
-  quitButton.disabled = true;
-  Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
-  pressed.jump = false;
-  echoContinueButton.focus();
-}
-
-function startEchoCutscene() {
-  resetCutscene();
-  cutsceneKind = "echo";
-  developerPanel.hidden = true;
-  setFlightEnabled(false);
-  levelDeveloperSequencePosition = 0;
-  won = false;
-  cutsceneActive = true;
-  gameShell.classList.add("cutscene-playing");
-  echoChapterMessage.hidden = true;
-  pauseButton.disabled = true;
-  restartButton.disabled = true;
-  restartRunButton.disabled = true;
-  quitButton.disabled = true;
-  Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
-  pressed.jump = false;
-}
-
-function startEchoLevel() {
-  resetCutscene();
-  unlockThrough(20);
-  countPostRunInRunTimer = false;
-  runStartLevel = 20;
-  loadLevel(20);
-  won = false;
-  pauseButton.disabled = false;
-  restartButton.disabled = false;
-  restartRunButton.disabled = false;
-  quitButton.disabled = false;
-  updatePauseButton();
-  canvas.focus();
 }
 
 function startRewindLevel() {
@@ -2238,20 +2106,7 @@ function replayRewindTutorial() {
 }
 
 function updateCutscene(dt) {
-  const duration = cutsceneKind === "echo" ? ECHO_CUTSCENE_DURATION : CUTSCENE_DURATION;
-  cutsceneTime = Math.min(duration, cutsceneTime + dt);
-  if (cutsceneKind === "echo") {
-    if (!cutsceneZapPlayed && cutsceneTime >= 5.35) {
-      cutsceneZapPlayed = true;
-      playSfx("time-zap");
-    }
-    if (!cutscenePowerPlayed && cutsceneTime >= 6.55) {
-      cutscenePowerPlayed = true;
-      playSfx("rewind-awaken");
-    }
-    if (cutsceneTime >= duration) startEchoLevel();
-    return;
-  }
+  cutsceneTime = Math.min(CUTSCENE_DURATION, cutsceneTime + dt);
   if (!cutsceneZapPlayed && cutsceneTime >= 6.65) {
     cutsceneZapPlayed = true;
     playSfx("time-zap");
@@ -2559,8 +2414,7 @@ function releaseRewindPointer(event) {
 canvas.addEventListener("pointerdown", (event) => {
   if (cutsceneActive) {
     event.preventDefault();
-    if (cutsceneKind === "echo") startEchoLevel();
-    else startRewindLevel();
+    startRewindLevel();
     return;
   }
   if (!gameStarted || paused || won) return;
@@ -2692,10 +2546,7 @@ addEventListener("keydown", (event) => {
   }
   if (event.code === "KeyR") restartLevel();
   if (event.code === "KeyT") startOver();
-  if (event.code === "Enter" && won) {
-    if (!echoChapterMessage.hidden) startEchoCutscene();
-    else if (!message.hidden && !continueButton.hidden) startRewindCutscene();
-  }
+  if (event.code === "Enter" && won) startRewindCutscene();
   setKey(event.code, true);
 });
 addEventListener("keyup", (event) => { if (gameStarted) setKey(event.code, false); });
@@ -2739,8 +2590,6 @@ menuTextureButtons.forEach(button => button.addEventListener("click", () => sele
 menuBackdropButtons.forEach(button => button.addEventListener("click", () => selectMenuBackdrop(button.dataset.menuBackdrop)));
 publishRunButton.addEventListener("click", publishFinishedRun);
 continueButton.addEventListener("click", startRewindCutscene);
-echoContinueButton.addEventListener("click", startEchoCutscene);
-echoMenuButton.addEventListener("click", quitRun);
 replayRewindButton.addEventListener("click", replayRewindTutorial);
 rewindMenuButton.addEventListener("click", quitRun);
 runNameInput.addEventListener("keydown", (event) => {
@@ -3586,8 +3435,7 @@ function update(dt) {
       }
     }
     else if (currentLevel().rewindChapter || currentLevel().echoChapter) {
-      if (levelIndex === 19) showEchoChapterResults();
-      else if (levelIndex === levels.length - 1) finishRewindTutorial();
+      if (levelIndex === levels.length - 1) finishRewindTutorial();
       else {
         completeLevelSplit();
         unlockThrough(levelIndex + 1);
@@ -4441,142 +4289,6 @@ function drawRewindPower(time, pose) {
   ctx.restore();
 }
 
-function drawEchoMachine(time, scanIntensity) {
-  const x = 382;
-  const y = 235;
-  const width = 196;
-  const height = 225;
-  const pulse = .55 + Math.sin(time * 8) * .18;
-  ctx.save();
-
-  ctx.fillStyle = "#172848";
-  ctx.strokeStyle = "#79e9ff";
-  ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.roundRect(x, y + 28, 34, height - 28, 10); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.roundRect(x + width - 34, y + 28, 34, height - 28, 10); ctx.fill(); ctx.stroke();
-
-  ctx.strokeStyle = "#304c73";
-  ctx.lineWidth = 18;
-  ctx.beginPath(); ctx.arc(x + width / 2, y + 58, 80, Math.PI, 0); ctx.stroke();
-  ctx.strokeStyle = "#9bf4ff";
-  ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.arc(x + width / 2, y + 58, 80, Math.PI, 0); ctx.stroke();
-
-  for (let side = 0; side < 2; side++) {
-    const coilX = side ? x + width - 17 : x + 17;
-    for (let row = 0; row < 5; row++) {
-      const coilY = y + 58 + row * 28;
-      ctx.fillStyle = row % 2 ? "#53d8ec" : "#ffe17a";
-      ctx.globalAlpha = .62 + Math.sin(time * 11 + row + side) * .2;
-      ctx.beginPath(); ctx.arc(coilX, coilY, 7, 0, Math.PI * 2); ctx.fill();
-    }
-  }
-  ctx.globalAlpha = 1;
-
-  ctx.fillStyle = "#0a1730cc";
-  ctx.strokeStyle = "#d5fbff";
-  ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.roundRect(x + 43, y + 48, width - 86, height - 56, 52); ctx.fill(); ctx.stroke();
-
-  ctx.fillStyle = "#0d1e37";
-  ctx.strokeStyle = "#071226";
-  ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.roundRect(x - 13, y + height - 13, width + 26, 24, 7); ctx.fill(); ctx.stroke();
-
-  if (scanIntensity > 0) {
-    const scanY = y + 58 + ((time * 105) % 135);
-    ctx.shadowColor = "#7ff5ff";
-    ctx.shadowBlur = 17;
-    ctx.strokeStyle = `rgba(151,249,255,${Math.min(1, scanIntensity * (.7 + pulse * .3))})`;
-    ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.moveTo(x + 48, scanY); ctx.lineTo(x + width - 48, scanY); ctx.stroke();
-  }
-  ctx.restore();
-}
-
-function drawEchoCutscene() {
-  const time = cutsceneTime;
-  const gradient = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-  gradient.addColorStop(0, "#07142d");
-  gradient.addColorStop(.62, "#19375b");
-  gradient.addColorStop(1, "#386376");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-
-  ctx.save();
-  ctx.globalAlpha = .28;
-  ctx.strokeStyle = "#8befff";
-  ctx.lineWidth = 1;
-  for (let x = 0; x < VIEW_W; x += 48) {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, VIEW_H); ctx.stroke();
-  }
-  for (let y = 20; y < VIEW_H; y += 48) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(VIEW_W, y); ctx.stroke();
-  }
-  ctx.restore();
-
-  drawAssetRectangle("stone", 0, 460, VIEW_W, 80);
-  const walking = Math.max(0, Math.min(1, (time - .8) / 2.35));
-  const slimeX = time < 3.15 ? 82 + cutsceneEase(walking) * 385 : 467;
-  const scanning = Math.max(0, Math.min(1, (time - 3.75) / .65)) * Math.max(0, Math.min(1, (6.45 - time) / .55));
-  const duplicateProgress = cutsceneEase((time - 6.35) / 1.05);
-
-  drawEchoMachine(time, scanning);
-  drawCutsceneSlime({ x: slimeX, y: 418, airborne: false, powered: scanning > .1 }, time);
-
-  if (time >= 5.25) {
-    const trailProgress = Math.max(0, Math.min(1, (time - 5.25) / 1.35));
-    for (let copy = 1; copy <= 4; copy++) {
-      const alpha = trailProgress * (.2 - copy * .025);
-      drawCutsceneSlime({ x: slimeX + copy * 18, y: 418, airborne: false }, time - copy * .09, alpha);
-    }
-  }
-
-  if (time >= 6.35) {
-    const loop = time < 7.4 ? duplicateProgress : (Math.sin((time - 7.4) * 3.5) + 1) / 2;
-    ctx.save();
-    ctx.filter = "hue-rotate(95deg) saturate(1.35) brightness(1.2)";
-    ctx.globalAlpha = duplicateProgress * .82;
-    drawCutsceneSlime({ x: 467 + loop * 180, y: 418, airborne: false }, time);
-    ctx.restore();
-  }
-
-  if (time < 1.55) {
-    ctx.save();
-    ctx.globalAlpha = Math.min(1, time / .45) * Math.max(0, 1 - (time - 1.12) / .43);
-    ctx.fillStyle = "#e8fbff";
-    ctx.textAlign = "center";
-    ctx.font = "800 18px Inter, sans-serif";
-    ctx.fillText("AFTER THE REWIND TESTS...", VIEW_W / 2, 64);
-    ctx.restore();
-  }
-  if (time >= 6.55) {
-    const reveal = cutsceneEase((time - 6.55) / .75);
-    ctx.save();
-    ctx.globalAlpha = reveal;
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#a7f7ff";
-    ctx.shadowColor = "#63e8ff";
-    ctx.shadowBlur = 18;
-    ctx.font = "900 15px Inter, sans-serif";
-    ctx.fillText("NEW ABILITY", VIEW_W / 2, 76);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "900 44px Inter, sans-serif";
-    ctx.fillText("ECHO", VIEW_W / 2, 122);
-    ctx.restore();
-  }
-
-  const flashDistance = Math.abs(time - 5.4);
-  if (flashDistance < .2) {
-    ctx.fillStyle = `rgba(224,253,255,${(1 - flashDistance / .2) * .78})`;
-    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-  }
-  const fadeIn = Math.max(0, 1 - time / .45);
-  const fadeOut = Math.max(0, (time - (ECHO_CUTSCENE_DURATION - .7)) / .7);
-  ctx.fillStyle = `rgba(3,8,20,${Math.max(fadeIn, fadeOut)})`;
-  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-}
-
 function drawCutscene(time) {
   const sceneTime = cutsceneTime;
   const gradient = ctx.createLinearGradient(0, 0, 0, VIEW_H);
@@ -4813,8 +4525,7 @@ function drawEchoTutorialPrompt(time) {
 function render(time) {
   ctx.clearRect(0, 0, VIEW_W, VIEW_H);
   if (cutsceneActive) {
-    if (cutsceneKind === "echo") drawEchoCutscene();
-    else drawCutscene(time);
+    drawCutscene(time);
     return;
   }
   drawBackground();
