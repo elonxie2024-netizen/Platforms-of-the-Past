@@ -651,30 +651,6 @@ canvas {
 
 .roadmap-panel { width: min(790px, 100%); }
 .roadmap-note { max-width: 620px; color: #b8cbe2; font-size: .82rem; }
-.roadmap-chapter-nav {
-  width: min(410px, 100%);
-  display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) 46px;
-  align-items: center;
-  gap: 12px;
-}
-.roadmap-chapter-heading { display: grid; gap: 2px; text-align: center; }
-.roadmap-chapter-heading strong { color: #eaf8ff; font-size: 1rem; }
-.roadmap-chapter-heading span { color: #8de4ff; font-size: .7rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
-.roadmap-chapter-nav .roadmap-chapter-arrow {
-  width: 46px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 1px solid #8de4ff66;
-  border-radius: 13px;
-  color: #eaf8ff;
-  background: #174467;
-  font-size: 1.25rem;
-}
-.roadmap-chapter-nav .roadmap-chapter-arrow:hover:not(:disabled) { background: #21628f; transform: translateY(-1px); }
-.roadmap-chapter-nav .roadmap-chapter-arrow:disabled { opacity: .28; cursor: default; }
 
 .level-roadmap {
   position: relative;
@@ -720,7 +696,7 @@ canvas {
 
 .roadmap-level button:hover { transform: translateY(-2px); background: #72d8f5; }
 .roadmap-level button:focus-visible { outline: 3px solid #ffe05d; outline-offset: 4px; }
-.roadmap-level .level-name { width: 120px; color: #dff6ff; font-size: .67rem; font-weight: 800; line-height: 1.15; text-align: center; }
+.roadmap-level .level-name { max-width: 105px; color: #dff6ff; font-size: .67rem; font-weight: 800; line-height: 1.15; }
 
 .roadmap-level.locked button {
   border-color: #667186;

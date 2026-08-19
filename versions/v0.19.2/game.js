@@ -69,10 +69,6 @@ const closeChangelogButton = document.querySelector("#closeChangelogButton");
 const roadmapMenu = document.querySelector("#roadmapMenu");
 const levelRoadmap = document.querySelector("#levelRoadmap");
 const closeRoadmapButton = document.querySelector("#closeRoadmapButton");
-const previousRoadmapChapterButton = document.querySelector("#previousRoadmapChapterButton");
-const nextRoadmapChapterButton = document.querySelector("#nextRoadmapChapterButton");
-const roadmapChapterLabel = document.querySelector("#roadmapChapterLabel");
-const roadmapChapterRange = document.querySelector("#roadmapChapterRange");
 const versionsButton = document.querySelector("#versionsButton");
 const versionsMenu = document.querySelector("#versionsMenu");
 const versionsList = document.querySelector("#versionsList");
@@ -88,8 +84,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.19.3", commit: "Pending commit", date: "2026-08-19", message: "Add roadmap chapter pages", description: "Split the thirty-level adventure roadmap into Introduction, Rewind, and Echo chapter pages so long level names have enough room to remain readable. Added on-screen chapter arrows and Left/Right Arrow keyboard navigation while preserving level locks and progress." },
-  { version: "v0.19.2", commit: "7ad0af8", date: "2026-08-19", message: "Close Echo Chapter shortcuts", description: "Attached moving spike strips to the tops of level 24 and 25's vertical gates so they cannot be used as unintended stepping stones. Rebuilt level 26 as a longer four-platform plate-controlled crossing with minimal release grace, requiring the echo to keep the pressure plate active for the full route." },
+  { version: "v0.19.2", commit: "Pending commit", date: "2026-08-19", message: "Close Echo Chapter shortcuts", description: "Attached moving spike strips to the tops of level 24 and 25's vertical gates so they cannot be used as unintended stepping stones. Rebuilt level 26 as a longer four-platform plate-controlled crossing with minimal release grace, requiring the echo to keep the pressure plate active for the full route." },
   { version: "v0.19.1", commit: "17f8a92", date: "2026-08-18", message: "Preview echo recordings", description: "Split echo creation into recording, route preview, and creation stages. After recording stops, the world holds at the endpoint while a golden outline marks the echo's starting position and animated directional arrows trace its actual recorded path; pressing C again creates the echo." },
   { version: "v0.19.0", commit: "64b80e7", date: "2026-08-18", message: "Complete the Echo Chapter", description: "Added a Rewind Chapter completion screen and echo-unlock time-machine cinematic between levels 20 and 21. Added Cargo Loop, Safe Interval, Echo Assembly, and Echo Final Exam as levels 27 through 30, combining echoes with stable crate pushing, enemy timing, switches, pressure plates, moving platforms, hazards, and multi-section synthesis puzzles." },
   { version: "v0.18.0", commit: "d92b36f", date: "2026-08-18", message: "Expand the Echo Chapter", description: "Added five Echo Chapter levels from Next Time Around through Echo Rhythm. The new puzzles teach repeated loop timing, recorded momentary switch pulses, sequential moving weight across three plates, crossing echo schedules, and forgiving coordination across moving platforms." },
@@ -695,11 +690,11 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.19.3";
+const GAME_VERSION = "v0.19.2";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "echo-shortcut-fix-v1", label: "Version 0.19.2 to 0.19.3" },
+  { id: "echo-shortcut-fix-v1", label: "Version 0.19.2 to 0.19.2" },
   { id: "echo-route-preview-v1", label: "Version 0.19.1 to 0.19.1" },
   { id: "echo-final-v1", label: "Version 0.19.0 to 0.19.0" },
   { id: "echo-chapter-timing-v1", label: "Version 0.18.0 to 0.18.0" },
@@ -728,7 +723,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -741,7 +736,6 @@ let menuPlatformTexture = "grass";
 let menuBackdrop = "sun";
 let awakenedMenuAnimationStart = null;
 let highestUnlockedLevel = 0;
-let roadmapChapterIndex = 0;
 let leaderboardEntries = [];
 let leaderboardRequest = 0;
 let leaderboardMetric = "time";
@@ -793,7 +787,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -1656,70 +1650,49 @@ function closeRunSetup() {
   customRunButton.focus();
 }
 
-const ROADMAP_CHAPTER_SIZE = 10;
-const ROADMAP_CHAPTERS = ["Introduction", "Rewind", "Echo"];
 const ROADMAP_POINTS = [
-  [10, 27], [30, 27], [50, 27], [70, 27], [90, 27],
-  [90, 72], [70, 72], [50, 72], [30, 72], [10, 72]
+  [5, 17], [15, 17], [25, 17], [35, 17], [45, 17], [55, 17], [65, 17], [75, 17], [85, 17], [95, 17],
+  [95, 50], [85, 50], [75, 50], [65, 50], [55, 50], [45, 50], [35, 50], [25, 50], [15, 50], [5, 50],
+  [5, 83], [15, 83], [25, 83], [35, 83], [45, 83], [55, 83], [65, 83], [75, 83], [85, 83], [95, 83]
 ];
 
 function renderRoadmap() {
   levelRoadmap.replaceChildren();
-  const lastChapter = Math.ceil(levels.length / ROADMAP_CHAPTER_SIZE) - 1;
-  const chapterStart = roadmapChapterIndex * ROADMAP_CHAPTER_SIZE;
-  const chapterLevels = levels.slice(chapterStart, chapterStart + ROADMAP_CHAPTER_SIZE);
-  const chapterEnd = chapterStart + chapterLevels.length;
-  roadmapChapterLabel.textContent = ROADMAP_CHAPTERS[roadmapChapterIndex] || `Chapter ${roadmapChapterIndex + 1}`;
-  roadmapChapterRange.textContent = `Levels ${chapterStart + 1}-${chapterEnd}`;
-  previousRoadmapChapterButton.disabled = roadmapChapterIndex === 0;
-  nextRoadmapChapterButton.disabled = roadmapChapterIndex >= lastChapter;
-  levelRoadmap.setAttribute("aria-label", `${roadmapChapterLabel.textContent} roadmap, levels ${chapterStart + 1} through ${chapterEnd}`);
-
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.classList.add("roadmap-lines");
   svg.setAttribute("viewBox", "0 0 100 100");
   svg.setAttribute("preserveAspectRatio", "none");
   svg.setAttribute("aria-hidden", "true");
-  for (let index = 0; index < chapterLevels.length - 1; index++) {
+  for (let index = 0; index < levels.length - 1; index++) {
     const line = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
     line.setAttribute("points", `${ROADMAP_POINTS[index].join(",")} ${ROADMAP_POINTS[index + 1].join(",")}`);
-    if (chapterStart + index < highestUnlockedLevel) line.classList.add("unlocked");
+    if (index < highestUnlockedLevel) line.classList.add("unlocked");
     svg.append(line);
   }
   levelRoadmap.append(svg);
 
-  chapterLevels.forEach((level, index) => {
-    const levelIndex = chapterStart + index;
+  levels.forEach((level, index) => {
     const node = document.createElement("div");
-    const locked = levelIndex > highestUnlockedLevel;
+    const locked = index > highestUnlockedLevel;
     node.className = `roadmap-level${locked ? " locked" : ""}`;
     node.style.left = `${ROADMAP_POINTS[index][0]}%`;
     node.style.top = `${ROADMAP_POINTS[index][1]}%`;
     const button = document.createElement("button");
     button.type = "button";
     button.disabled = locked;
-    button.setAttribute("aria-label", locked ? `Level ${levelIndex + 1}, locked` : `Play level ${levelIndex + 1}: ${level.name}`);
+    button.setAttribute("aria-label", locked ? `Level ${index + 1}, locked` : `Play level ${index + 1}: ${level.name}`);
     if (locked) {
       button.innerHTML = '<svg class="roadmap-lock" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1.5A1.5 1.5 0 0 1 20 11.5v8A1.5 1.5 0 0 1 18.5 21h-13A1.5 1.5 0 0 1 4 19.5v-8A1.5 1.5 0 0 1 5.5 10H7Zm3 0h4V7a2 2 0 1 0-4 0v3Z"/></svg>';
     } else {
-      button.textContent = String(levelIndex + 1);
-      button.addEventListener("click", () => startRoadmapRun(levelIndex));
+      button.textContent = String(index + 1);
+      button.addEventListener("click", () => startRoadmapRun(index));
     }
     const name = document.createElement("span");
     name.className = "level-name";
-    name.textContent = locked ? `Level ${levelIndex + 1}` : level.name;
+    name.textContent = locked ? `Level ${index + 1}` : level.name;
     node.append(button, name);
     levelRoadmap.append(node);
   });
-}
-
-function setRoadmapChapter(index) {
-  const lastChapter = Math.ceil(levels.length / ROADMAP_CHAPTER_SIZE) - 1;
-  const nextIndex = Math.max(0, Math.min(lastChapter, index));
-  if (nextIndex === roadmapChapterIndex) return false;
-  roadmapChapterIndex = nextIndex;
-  renderRoadmap();
-  return true;
 }
 
 function openRoadmap() {
@@ -1728,8 +1701,6 @@ function openRoadmap() {
   settingsButton.setAttribute("aria-expanded", "false");
   mainMenu.hidden = true;
   playChoiceMenu.hidden = true;
-  const lastChapter = Math.ceil(levels.length / ROADMAP_CHAPTER_SIZE) - 1;
-  roadmapChapterIndex = Math.min(lastChapter, Math.floor(highestUnlockedLevel / ROADMAP_CHAPTER_SIZE));
   renderRoadmap();
   roadmapMenu.hidden = false;
   levelRoadmap.querySelector("button:not(:disabled)")?.focus();
@@ -1934,7 +1905,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -3027,19 +2998,6 @@ runSetupForm.addEventListener("submit", (event) => {
 });
 closeRunSetupButton.addEventListener("click", closeRunSetup);
 closeRoadmapButton.addEventListener("click", closeRoadmap);
-previousRoadmapChapterButton.addEventListener("click", () => setRoadmapChapter(roadmapChapterIndex - 1));
-nextRoadmapChapterButton.addEventListener("click", () => setRoadmapChapter(roadmapChapterIndex + 1));
-roadmapMenu.addEventListener("keydown", (event) => {
-  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-  event.preventDefault();
-  event.stopPropagation();
-  const direction = event.key === "ArrowRight" ? 1 : -1;
-  if (setRoadmapChapter(roadmapChapterIndex + direction)) {
-    const continuedButton = direction > 0 ? nextRoadmapChapterButton : previousRoadmapChapterButton;
-    const returnButton = direction > 0 ? previousRoadmapChapterButton : nextRoadmapChapterButton;
-    (continuedButton.disabled ? returnButton : continuedButton).focus();
-  }
-});
 
 settingsButton.addEventListener("click", () => {
   const opening = settingsPanel.hidden;
