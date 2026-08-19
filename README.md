@@ -6,9 +6,9 @@ A browser-based platformer where the world changes across time. Run, jump, avoid
 
 No install, download, or plugins. It runs entirely in the browser.
 
-> **Development status:** The platforming prototype is playable now. Ten rewind levels and the opening Echo Chapter level follow the introductory adventure and awakening cinematic.
+> **Development status:** The platforming prototype is playable now. Ten rewind levels and six Echo Chapter levels follow the introductory adventure and awakening cinematic.
 
-**Current version:** `v0.17.0`
+**Current version:** `v0.18.0`
 
 ## How it works
 
@@ -26,7 +26,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Recall a path.** Starting in level 11, hold `F` to preview actual recent history backward. Keep holding `F` and hold `G` to move the preview forward again, then release `F` to commit. Pushable crates always record where the player moves them, breakable blocks record whether they still exist, and enemies record both their patrol and whether they are alive. After the rewind field is introduced, it remains available in later levels and rewinds every eligible object it reaches. The slime and collected rewards remain in the present.
 
-**Create an echo.** Starting in level 21, press `C` to record the slime's real movement, jumps, and switch interactions, then press `C` again to spawn a cyan echo that loops those actions through the current world. Press `V` to remove it.
+**Create an echo.** Starting in level 21, press `C` to record the slime's real movement, jumps, and switch interactions, then press `C` again to spawn a cyan echo that loops those actions through the current world. Press `V` to remove it. Later Echo Chapter levels build around repeated timing, remote switch pulses, sequential pressure plates, crossing schedules, and moving-platform coordination.
 
 **Race the clock.** The speedrun timer starts with your first move or jump and continues between levels. Your final score is 300 minus your completion time in seconds, plus 2 points for every star.
 
@@ -75,7 +75,7 @@ The playable prototype includes:
 - Reversible nearby switches with clickable `E - FLIP` prompts that raise or submerge linked platforms in level 7
 - A completed-run results screen after level 10 with publishing, quitting, and a prominent story Continue button that pulses after publication
 - Ten focused rewind levels built on a consistent history system for moving platforms, player-pushed crates, breakable blocks, and enemies
-- First Echo as level 21, introducing deterministic looping action recordings, physical echo collisions, pressure-plate activation, and replayed switch interactions
+- Six Echo Chapter levels beginning at level 21, introducing deterministic looping action recordings, physical echo collisions, repeated plate timing, replayed switch interactions, moving weight, crossing schedules, and coordinated platforms
 - Thin automatic pressure plates and plate-controlled platforms in level 8, with a no-wait first shuttle and a required crate-held second bridge
 - Two patrolling red slime enemies in level 9 that reverse at ledges and obstacles, defeat the player from the side, burst into red slime pieces when stomped, and each drop a collectible star
 - A long final test in level 10 that combines floating platforms, jump pads, automatic movers, crates, switches, and pressure plates

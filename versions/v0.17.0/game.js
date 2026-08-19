@@ -80,8 +80,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.18.0", commit: "Pending commit", date: "2026-08-18", message: "Expand the Echo Chapter", description: "Added five Echo Chapter levels from Next Time Around through Echo Rhythm. The new puzzles teach repeated loop timing, recorded momentary switch pulses, sequential moving weight across three plates, crossing echo schedules, and forgiving coordination across moving platforms." },
-  { version: "v0.17.0", commit: "77874ee", date: "2026-08-18", message: "Begin the Echo Chapter", description: "Added First Echo as level 21 and introduced deterministic action echoes. C records the slime's movement, jumps, and interactions, then spawns a looping cyan echo that obeys current platforms, walls, pressure plates, and switches; V removes it. The first puzzle uses an echo and the player on separate pressure plates to raise the final gate." },
+  { version: "v0.17.0", commit: "Pending commit", date: "2026-08-18", message: "Begin the Echo Chapter", description: "Added First Echo as level 21 and introduced deterministic action echoes. C records the slime's movement, jumps, and interactions, then spawns a looping cyan echo that obeys current platforms, walls, pressure plates, and switches; V removes it. The first puzzle uses an echo and the player on separate pressure plates to raise the final gate." },
   { version: "v0.16.1", commit: "26479de", date: "2026-08-17", message: "Fix roadmap rewind timing", description: "Made standalone rewind-section runs launched from the roadmap start both the run timer and level timer on the player's first input. The run clock now persists through the remaining rewind levels and stops at the current endpoint." },
   { version: "v0.16.0", commit: "361a241", date: "2026-08-17", message: "Turn rewind into a consistent world system", description: "Made every pushable crate, breakable block, and enemy maintain dynamic movement and state history throughout rewind levels. Optional crate movement can now be undone, destroyed blocks consistently return, and defeated enemies rewind back to life while collected rewards remain owned. The rewind field now persists after its introduction and targets eligible objects dynamically." },
   { version: "v0.15.3", commit: "1a8162d", date: "2026-08-17", message: "Fix the Level 18 freeze", description: "Initialized rewind playback state for cracked blocks so Second Chance and the final exam continue updating normally as soon as they load. Added a defensive playback check for rewindable state objects." },
@@ -221,7 +220,7 @@ const K = (x, y, w = 60, h = 60) => ({
   previewCursor: 0, previewLatest: 0, previewAccumulator: 0, previewPaused: false,
   timelinePlayback: [], rewindGrace: 0, timelineLocked: false, speed: 330
 });
-const S = (x, y, id, options = {}) => ({ x, y, w: 42, h: 44, id, flipped: false, activeTimer: 0, ...options });
+const S = (x, y, id) => ({ x, y, w: 42, h: 44, id, flipped: false });
 const Q = (x, y, id, w = 72, options = {}) => ({ x, y, w, h: 12, id, pressed: false, pressProgress: 0, ...options });
 const E = (x, surfaceY, minX, maxX, direction = 1, speed = 62) => ({
   x, y: surfaceY - PLAYER_H, w: PLAYER_W, h: PLAYER_H, minX, maxX, speed,
@@ -466,69 +465,6 @@ const levels = [
     ],
     pressurePlates: [Q(275,478,"echo-a",110), Q(620,478,"echo-b",470)],
     hazards: [], stars: [], finish: R(1050,400,34,90)
-  },
-  {
-    name: "Next Time Around", width: 1300, start: [55,448], music: "level1", theme: "rewind",
-    postRun: true, echoChapter: true,
-    platforms: [
-      R(0,490,470,80,"stone"),
-      C(510,540,510,490,"loop-plate",330,40,"stone",false,.18),
-      R(880,490,420,80,"stone")
-    ],
-    pressurePlates: [Q(270,478,"loop-plate",120)],
-    hazards: [R(470,510,410,60,"lava")], stars: [], finish: R(1220,400,34,90)
-  },
-  {
-    name: "Remote Instructions", width: 1400, start: [55,448], music: "level2", theme: "rewind",
-    postRun: true, echoChapter: true,
-    platforms: [
-      R(0,490,420,80,"stone"),
-      C(440,430,820,430,"echo-pulse",180,40,"stone",false,.18),
-      R(1040,490,360,80,"stone")
-    ],
-    switches: [S(90,446,"echo-pulse",{ momentary: true, pulseDuration: 1 })],
-    hazards: [R(420,510,620,60,"lava")], stars: [], finish: R(1320,400,34,90)
-  },
-  {
-    name: "Passing Signals", width: 1450, start: [55,448], music: "level3", theme: "rewind",
-    postRun: true, echoChapter: true,
-    platforms: [
-      R(0,490,1450,80,"stone"),
-      R(120,300,960,40,"stone"), R(1230,300,220,40,"stone"),
-      C(850,170,850,35,"sequence-c",72,130,"stone",false,.95),
-      C(550,170,550,35,"sequence-b",72,130,"stone",false,.95),
-      C(250,170,250,35,"sequence-a",72,130,"stone",false,.95)
-    ],
-    pressurePlates: [
-      Q(275,478,"sequence-a",155), Q(585,478,"sequence-b",155), Q(895,478,"sequence-c",155)
-    ],
-    jumpPads: [R(1120,470,64,20,"jump-pad")],
-    hazards: [], stars: [], finish: R(145,210,34,90)
-  },
-  {
-    name: "Crossing Paths", width: 1500, start: [90,448], music: "level1", theme: "rewind",
-    postRun: true, echoChapter: true,
-    platforms: [
-      R(0,490,1500,80,"stone"),
-      R(210,330,1290,40,"stone"),
-      C(600,200,600,65,"cross-a",76,130,"stone",false,1.05),
-      C(980,200,980,65,"cross-b",76,130,"stone",false,1.05)
-    ],
-    pressurePlates: [Q(1010,478,"cross-a",170), Q(300,478,"cross-b",170)],
-    jumpPads: [R(5,470,60,20,"jump-pad")],
-    hazards: [], stars: [], finish: R(1410,240,34,90)
-  },
-  {
-    name: "Echo Rhythm", width: 1320, start: [55,448], music: "level3", theme: "lava",
-    postRun: true, echoChapter: true,
-    platforms: [
-      R(0,490,450,80,"stone"),
-      C(500,535,500,405,"rhythm-plate",155,38,"stone",false,1.15),
-      C(735,535,735,345,"rhythm-plate",155,38,"stone",false,1.15),
-      R(980,450,340,120,"stone")
-    ],
-    pressurePlates: [Q(220,478,"rhythm-plate",145)],
-    hazards: [R(450,500,530,70,"lava")], stars: [], finish: R(1240,360,34,90)
   }
 ];
 
@@ -601,11 +537,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.18.0";
+const GAME_VERSION = "v0.17.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "echo-chapter-timing-v1", label: "Version 0.18.0 to 0.18.0" },
   { id: "first-echo-v1", label: "Version 0.17.0 to 0.17.0" },
   { id: "roadmap-rewind-timing-v1", label: "Version 0.16.1 to 0.16.1" },
   { id: "systemic-rewind-v1", label: "Version 0.16.0 to 0.16.0" },
@@ -631,7 +566,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -695,7 +630,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -787,10 +722,7 @@ function resetLevelMotion() {
   levelMotionTime = 0;
   rewindFieldPreview = null;
   if (currentLevel().rewindTutorial) currentLevel().rewindHintUnlocked = false;
-  for (const levelSwitch of currentLevel().switches || []) {
-    levelSwitch.flipped = false;
-    levelSwitch.activeTimer = 0;
-  }
+  for (const levelSwitch of currentLevel().switches || []) levelSwitch.flipped = false;
   for (const plate of currentLevel().pressurePlates || []) {
     plate.pressed = false;
     plate.pressProgress = 0;
@@ -876,14 +808,6 @@ function updatePressurePlates(dt) {
     plate.pressProgress = Math.max(0, Math.min(1,
       plate.pressProgress + Math.sign(target - plate.pressProgress) * dt * 10
     ));
-  }
-}
-
-function updateMomentarySwitches(dt) {
-  for (const levelSwitch of currentLevel().switches || []) {
-    if (!levelSwitch.momentary || levelSwitch.activeTimer <= 0) continue;
-    levelSwitch.activeTimer = Math.max(0, levelSwitch.activeTimer - dt);
-    levelSwitch.flipped = levelSwitch.activeTimer > 0;
   }
 }
 
@@ -1801,7 +1725,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -2329,12 +2253,7 @@ function nearbySwitch(actor = player) {
 function activateNearbySwitch(actor = player) {
   const levelSwitch = nearbySwitch(actor);
   if (!levelSwitch) return false;
-  if (levelSwitch.momentary) {
-    levelSwitch.activeTimer = levelSwitch.pulseDuration || 1;
-    levelSwitch.flipped = true;
-  } else {
-    levelSwitch.flipped = !levelSwitch.flipped;
-  }
+  levelSwitch.flipped = !levelSwitch.flipped;
   recordMechanic("switch");
   playSfx("switch");
   return true;
@@ -3332,7 +3251,6 @@ function update(dt) {
   }
 
   captureEchoFrame();
-  updateMomentarySwitches(dt);
   updatePressurePlates(dt);
   updateMovingPlatforms(dt);
 
