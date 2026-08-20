@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels and ten Echo Chapter levels follow the introductory adventure and awakening cinematic.
 
-**Current version:** `v0.19.6`
+**Current version:** `v0.19.7`
 
 ## How it works
 

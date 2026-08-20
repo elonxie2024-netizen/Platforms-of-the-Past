@@ -11,6 +11,7 @@ create table if not exists public.leaderboard_rulesets (
 
 insert into public.leaderboard_rulesets (id, label, accepted_versions)
 values
+  ('rewind-final-crossing-v1', 'Version 0.19.7 to 0.19.7', array['v0.19.7']),
   ('direct-chapter-timer-v1', 'Version 0.19.6 to 0.19.6', array['v0.19.6']),
   ('chapter-timer-continuation-v1', 'Version 0.19.5 to 0.19.5', array['v0.19.5']),
   ('echo-shortcut-fix-v1', 'Version 0.19.2 to 0.19.4', array['v0.19.2', 'v0.19.3', 'v0.19.4']),

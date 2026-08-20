@@ -88,8 +88,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.19.7", commit: "Pending commit", date: "2026-08-20", message: "Fix the Rewind Final Exam crossing", description: "Corrected the final section of level 20 so its moving platform remains reachable by the rewind field after the crate sends it across the lava. Projected the field toward the gap and increased its range enough to select the platform from the ledge while leaving the pressure-plate crate outside the field." },
-  { version: "v0.19.6", commit: "89876b1", date: "2026-08-20", message: "Preserve direct chapter-transition runs", description: "Fixed level-10 starts so choosing Continue preserves their timer into level 11 instead of requiring completed splits from every introductory level. The transition now works for normal finishes and developer-flight finishes while still pausing during the cutscene." },
+  { version: "v0.19.6", commit: "Pending commit", date: "2026-08-20", message: "Preserve direct chapter-transition runs", description: "Fixed level-10 starts so choosing Continue preserves their timer into level 11 instead of requiring completed splits from every introductory level. The transition now works for normal finishes and developer-flight finishes while still pausing during the cutscene." },
   { version: "v0.19.5", commit: "d34fea2", date: "2026-08-20", message: "Continue timers across story chapters", description: "Made a run started from level 1 retain its elapsed time when Continue carries it into the Rewind and Echo chapters. The run timer pauses throughout both story cutscenes, resumes when the next chapter becomes playable, and continues contributing to the final run time without resetting the original run start." },
   { version: "v0.19.4", commit: "0ffbf35", date: "2026-08-19", message: "Clarify chapter roadmap paths", description: "Rearranged each roadmap chapter into two left-to-right rows. The route now travels from levels 1 through 5 across the upper row, connects diagonally to level 6, and continues through level 10 across the lower row." },
   { version: "v0.19.3", commit: "0a6ae8b", date: "2026-08-19", message: "Add roadmap chapter pages", description: "Split the thirty-level adventure roadmap into Introduction, Rewind, and Echo chapter pages so long level names have enough room to remain readable. Added on-screen chapter arrows and Left/Right Arrow keyboard navigation while preserving level locks and progress." },
@@ -455,7 +454,7 @@ const levels = [
   {
     name: "Rewind Final Exam", width: 3000, start: [55,448], music: "level3", theme: "lava",
     postRun: true, rewindChapter: true, rewindTutorial: true, rewindField: true,
-    rewindFieldRadius: 440, rewindFieldOffset: 180, rewindHintUnlocked: false, requiredLevelStars: 3,
+    rewindFieldRadius: 360, rewindHintUnlocked: false, requiredLevelStars: 3,
     platforms: [
       R(0,490,520,80,"stone"),
       C(650,520,650,420,"exam-enemy",180,40,"stone",false,0),
@@ -699,11 +698,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.19.7";
+const GAME_VERSION = "v0.19.6";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "rewind-final-crossing-v1", label: "Version 0.19.7 to 0.19.7" },
   { id: "direct-chapter-timer-v1", label: "Version 0.19.6 to 0.19.6" },
   { id: "chapter-timer-continuation-v1", label: "Version 0.19.5 to 0.19.5" },
   { id: "echo-shortcut-fix-v1", label: "Version 0.19.2 to 0.19.4" },
@@ -735,7 +733,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -800,7 +798,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -1947,7 +1945,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
