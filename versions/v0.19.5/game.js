@@ -88,8 +88,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.19.6", commit: "Pending commit", date: "2026-08-20", message: "Preserve direct chapter-transition runs", description: "Fixed level-10 starts so choosing Continue preserves their timer into level 11 instead of requiring completed splits from every introductory level. The transition now works for normal finishes and developer-flight finishes while still pausing during the cutscene." },
-  { version: "v0.19.5", commit: "d34fea2", date: "2026-08-20", message: "Continue timers across story chapters", description: "Made a run started from level 1 retain its elapsed time when Continue carries it into the Rewind and Echo chapters. The run timer pauses throughout both story cutscenes, resumes when the next chapter becomes playable, and continues contributing to the final run time without resetting the original run start." },
+  { version: "v0.19.5", commit: "Pending commit", date: "2026-08-20", message: "Continue timers across story chapters", description: "Made a run started from level 1 retain its elapsed time when Continue carries it into the Rewind and Echo chapters. The run timer pauses throughout both story cutscenes, resumes when the next chapter becomes playable, and continues contributing to the final run time without resetting the original run start." },
   { version: "v0.19.4", commit: "0ffbf35", date: "2026-08-19", message: "Clarify chapter roadmap paths", description: "Rearranged each roadmap chapter into two left-to-right rows. The route now travels from levels 1 through 5 across the upper row, connects diagonally to level 6, and continues through level 10 across the lower row." },
   { version: "v0.19.3", commit: "0a6ae8b", date: "2026-08-19", message: "Add roadmap chapter pages", description: "Split the thirty-level adventure roadmap into Introduction, Rewind, and Echo chapter pages so long level names have enough room to remain readable. Added on-screen chapter arrows and Left/Right Arrow keyboard navigation while preserving level locks and progress." },
   { version: "v0.19.2", commit: "7ad0af8", date: "2026-08-19", message: "Close Echo Chapter shortcuts", description: "Attached moving spike strips to the tops of level 24 and 25's vertical gates so they cannot be used as unintended stepping stones. Rebuilt level 26 as a longer four-platform plate-controlled crossing with minimal release grace, requiring the echo to keep the pressure plate active for the full route." },
@@ -698,11 +697,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.19.6";
+const GAME_VERSION = "v0.19.5";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "direct-chapter-timer-v1", label: "Version 0.19.6 to 0.19.6" },
   { id: "chapter-timer-continuation-v1", label: "Version 0.19.5 to 0.19.5" },
   { id: "echo-shortcut-fix-v1", label: "Version 0.19.2 to 0.19.4" },
   { id: "echo-route-preview-v1", label: "Version 0.19.1 to 0.19.1" },
@@ -733,7 +731,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -798,7 +796,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -1945,7 +1943,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -2184,7 +2182,11 @@ function showRunResults() {
 }
 
 function startRewindCutscene() {
-  const continuingStoryRun = Number.isFinite(levelSplits[INTRO_LEVEL_COUNT - 1]);
+  const introSplitsComplete = Array.from(
+    { length: INTRO_LEVEL_COUNT },
+    (_, index) => levelSplits[index]
+  ).every(Number.isFinite);
+  const continuingClassicAdventure = !activeRunConfig && runStartLevel === 0 && introSplitsComplete;
   resetCutscene();
   cutsceneKind = "rewind";
   developerPanel.hidden = true;
@@ -2193,7 +2195,7 @@ function startRewindCutscene() {
   activeRunConfig = null;
   runLevelQueue = [];
   runQueuePosition = 0;
-  countPostRunInRunTimer = continuingStoryRun;
+  countPostRunInRunTimer = continuingClassicAdventure;
   continueButton.classList.remove("ready");
   won = false;
   cutsceneActive = true;
