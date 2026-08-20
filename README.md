@@ -6,9 +6,9 @@ A browser-based platformer where the world changes across time. Run, jump, avoid
 
 No install, download, or plugins. It runs entirely in the browser.
 
-> **Development status:** The platforming prototype is playable now. Ten rewind levels and ten Echo Chapter levels follow the introductory adventure and awakening cinematic.
+> **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic.
 
-**Current version:** `v0.20.1`
+**Current version:** `v0.21.0`
 
 ## How it works
 
@@ -27,6 +27,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 **Recall a path.** Starting in level 11, hold `F` to preview actual recent history backward. Keep holding `F` and hold `G` to move the preview forward again, then release `F` to commit. Pushable crates always record where the player moves them, breakable blocks record whether they still exist, and enemies record both their patrol and whether they are alive. After the rewind field is introduced, it remains available in later levels and rewinds every eligible object it reaches. The slime and collected rewards remain in the present.
 
 **Create an echo.** Completing level 20 opens a chapter-ending screen and a second time-machine cinematic before level 21. Press `C` to start recording the slime's real movement, jumps, and switch interactions. Press `C` again to stop and preview the route with a golden starting outline and directional arrows, then press `C` once more to create the cyan looping echo. Press `V` to remove it. Later Echo Chapter levels combine repeated timing, remote switches, pressure plates, crates, enemies, hazards, and moving platforms before the level-30 final exam.
+
+**Converge timelines.** Chapter 4 combines rewind and echoes across levels 31–40. Echo actions continue changing the present while platforms, crates, broken blocks, enemies, and dangerous moving blades retrace their recorded history. The chapter emphasizes interactions between established rules rather than tighter execution, ending with a long combined final exam.
 
 **Race the clock.** The speedrun timer starts with your first move or jump and continues between levels. Continuing the story preserves the same run timer across the Introduction, Rewind, and Echo chapters while pausing it during both cutscenes. Your final score is 300 minus your completion time in seconds, plus 2 points for every star.
 

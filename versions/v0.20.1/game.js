@@ -24,10 +24,6 @@ const echoChapterMessage = document.querySelector("#echoChapterMessage");
 const echoChapterSummary = document.querySelector("#echoChapterSummary");
 const echoContinueButton = document.querySelector("#echoContinueButton");
 const echoMenuButton = document.querySelector("#echoMenuButton");
-const convergenceChapterMessage = document.querySelector("#convergenceChapterMessage");
-const convergenceChapterSummary = document.querySelector("#convergenceChapterSummary");
-const convergenceContinueButton = document.querySelector("#convergenceContinueButton");
-const convergenceMenuButton = document.querySelector("#convergenceMenuButton");
 const mainMenu = document.querySelector("#mainMenu");
 const playButton = document.querySelector("#playButton");
 const playChoiceMenu = document.querySelector("#playChoiceMenu");
@@ -92,8 +88,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.21.0", commit: "Pending commit", date: "2026-08-20", message: "Add the combined Rewind and Echo chapter", description: "Added Chapter 4 and levels 31 through 40, combining echoes with dynamic rewind history across moving platforms, crates, fragile blocks, enemies, switches, pressure plates, hazards, and rewind fields. Introduced a visually distinct moving blade obstacle whose complete motion path can be rewound, then reused it as one ingredient across increasingly systemic puzzles and the multi-section Convergence final exam. Added the Echo Chapter completion handoff, a fourth roadmap page, consistent progression into the new chapter, and a final combined-chapter results screen." },
-  { version: "v0.20.1", commit: "2683bab", date: "2026-08-20", message: "Add fragile block damage assets", description: "Moved both visible damage stages for fragile blocks out of the canvas drawing code and into reusable SVG overlays. Cracked grass, stone, and crate blocks retain their original material textures while sharing consistent scalable fracture artwork." },
+  { version: "v0.20.1", commit: "Pending commit", date: "2026-08-20", message: "Move fragile block damage into assets", description: "Moved both visible damage stages for fragile blocks out of the canvas drawing code and into reusable SVG overlays. Cracked grass, stone, and crate blocks retain their original material textures while sharing consistent scalable fracture artwork." },
   { version: "v0.20.0", commit: "75b010d", date: "2026-08-20", message: "Move game characters and mechanics into assets", description: "Moved the player, echo, enemy, pressure-plate, jump-pad, and switch artwork out of the canvas drawing code and into reusable SVG files. Gameplay now loads those assets while retaining slime squash, plate depression, pad pulsing, switch states, cutscene animation, rewind previews, and menu animation. Expanded version archiving to include every shared asset file." },
   { version: "v0.19.7", commit: "57422a8", date: "2026-08-20", message: "Fix the Rewind Final Exam crossing", description: "Corrected the final section of level 20 so its moving platform remains reachable by the rewind field after the crate sends it across the lava. Projected the field toward the gap and increased its range enough to select the platform from the ledge while leaving the pressure-plate crate outside the field." },
   { version: "v0.19.6", commit: "89876b1", date: "2026-08-20", message: "Preserve direct chapter-transition runs", description: "Fixed level-10 starts so choosing Continue preserves their timer into level 11 instead of requiring completed splits from every introductory level. The transition now works for normal finishes and developer-flight finishes while still pausing during the cutscene." },
@@ -234,15 +229,6 @@ const C = (x, y, targetX, targetY, switchId, w = 140, h = 40, kind = "stone", re
 const W = (x, y, targetX, targetY, plateId, w = 160, h = 40, kind = "stone", speed = 330, options = {}) => ({
   x, y, w, h, kind, axis: "x", rewindable: true, plateId, targetX, targetY,
   baseX: x, baseY: y, speed, releaseDelay: 3, releaseTimer: 0,
-  motionHistory: [{ x, y, time: 0 }], timelinePreview: false,
-  previewCursor: 0, previewLatest: 0, previewAccumulator: 0, previewPaused: false,
-  timelinePlayback: [], rewindGrace: 0, timelineLocked: false,
-  ...options
-});
-const D = (x, y, motionPath, speed = 170, size = 58, options = {}) => ({
-  x, y, w: size, h: size, kind: "moving-obstacle", dangerous: true, nonSolid: true,
-  rewindable: true, baseX: x, baseY: y, speed, motionPath,
-  pathIndex: 1, autoStart: true, loopPath: true, carryPlayer: false,
   motionHistory: [{ x, y, time: 0 }], timelinePreview: false,
   previewCursor: 0, previewLatest: 0, previewAccumulator: 0, previewPaused: false,
   timelinePlayback: [], rewindGrace: 0, timelineLocked: false,
@@ -641,190 +627,6 @@ const levels = [
       R(2970,500,500,70,"lava"), R(3770,500,280,70,"lava")
     ],
     stars: [], finish: R(4220,300,34,90)
-  },
-  {
-    name: "Shared History", width: 1700, start: [55,448], music: "level2", theme: "rewind",
-    postRun: true, rewindChapter: true, rewindTutorial: true, echoChapter: true,
-    rewindField: true, rewindFieldRadius: 430, rewindFieldOffset: 140,
-    platforms: [
-      R(0,490,500,80,"stone"),
-      C(520,535,520,430,"shared-entry",210,40,"stone",true,.15),
-      R(770,490,210,80,"stone"),
-      W(1010,430,1280,430,null,170,40,"stone",210,{
-        autoStart: true, resumeAfterRewind: false,
-        motionPath: [{ x: 1010, y: 430 }, { x: 1280, y: 430 }], pathIndex: 1
-      }),
-      R(1430,450,270,120,"stone")
-    ],
-    pressurePlates: [Q(205,478,"shared-entry",145)],
-    hazards: [R(500,500,270,70,"lava"), R(980,500,450,70,"lava")],
-    stars: [[1095,380]], finish: R(1620,360,34,90)
-  },
-  {
-    name: "Blade Recall", width: 1700, start: [55,448], music: "level3", theme: "lava",
-    postRun: true, rewindChapter: true, rewindTutorial: true, echoChapter: true,
-    rewindField: true, rewindFieldRadius: 440, rewindFieldOffset: 150,
-    platforms: [
-      R(0,490,1700,80,"stone"), R(520,360,560,40,"stone"),
-      D(470,426,[{ x: 470, y: 426 },{ x: 890, y: 426 }],155,60,{
-        loopPath: false, resumeAfterRewind: false
-      }),
-      C(1080,170,1080,35,"blade-exit",72,320,"stone",true,.2)
-    ],
-    pressurePlates: [Q(230,478,"blade-exit",150)],
-    hazards: [], stars: [[1000,430]], finish: R(1605,400,34,90)
-  },
-  {
-    name: "Pulse Return", width: 1800, start: [55,448], music: "level1", theme: "rewind",
-    postRun: true, rewindChapter: true, rewindTutorial: true, echoChapter: true,
-    rewindField: true, rewindFieldRadius: 460, rewindFieldOffset: 170,
-    platforms: [
-      R(0,490,520,80,"stone"),
-      W(560,430,1040,430,"pulse-route",180,40,"stone",245,{ releaseDelay: .32 }),
-      R(1240,450,560,120,"stone"),
-      D(1310,382,[{ x: 1310, y: 382 },{ x: 1590, y: 382 },{ x: 1310, y: 382 }],145,54)
-    ],
-    pressurePlates: [Q(250,478,"pulse-route",120)],
-    hazards: [R(520,500,720,70,"lava")], stars: [[1115,375]], finish: R(1715,360,34,90)
-  },
-  {
-    name: "Cargo Countermove", width: 1900, start: [55,448], music: "level2", theme: "rewind",
-    postRun: true, rewindChapter: true, rewindTutorial: true, echoChapter: true,
-    echoCanPushCrates: true, rewindField: true, rewindFieldRadius: 470, rewindFieldOffset: 180,
-    platforms: [
-      R(0,490,860,80,"stone"), K(310,430),
-      C(860,235,860,70,"cargo-gate",78,255,"stone",true,.35),
-      R(940,490,260,80,"stone"),
-      W(1225,430,1510,430,"cargo-bridge",170,40,"stone",230,{ releaseDelay: 0 }),
-      R(1680,450,220,120,"stone")
-    ],
-    pressurePlates: [Q(660,478,"cargo-gate",125,{ crateOnly: true }), Q(1030,478,"cargo-bridge",120)],
-    hazards: [R(1200,500,480,70,"lava")], stars: [[900,190],[1575,380]],
-    requiredLevelStars: 2, finish: R(1820,360,34,90)
-  },
-  {
-    name: "Restored Route", width: 1900, start: [300,448], music: "level3", theme: "lava",
-    postRun: true, rewindChapter: true, rewindTutorial: true, echoChapter: true,
-    rewindField: true, rewindFieldRadius: 520, rewindFieldOffset: 180,
-    platforms: [
-      R(0,490,420,80,"stone"), C(180,220,180,55,"restored-exit",76,270,"stone",true,.2),
-      B(440,430,"impact","grass",120,54), B(580,390,"impact","stone",120,54),
-      B(720,430,"impact","crate",120,54), R(860,490,1040,80,"stone")
-    ],
-    pressurePlates: [Q(1010,478,"restored-exit",145)],
-    hazards: [R(420,510,440,60,"lava")], stars: [[650,340]],
-    finish: R(55,400,34,90)
-  },
-  {
-    name: "Patrol Paradox", width: 2000, start: [55,448], music: "level1", theme: "rewind",
-    postRun: true, rewindChapter: true, rewindTutorial: true, echoChapter: true,
-    rewindField: true, rewindFieldRadius: 500, rewindFieldOffset: 190,
-    platforms: [
-      R(0,490,820,80,"stone"),
-      { ...C(950,235,950,70,"patrol-gate",78,255,"stone",true,0), moveDuration: .32 },
-      R(1030,490,170,80,"stone"),
-      C(1230,535,1230,420,"patrol-pulse",190,40,"stone",false,.5),
-      R(1460,450,540,120,"stone"),
-      D(1560,382,[{ x: 1560, y: 382 },{ x: 1810, y: 382 },{ x: 1560, y: 382 }],150,54)
-    ],
-    switches: [S(980,446,"patrol-pulse",{ momentary: true, pulseDuration: 1.3 })],
-    pressurePlates: [Q(625,478,"patrol-gate",125,{ enemyOnly: true })],
-    enemies: [ER(640,490,620,710,1,48,{ stopAtBoundary: true })],
-    hazards: [R(1200,500,260,70,"lava")], stars: [[720,425],[1330,370]],
-    requiredStars: 3, finish: R(1915,360,34,90)
-  },
-  {
-    name: "Selective Interference", width: 2050, start: [55,448], music: "level2", theme: "lava",
-    postRun: true, rewindChapter: true, rewindTutorial: true, echoChapter: true,
-    rewindField: true, rewindFieldRadius: 310, rewindFieldOffset: 175,
-    platforms: [
-      R(0,490,560,80,"stone"),
-      W(610,430,930,430,"interference-a",160,40,"stone",225),
-      D(720,350,[{ x: 720, y: 350 },{ x: 1020, y: 350 },{ x: 720, y: 350 }],150,58),
-      R(1130,490,340,80,"stone"),
-      W(1510,430,1740,330,"interference-b",160,40,"stone",215),
-      R(1870,390,180,180,"stone")
-    ],
-    pressurePlates: [Q(270,478,"interference-a",135), Q(1280,478,"interference-b",125)],
-    hazards: [R(560,500,570,70,"lava"), R(1470,500,400,70,"lava")],
-    stars: [[1000,300],[1780,275]], requiredLevelStars: 2, finish: R(1970,300,34,90)
-  },
-  {
-    name: "Fractured Schedule", width: 2200, start: [55,448], music: "level3", theme: "rewind",
-    postRun: true, rewindChapter: true, rewindTutorial: true, echoChapter: true,
-    echoCanPushCrates: true, rewindField: true, rewindFieldRadius: 500, rewindFieldOffset: 190,
-    platforms: [
-      R(0,490,650,80,"stone"), K(330,430),
-      B(650,430,"impact","stone",120,54), R(600,520,250,50,"stone"),
-      C(850,220,850,55,"schedule-switch",74,270,"stone",false,.65),
-      R(850,490,510,80,"stone"),
-      W(1390,430,1680,430,"schedule-plate",170,40,"stone",225),
-      R(1840,450,360,120,"stone")
-    ],
-    switches: [S(190,446,"schedule-switch",{ momentary: true, pulseDuration: 1.4 })],
-    pressurePlates: [Q(1180,478,"schedule-plate",120,{ crateOnly: true })],
-    hazards: [R(1360,500,480,70,"lava")], stars: [[720,475],[1745,375]],
-    requiredLevelStars: 2, finish: R(2115,360,34,90)
-  },
-  {
-    name: "Displaced Replay", width: 2200, start: [55,448], music: "level1", theme: "lava",
-    postRun: true, rewindChapter: true, rewindTutorial: true, echoChapter: true,
-    rewindField: true, rewindFieldRadius: 480, rewindFieldOffset: 190,
-    platforms: [
-      R(0,490,500,80,"stone"),
-      W(540,430,920,350,null,170,40,"stone",205,{
-        autoStart: true,
-        motionPath: [{ x: 540, y: 430 },{ x: 760, y: 330 },{ x: 920, y: 430 },{ x: 540, y: 430 }],
-        pathIndex: 1, loopPath: true
-      }),
-      R(1080,490,520,80,"stone"),
-      C(1500,220,1500,55,"replay-exit",76,270,"stone",true,.45),
-      R(1580,490,620,80,"stone"),
-      D(1690,425,[{ x: 1690, y: 425 },{ x: 1980, y: 425 },{ x: 1690, y: 425 }],145,58)
-    ],
-    pressurePlates: [Q(1240,478,"replay-exit",145)],
-    hazards: [R(500,500,580,70,"lava")], stars: [[830,285]],
-    finish: R(2115,400,34,90)
-  },
-  {
-    name: "Convergence", width: 5400, start: [55,448], music: "level3", theme: "lava",
-    postRun: true, rewindChapter: true, rewindTutorial: true, echoChapter: true,
-    echoCanPushCrates: true, rewindField: true, rewindFieldRadius: 500, rewindFieldOffset: 190,
-    requiredLevelStars: 5,
-    platforms: [
-      R(0,490,520,80,"stone"),
-      C(540,535,540,430,"final-entry",210,40,"stone",true,.2),
-      R(790,490,250,80,"stone"),
-      W(1070,430,1390,430,null,170,40,"stone",220,{
-        autoStart: true, resumeAfterRewind: false,
-        motionPath: [{ x: 1070, y: 430 },{ x: 1390, y: 430 }], pathIndex: 1
-      }),
-      R(1560,490,650,80,"stone"),
-      D(1710,425,[{ x: 1710, y: 425 },{ x: 2050, y: 425 }],160,60,{
-        loopPath: false, resumeAfterRewind: false
-      }),
-      K(2250,430), R(2210,490,700,80,"stone"),
-      C(2910,230,2910,65,"final-cargo",80,260,"stone",true,.3),
-      B(3040,430,"stand","grass",120,54), B(3180,390,"impact","stone",120,54),
-      R(3300,490,650,80,"stone"),
-      C(3950,235,3950,70,"final-enemy",80,255,"stone",true,.3),
-      R(4030,490,360,80,"stone"),
-      W(4420,430,4740,360,"final-exit",170,40,"stone",220),
-      D(4590,300,[{ x: 4590, y: 300 },{ x: 4890, y: 410 },{ x: 4590, y: 300 }],155,58),
-      R(5050,430,350,140,"stone")
-    ],
-    switches: [S(1650,446,"final-cargo",{ momentary: true, pulseDuration: 1.4 })],
-    pressurePlates: [
-      Q(220,478,"final-entry",145), Q(2710,478,"final-cargo",120,{ crateOnly: true }),
-      Q(3740,478,"final-enemy",105,{ enemyOnly: true }), Q(4190,478,"final-exit",130)
-    ],
-    enemies: [ER(3660,490,3440,3860,1,74,{ stopAtBoundary: true })],
-    hazards: [
-      R(520,500,270,70,"lava"), R(1040,500,520,70,"lava"),
-      R(2910,500,390,70,"lava"), R(4390,500,660,70,"lava")
-    ],
-    stars: [[1120,380],[2010,375],[2960,190],[3240,340],[4800,300]],
-    finish: R(5310,340,34,90)
   }
 ];
 
@@ -899,11 +701,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.21.0";
+const GAME_VERSION = "v0.20.1";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "combined-chapter-v1", label: "Version 0.21.0 to 0.21.0" },
   { id: "rewind-final-crossing-v1", label: "Version 0.19.7 to 0.20.1" },
   { id: "direct-chapter-timer-v1", label: "Version 0.19.6 to 0.19.6" },
   { id: "chapter-timer-continuation-v1", label: "Version 0.19.5 to 0.19.5" },
@@ -936,7 +737,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -1002,7 +803,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1017,8 +818,7 @@ for (const [name, filename] of Object.entries({
   switchLeft: "switch-left.svg",
   switchRight: "switch-right.svg",
   fragileBlockCracks: "fragile-block-cracks.svg",
-  fragileBlockHalfBroken: "fragile-block-half-broken.svg",
-  movingObstacle: "moving-obstacle.svg"
+  fragileBlockHalfBroken: "fragile-block-half-broken.svg"
 })) {
   const image = new Image();
   image.src = `assets/${filename}`;
@@ -1061,7 +861,7 @@ function linkedControlActive(platform) {
 }
 
 function platformHasCollision(platform) {
-  return !platform.nonSolid && !platform.broken && (!platform.requiresActive || linkedControlActive(platform));
+  return !platform.broken && (!platform.requiresActive || linkedControlActive(platform));
 }
 
 function resetEnemies(resetRewards = false) {
@@ -1380,7 +1180,6 @@ function updateRewindablePlatform(platform, dt) {
 
   if (platform.motionPath) {
     if (!platform.autoStart && !platform.autoActivated) return;
-    if (platform.pathIndex >= platform.motionPath.length && platform.loopPath) platform.pathIndex = 0;
     const target = platform.motionPath[platform.pathIndex];
     if (!target) return;
     const dx = target.x - platform.x;
@@ -1390,13 +1189,9 @@ function updateRewindablePlatform(platform, dt) {
     movePlatformWithPlayer(
       platform,
       distance <= .01 ? target.x : platform.x + dx / distance * step,
-      distance <= .01 ? target.y : platform.y + dy / distance * step,
-      platform.carryPlayer !== false
+      distance <= .01 ? target.y : platform.y + dy / distance * step
     );
-    if (distance <= step + .01) {
-      platform.pathIndex++;
-      if (platform.pathIndex >= platform.motionPath.length && platform.loopPath) platform.pathIndex = 0;
-    }
+    if (distance <= step + .01) platform.pathIndex++;
     return;
   }
 
@@ -1435,7 +1230,7 @@ function updateMovingPlatforms(dt) {
       const targetProgress = linkedControlActive(platform) || platform.releaseTimer > 0 ? 1 : 0;
       if (platform.moveProgress === targetProgress) continue;
       platform.moveProgress = Math.max(0, Math.min(1,
-        platform.moveProgress + Math.sign(targetProgress - platform.moveProgress) * dt / (platform.moveDuration || 1.15)
+        platform.moveProgress + Math.sign(targetProgress - platform.moveProgress) * dt / 1.15
       ));
       const eased = platform.moveProgress * platform.moveProgress * (3 - 2 * platform.moveProgress);
       movePlatformWithPlayer(
@@ -1544,7 +1339,6 @@ function loadLevel(index, keepScore = true) {
   message.hidden = true;
   chapterCompleteMessage.hidden = true;
   echoChapterMessage.hidden = true;
-  convergenceChapterMessage.hidden = true;
   resetLevelMotion();
   resetPlayer(false, true);
   if (timerRunning && gameStarted) beginLevelTimer();
@@ -1906,7 +1700,7 @@ function closeRunSetup() {
 }
 
 const ROADMAP_CHAPTER_SIZE = 10;
-const ROADMAP_CHAPTERS = ["Introduction", "Rewind", "Echo", "Rewind + Echo"];
+const ROADMAP_CHAPTERS = ["Introduction", "Rewind", "Echo"];
 const ROADMAP_POINTS = [
   [10, 27], [30, 27], [50, 27], [70, 27], [90, 27],
   [10, 72], [30, 72], [50, 72], [70, 72], [90, 72]
@@ -2183,7 +1977,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -2460,38 +2254,6 @@ function showEchoChapterResults() {
   echoContinueButton.focus();
 }
 
-function showConvergenceChapterResults() {
-  completeLevelSplit();
-  unlockThrough(30);
-  if (countPostRunInRunTimer) finishRunTimer();
-  won = true;
-  convergenceChapterSummary.textContent = `Level time ${formatRunTime(levelElapsed)}`;
-  convergenceChapterMessage.hidden = false;
-  pauseButton.disabled = true;
-  restartButton.disabled = true;
-  restartRunButton.disabled = true;
-  quitButton.disabled = true;
-  Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
-  pressed.jump = false;
-  convergenceContinueButton.focus();
-}
-
-function startConvergenceLevel() {
-  const continuingTimedRun = countPostRunInRunTimer;
-  convergenceChapterMessage.hidden = true;
-  unlockThrough(30);
-  if (!continuingTimedRun) runStartLevel = 30;
-  loadLevel(30);
-  if (continuingTimedRun) resumeRunTimerForLoadedLevel();
-  won = false;
-  pauseButton.disabled = false;
-  restartButton.disabled = false;
-  restartRunButton.disabled = false;
-  quitButton.disabled = false;
-  updatePauseButton();
-  canvas.focus();
-}
-
 function startEchoCutscene() {
   resetCutscene();
   cutsceneKind = "echo";
@@ -2547,7 +2309,7 @@ function startRewindLevel() {
   canvas.focus();
 }
 
-function finishCombinedChapter() {
+function finishRewindTutorial() {
   completeLevelSplit();
   if (countPostRunInRunTimer) finishRunTimer();
   won = true;
@@ -2561,7 +2323,7 @@ function finishCombinedChapter() {
   replayRewindButton.focus();
 }
 
-function replayCombinedFinale() {
+function replayRewindTutorial() {
   chapterCompleteMessage.hidden = true;
   won = false;
   loadLevel(levels.length - 1);
@@ -3086,7 +2848,6 @@ addEventListener("keydown", (event) => {
   if (event.code === "KeyT") startOver();
   if (event.code === "Enter" && won) {
     if (!echoChapterMessage.hidden) startEchoCutscene();
-    else if (!convergenceChapterMessage.hidden) startConvergenceLevel();
     else if (!message.hidden && !continueButton.hidden) startRewindCutscene();
   }
   setKey(event.code, true);
@@ -3134,9 +2895,7 @@ publishRunButton.addEventListener("click", publishFinishedRun);
 continueButton.addEventListener("click", startRewindCutscene);
 echoContinueButton.addEventListener("click", startEchoCutscene);
 echoMenuButton.addEventListener("click", quitRun);
-convergenceContinueButton.addEventListener("click", startConvergenceLevel);
-convergenceMenuButton.addEventListener("click", quitRun);
-replayRewindButton.addEventListener("click", replayCombinedFinale);
+replayRewindButton.addEventListener("click", replayRewindTutorial);
 rewindMenuButton.addEventListener("click", quitRun);
 runNameInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -3956,13 +3715,6 @@ function update(dt) {
     startSpikeDeath(`${levelIndex}:hazard:${touchedHazardIndex}`);
     return;
   }
-  const touchedMovingObstacleIndex = currentLevel().platforms.findIndex((platform) =>
-    platform.dangerous && !platform.broken && overlaps(box, platform)
-  );
-  if (touchedMovingObstacleIndex >= 0) {
-    startSpikeDeath(`${levelIndex}:moving-obstacle:${touchedMovingObstacleIndex}`);
-    return;
-  }
 
   currentLevel().stars.forEach(([x, y], i) => {
     const star = { x: x - 15, y: y - 15, w: 30, h: 30 };
@@ -4004,8 +3756,7 @@ function update(dt) {
     }
     else if (currentLevel().rewindChapter || currentLevel().echoChapter) {
       if (levelIndex === 19) showEchoChapterResults();
-      else if (levelIndex === 29) showConvergenceChapterResults();
-      else if (levelIndex === levels.length - 1) finishCombinedChapter();
+      else if (levelIndex === levels.length - 1) finishRewindTutorial();
       else {
         completeLevelSplit();
         unlockThrough(levelIndex + 1);
@@ -4207,25 +3958,10 @@ function drawMechanicBlock(block, x, time) {
   ctx.restore();
 }
 
-function drawMovingObstacle(obstacle, x, time) {
-  const pulse = (Math.sin(time * .012) + 1) * .5;
-  ctx.save();
-  ctx.translate(x + obstacle.w / 2, obstacle.y + obstacle.h / 2);
-  ctx.rotate(time * .0045);
-  ctx.shadowColor = "#ff4a32";
-  ctx.shadowBlur = 8 + pulse * 7;
-  drawGameArt("movingObstacle", -obstacle.w / 2, -obstacle.h / 2, obstacle.w, obstacle.h);
-  ctx.restore();
-}
-
 function drawPlatform(p, time) {
   if (p.broken) return;
   const x = p.x - cameraX;
   if (x + p.w < -80 || x > VIEW_W + 80) return;
-  if (p.kind === "moving-obstacle") {
-    drawMovingObstacle(p, x, time);
-    return;
-  }
   if (p.kind === "breakable-block" || p.kind === "floating-block") {
     drawMechanicBlock(p, x, time);
     return;
