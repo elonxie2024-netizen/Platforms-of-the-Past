@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $releases = [ordered]@{
+  'v0.19.7' = '57422a8'
   'v0.19.6' = '89876b1'
   'v0.19.5' = 'd34fea2'
   'v0.19.4' = '0ffbf35'
@@ -90,10 +91,9 @@ $archiveAssetRoot = Join-Path $archiveRoot 'assets'
 New-Item -ItemType Directory -Force -Path $archiveRoot | Out-Null
 New-Item -ItemType Directory -Force -Path $archiveAssetRoot | Out-Null
 
-$sourceAsset = Join-Path $repoRoot 'assets\platformer-assets.png'
-$archiveAsset = Join-Path $archiveAssetRoot 'platformer-assets.png'
-if (-not (Test-Path -LiteralPath $sourceAsset)) { throw "Missing shared game asset: $sourceAsset" }
-Copy-Item -LiteralPath $sourceAsset -Destination $archiveAsset -Force
+$sourceAssetRoot = Join-Path $repoRoot 'assets'
+if (-not (Test-Path -LiteralPath $sourceAssetRoot)) { throw "Missing shared game assets: $sourceAssetRoot" }
+Get-ChildItem -LiteralPath $sourceAssetRoot -File | Copy-Item -Destination $archiveAssetRoot -Force
 
 foreach ($release in $releases.GetEnumerator()) {
   $releaseRoot = Join-Path $archiveRoot $release.Key

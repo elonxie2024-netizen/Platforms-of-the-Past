@@ -279,14 +279,36 @@ canvas {
   left: 19%;
   bottom: 48px;
   width: 44px;
-  height: 44px;
-  background: url("assets/slime-player.svg") center / contain no-repeat;
-  filter: drop-shadow(0 6px 5px #17482b45);
+  height: 40px;
+  border: 3px solid #207a43;
+  border-radius: 12px;
+  background: #55c96b;
+  box-shadow: inset 7px 7px #9af0a255, 0 6px 10px #17482b45;
   will-change: left, bottom, transform;
 }
 
-.menu-slime::before,
-.menu-slime::after { content: none; }
+.menu-slime::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  left: 11px;
+  width: 5px;
+  height: 7px;
+  border-radius: 50%;
+  background: #173d2c;
+  box-shadow: 16px 0 #173d2c;
+}
+
+.menu-slime::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  bottom: 8px;
+  width: 10px;
+  height: 5px;
+  border-bottom: 2px solid #173d2c;
+  border-radius: 0 0 9px 9px;
+}
 
 .menu-customization {
   width: min(550px, 100%);

@@ -88,8 +88,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.20.0", commit: "Pending commit", date: "2026-08-20", message: "Move game characters and mechanics into assets", description: "Moved the player, echo, enemy, pressure-plate, jump-pad, and switch artwork out of the canvas drawing code and into reusable SVG files. Gameplay now loads those assets while retaining slime squash, plate depression, pad pulsing, switch states, cutscene animation, rewind previews, and menu animation. Expanded version archiving to include every shared asset file." },
-  { version: "v0.19.7", commit: "57422a8", date: "2026-08-20", message: "Fix the Rewind Final Exam crossing", description: "Corrected the final section of level 20 so its moving platform remains reachable by the rewind field after the crate sends it across the lava. Projected the field toward the gap and increased its range enough to select the platform from the ledge while leaving the pressure-plate crate outside the field." },
+  { version: "v0.19.7", commit: "Pending commit", date: "2026-08-20", message: "Fix the Rewind Final Exam crossing", description: "Corrected the final section of level 20 so its moving platform remains reachable by the rewind field after the crate sends it across the lava. Projected the field toward the gap and increased its range enough to select the platform from the ledge while leaving the pressure-plate crate outside the field." },
   { version: "v0.19.6", commit: "89876b1", date: "2026-08-20", message: "Preserve direct chapter-transition runs", description: "Fixed level-10 starts so choosing Continue preserves their timer into level 11 instead of requiring completed splits from every introductory level. The transition now works for normal finishes and developer-flight finishes while still pausing during the cutscene." },
   { version: "v0.19.5", commit: "d34fea2", date: "2026-08-20", message: "Continue timers across story chapters", description: "Made a run started from level 1 retain its elapsed time when Continue carries it into the Rewind and Echo chapters. The run timer pauses throughout both story cutscenes, resumes when the next chapter becomes playable, and continues contributing to the final run time without resetting the original run start." },
   { version: "v0.19.4", commit: "0ffbf35", date: "2026-08-19", message: "Clarify chapter roadmap paths", description: "Rearranged each roadmap chapter into two left-to-right rows. The route now travels from levels 1 through 5 across the upper row, connects diagonally to level 6, and continues through level 10 across the lower row." },
@@ -700,11 +699,11 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.20.0";
+const GAME_VERSION = "v0.19.7";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "rewind-final-crossing-v1", label: "Version 0.19.7 to 0.20.0" },
+  { id: "rewind-final-crossing-v1", label: "Version 0.19.7 to 0.19.7" },
   { id: "direct-chapter-timer-v1", label: "Version 0.19.6 to 0.19.6" },
   { id: "chapter-timer-continuation-v1", label: "Version 0.19.5 to 0.19.5" },
   { id: "echo-shortcut-fix-v1", label: "Version 0.19.2 to 0.19.4" },
@@ -736,7 +735,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -801,32 +800,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
-
-const gameArt = {};
-for (const [name, filename] of Object.entries({
-  player: "slime-player.svg",
-  enemy: "slime-enemy.svg",
-  echo: "slime-echo.svg",
-  pressurePlateBase: "pressure-plate-base.svg",
-  pressurePlateTop: "pressure-plate-top.svg",
-  pressurePlateTopActive: "pressure-plate-top-active.svg",
-  jumpPadBase: "jump-pad-base.svg",
-  jumpPadTop: "jump-pad-top.svg",
-  switchLeft: "switch-left.svg",
-  switchRight: "switch-right.svg"
-})) {
-  const image = new Image();
-  image.src = `assets/${filename}`;
-  gameArt[name] = image;
-}
-
-function drawGameArt(name, x, y, width, height) {
-  const image = gameArt[name];
-  if (!image?.complete || !image.naturalWidth) return false;
-  ctx.drawImage(image, x, y, width, height);
-  return true;
-}
+spriteSheet.src = "../assets/platformer-assets.png";
 
 function currentLevel() { return levels[levelIndex]; }
 function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
@@ -1973,7 +1947,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -4085,12 +4059,30 @@ function drawMovingPlatformMarker(platform, x) {
 function drawSwitch(levelSwitch, time) {
   const x = levelSwitch.x - cameraX;
   if (x + levelSwitch.w < -30 || x > VIEW_W + 30) return;
+  const centerX = x + levelSwitch.w / 2;
+  const baseY = levelSwitch.y + levelSwitch.h;
+  const leverDirection = levelSwitch.flipped ? 1 : -1;
+
   ctx.save();
   ctx.shadowColor = "#0a102288";
   ctx.shadowBlur = 5;
   ctx.shadowOffsetY = 3;
-  drawGameArt(levelSwitch.flipped ? "switchRight" : "switchLeft", x, levelSwitch.y, levelSwitch.w, levelSwitch.h);
+  ctx.fillStyle = "#38485a";
+  ctx.strokeStyle = "#172434";
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.roundRect(x + 3, baseY - 14, levelSwitch.w - 6, 14, 5); ctx.fill(); ctx.stroke();
   ctx.shadowColor = "transparent";
+  ctx.strokeStyle = "#d4dbe1";
+  ctx.lineWidth = 6;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(centerX, baseY - 13);
+  ctx.lineTo(centerX + leverDirection * 13, levelSwitch.y + 7);
+  ctx.stroke();
+  ctx.fillStyle = levelSwitch.flipped ? "#74dc88" : "#efb746";
+  ctx.strokeStyle = "#183a2a";
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(centerX + leverDirection * 13, levelSwitch.y + 7, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
   if (nearbySwitch() === levelSwitch) {
     const prompt = switchPromptBounds(levelSwitch, time);
@@ -4116,12 +4108,32 @@ function drawPressurePlate(plate) {
   const x = plate.x - cameraX;
   if (x + plate.w < -20 || x > VIEW_W + 20) return;
   const depression = plate.pressProgress * 5;
+  const activeColor = plate.pressed ? "#75e38a" : "#8de4ff";
+
   ctx.save();
   ctx.shadowColor = plate.pressed ? "#75e38aaa" : "#8de4ff88";
   ctx.shadowBlur = plate.pressed ? 12 : 7;
-  drawGameArt("pressurePlateBase", x, plate.y + 5, plate.w, 7);
-  drawGameArt(plate.pressed ? "pressurePlateTopActive" : "pressurePlateTop", x + 4, plate.y + depression, plate.w - 8, 6);
+  ctx.fillStyle = "#17283b";
+  ctx.strokeStyle = "#081421";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(x, plate.y + 5, plate.w, 7, 3);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = activeColor;
+  ctx.strokeStyle = "#dffaff";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(x + 4, plate.y + depression, plate.w - 8, 6, 3);
+  ctx.fill();
+  ctx.stroke();
+
   ctx.shadowColor = "transparent";
+  ctx.fillStyle = plate.pressed ? "#143d27" : "#12324c";
+  ctx.beginPath();
+  ctx.arc(x + plate.w / 2, plate.y + 3 + depression, 2, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 
@@ -4132,8 +4144,18 @@ function drawJumpPad(pad, time) {
   ctx.save();
   ctx.shadowColor = "#ffe05d";
   ctx.shadowBlur = 6 + pulse * 7;
-  drawGameArt("jumpPadBase", x, pad.y + 7, pad.w, pad.h - 7);
-  drawGameArt("jumpPadTop", x + 3, pad.y + 2 - pulse * 2, pad.w - 6, 10);
+  ctx.fillStyle = "#243958";
+  ctx.beginPath(); ctx.roundRect(x, pad.y + 7, pad.w, pad.h - 7, 5); ctx.fill();
+  ctx.fillStyle = "#ffe05d";
+  ctx.beginPath(); ctx.roundRect(x + 3, pad.y + 2 - pulse * 2, pad.w - 6, 10, 5); ctx.fill();
+  ctx.fillStyle = "#ef8f2f";
+  for (let offset = 10; offset < pad.w - 5; offset += 16) {
+    ctx.beginPath();
+    ctx.moveTo(x + offset - 5, pad.y + 9 - pulse * 2);
+    ctx.lineTo(x + offset, pad.y + 4 - pulse * 2);
+    ctx.lineTo(x + offset + 5, pad.y + 9 - pulse * 2);
+    ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -4200,22 +4222,62 @@ function drawFlag(flag) {
   ctx.fillStyle = "#f0445a"; ctx.beginPath(); ctx.moveTo(x + 10, flag.y + 5); ctx.lineTo(x + 55, flag.y + 18); ctx.lineTo(x + 10, flag.y + 34); ctx.fill();
 }
 
-function drawSlimeCharacter(character, time, assetName) {
+function drawSlimeCharacter(character, time, palette) {
   const x = character.x - cameraX, y = character.y;
   ctx.save(); ctx.translate(x + PLAYER_W / 2, y + PLAYER_H / 2);
   if (!character.grounded) ctx.rotate(character.vx * .00025);
+  ctx.scale(character.facing, 1);
   const moving = character.grounded && Math.abs(character.vx) > 20;
   const bounce = moving ? Math.sin(time * .018) * 1.6 : Math.sin(time * .004) * .6;
   const squash = character.grounded ? bounce : -1.4;
-  const scaleX = (34 + squash * .9) / 34;
-  const scaleY = (31 - squash * .35) / 31;
-  ctx.scale(character.facing * scaleX, scaleY);
-  drawGameArt(assetName, -19, -16, 38, 38);
+
+  // A squat rounded-square slime body that gently squashes as it moves.
+  ctx.fillStyle = palette.body;
+  ctx.strokeStyle = palette.outline;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.roundRect(
+    -17 - squash * .45,
+    -11 + Math.abs(squash) * .1,
+    34 + squash * .9,
+    31 - squash * .35,
+    9
+  );
+  ctx.fill();
+  ctx.stroke();
+
+  // Gloss and simple facial features keep each slime readable at game size.
+  ctx.fillStyle = palette.highlight;
+  ctx.beginPath(); ctx.ellipse(-8, -5, 3.5, 4.5, .55, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = palette.face;
+  ctx.beginPath();
+  ctx.ellipse(-5, 0, 2.5, 3.8, 0, 0, Math.PI * 2);
+  ctx.ellipse(6, 0, 2.5, 3.8, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(-5.7, -1.2, .8, 0, Math.PI * 2);
+  ctx.arc(5.3, -1.2, .8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = palette.face;
+  ctx.lineWidth = 1.7;
+  ctx.lineCap = "round";
+  if (palette.expression === "angry") {
+    ctx.beginPath();
+    ctx.moveTo(-9, -6); ctx.lineTo(-2.8, -3.4);
+    ctx.moveTo(9, -6); ctx.lineTo(3, -3.4);
+    ctx.stroke();
+    ctx.beginPath(); ctx.arc(.5, 11.5, 4.5, Math.PI + .15, Math.PI * 2 - .15); ctx.stroke();
+  } else {
+    ctx.beginPath(); ctx.arc(.5, 7, 4.5, .15, Math.PI - .15); ctx.stroke();
+  }
   ctx.restore();
 }
 
 function drawPlayer(time) {
-  drawSlimeCharacter(player, time, "player");
+  drawSlimeCharacter(player, time, {
+    body: "#55c96b", outline: "#207a43", highlight: "#9af0a2", face: "#173d2c"
+  });
 }
 
 function drawEcho(time) {
@@ -4224,7 +4286,9 @@ function drawEcho(time) {
   ctx.globalAlpha = .74;
   ctx.shadowColor = "#77e8ff";
   ctx.shadowBlur = 12;
-  drawSlimeCharacter(echo, time, "echo");
+  drawSlimeCharacter(echo, time, {
+    body: "#66d9d2", outline: "#287b91", highlight: "#c0fff5", face: "#173d4a"
+  });
   ctx.restore();
 }
 
@@ -4305,7 +4369,9 @@ function drawEnemies(time) {
     drawSlimeCharacter({
       x: enemy.x, y: enemy.y, vx: enemy.direction * enemy.speed,
       grounded: true, facing: enemy.direction
-    }, time, "enemy");
+    }, time, {
+      body: "#e85b61", outline: "#8f2735", highlight: "#ff9a9e", face: "#4b1721", expression: "angry"
+    });
   }
 }
 
@@ -4430,8 +4496,20 @@ function drawCutsceneSlime(pose, time, alpha = 1) {
     ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(0, 0, 27 + Math.sin(time * 7) * 3, 0, Math.PI * 2); ctx.stroke();
   }
-  ctx.scale((34 + bounce * .8) / 34, (31 - bounce * .3) / 31);
-  drawGameArt("player", -19, -16, 38, 38);
+
+  ctx.fillStyle = "#55c96b";
+  ctx.strokeStyle = pose.powered ? "#64ecdf" : "#207a43";
+  ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.roundRect(-17 - bounce * .4, -11, 34 + bounce * .8, 31 - bounce * .3, 9); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#9af0a2";
+  ctx.beginPath(); ctx.ellipse(-8, -5, 3.5, 4.5, .55, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#173d2c";
+  ctx.beginPath(); ctx.ellipse(-5, 0, 2.5, 3.8, 0, 0, Math.PI * 2); ctx.ellipse(6, 0, 2.5, 3.8, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#fff";
+  ctx.beginPath(); ctx.arc(-5.7, -1.2, .8, 0, Math.PI * 2); ctx.arc(5.3, -1.2, .8, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = "#173d2c";
+  ctx.lineWidth = 1.7;
+  ctx.beginPath(); ctx.arc(.5, 7, 4.5, .15, Math.PI - .15); ctx.stroke();
   ctx.restore();
 }
 
@@ -4818,14 +4896,20 @@ function drawRewindPathPreview(time) {
       const restoredState = selected[0];
       ctx.save();
       ctx.globalAlpha = .62;
+      ctx.fillStyle = "#e85b61";
       ctx.strokeStyle = "#ffe05d";
       ctx.lineWidth = 3;
       ctx.setLineDash([7, 6]);
-      drawGameArt("enemy", restoredState.x - 4, restoredState.y + 2, 38, 38);
       ctx.beginPath();
       ctx.roundRect(restoredState.x - 2, restoredState.y + 8, platform.w + 4, platform.h - 8, 9);
+      ctx.fill();
       ctx.stroke();
       ctx.setLineDash([]);
+      ctx.fillStyle = "#4b1721";
+      ctx.beginPath();
+      ctx.arc(restoredState.x + 10, restoredState.y + 22, 2.3, 0, Math.PI * 2);
+      ctx.arc(restoredState.x + 21, restoredState.y + 22, 2.3, 0, Math.PI * 2);
+      ctx.fill();
       ctx.restore();
     }
     ctx.strokeStyle = "rgba(255, 211, 77, .82)";
