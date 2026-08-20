@@ -92,8 +92,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.21.1", commit: "Pending commit", date: "2026-08-20", message: "Fix the Blade Recall corridor", description: "Moved the blade's fully rewound position farther from the lower corridor entrance, leaving a safe and forgiving gap for the player to enter. The low ceiling still prevents jumping over the blade, so rewinding it remains required." },
-  { version: "v0.21.0", commit: "79e576a", date: "2026-08-20", message: "Add the combined Rewind and Echo chapter", description: "Added Chapter 4 and levels 31 through 40, combining echoes with dynamic rewind history across moving platforms, crates, fragile blocks, enemies, switches, pressure plates, hazards, and rewind fields. Introduced a visually distinct moving blade obstacle whose complete motion path can be rewound, then reused it as one ingredient across increasingly systemic puzzles and the multi-section Convergence final exam. Added the Echo Chapter completion handoff, a fourth roadmap page, consistent progression into the new chapter, and a final combined-chapter results screen." },
+  { version: "v0.21.0", commit: "Pending commit", date: "2026-08-20", message: "Add the combined Rewind and Echo chapter", description: "Added Chapter 4 and levels 31 through 40, combining echoes with dynamic rewind history across moving platforms, crates, fragile blocks, enemies, switches, pressure plates, hazards, and rewind fields. Introduced a visually distinct moving blade obstacle whose complete motion path can be rewound, then reused it as one ingredient across increasingly systemic puzzles and the multi-section Convergence final exam. Added the Echo Chapter completion handoff, a fourth roadmap page, consistent progression into the new chapter, and a final combined-chapter results screen." },
   { version: "v0.20.1", commit: "2683bab", date: "2026-08-20", message: "Add fragile block damage assets", description: "Moved both visible damage stages for fragile blocks out of the canvas drawing code and into reusable SVG overlays. Cracked grass, stone, and crate blocks retain their original material textures while sharing consistent scalable fracture artwork." },
   { version: "v0.20.0", commit: "75b010d", date: "2026-08-20", message: "Move game characters and mechanics into assets", description: "Moved the player, echo, enemy, pressure-plate, jump-pad, and switch artwork out of the canvas drawing code and into reusable SVG files. Gameplay now loads those assets while retaining slime squash, plate depression, pad pulsing, switch states, cutscene animation, rewind previews, and menu animation. Expanded version archiving to include every shared asset file." },
   { version: "v0.19.7", commit: "57422a8", date: "2026-08-20", message: "Fix the Rewind Final Exam crossing", description: "Corrected the final section of level 20 so its moving platform remains reachable by the rewind field after the crate sends it across the lava. Projected the field toward the gap and increased its range enough to select the platform from the ledge while leaving the pressure-plate crate outside the field." },
@@ -667,7 +666,7 @@ const levels = [
     rewindField: true, rewindFieldRadius: 440, rewindFieldOffset: 150,
     platforms: [
       R(0,490,1700,80,"stone"), R(520,360,560,40,"stone"),
-      D(390,426,[{ x: 390, y: 426 },{ x: 890, y: 426 }],155,60,{
+      D(470,426,[{ x: 470, y: 426 },{ x: 890, y: 426 }],155,60,{
         loopPath: false, resumeAfterRewind: false
       }),
       C(1080,170,1080,35,"blade-exit",72,320,"stone",true,.2)
@@ -900,11 +899,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.21.1";
+const GAME_VERSION = "v0.21.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "blade-recall-corridor-v1", label: "Version 0.21.1 to 0.21.1" },
   { id: "combined-chapter-v1", label: "Version 0.21.0 to 0.21.0" },
   { id: "rewind-final-crossing-v1", label: "Version 0.19.7 to 0.20.1" },
   { id: "direct-chapter-timer-v1", label: "Version 0.19.6 to 0.19.6" },
@@ -938,7 +936,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -1004,7 +1002,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -2185,7 +2183,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
