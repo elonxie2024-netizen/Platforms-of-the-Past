@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels and ten Echo Chapter levels follow the introductory adventure and awakening cinematic.
 
-**Current version:** `v0.19.4`
+**Current version:** `v0.19.5`
 
 ## How it works
 
@@ -28,7 +28,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Create an echo.** Completing level 20 opens a chapter-ending screen and a second time-machine cinematic before level 21. Press `C` to start recording the slime's real movement, jumps, and switch interactions. Press `C` again to stop and preview the route with a golden starting outline and directional arrows, then press `C` once more to create the cyan looping echo. Press `V` to remove it. Later Echo Chapter levels combine repeated timing, remote switches, pressure plates, crates, enemies, hazards, and moving platforms before the level-30 final exam.
 
-**Race the clock.** The speedrun timer starts with your first move or jump and continues between levels. Your final score is 300 minus your completion time in seconds, plus 2 points for every star.
+**Race the clock.** The speedrun timer starts with your first move or jump and continues between levels. Continuing the story preserves the same run timer across the Introduction, Rewind, and Echo chapters while pausing it during both cutscenes. Your final score is 300 minus your completion time in seconds, plus 2 points for every star.
 
 **Compare your splits.** A second timer tracks the current level and resets whenever you restart that level. The run timer keeps going, while the results screen records the successful attempt for each level.
 
