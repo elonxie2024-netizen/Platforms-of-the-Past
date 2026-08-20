@@ -88,8 +88,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.20.1", commit: "Pending commit", date: "2026-08-20", message: "Move fragile block damage into assets", description: "Moved both visible damage stages for fragile blocks out of the canvas drawing code and into reusable SVG overlays. Cracked grass, stone, and crate blocks retain their original material textures while sharing consistent scalable fracture artwork." },
-  { version: "v0.20.0", commit: "75b010d", date: "2026-08-20", message: "Move game characters and mechanics into assets", description: "Moved the player, echo, enemy, pressure-plate, jump-pad, and switch artwork out of the canvas drawing code and into reusable SVG files. Gameplay now loads those assets while retaining slime squash, plate depression, pad pulsing, switch states, cutscene animation, rewind previews, and menu animation. Expanded version archiving to include every shared asset file." },
+  { version: "v0.20.0", commit: "Pending commit", date: "2026-08-20", message: "Move game characters and mechanics into assets", description: "Moved the player, echo, enemy, pressure-plate, jump-pad, and switch artwork out of the canvas drawing code and into reusable SVG files. Gameplay now loads those assets while retaining slime squash, plate depression, pad pulsing, switch states, cutscene animation, rewind previews, and menu animation. Expanded version archiving to include every shared asset file." },
   { version: "v0.19.7", commit: "57422a8", date: "2026-08-20", message: "Fix the Rewind Final Exam crossing", description: "Corrected the final section of level 20 so its moving platform remains reachable by the rewind field after the crate sends it across the lava. Projected the field toward the gap and increased its range enough to select the platform from the ledge while leaving the pressure-plate crate outside the field." },
   { version: "v0.19.6", commit: "89876b1", date: "2026-08-20", message: "Preserve direct chapter-transition runs", description: "Fixed level-10 starts so choosing Continue preserves their timer into level 11 instead of requiring completed splits from every introductory level. The transition now works for normal finishes and developer-flight finishes while still pausing during the cutscene." },
   { version: "v0.19.5", commit: "d34fea2", date: "2026-08-20", message: "Continue timers across story chapters", description: "Made a run started from level 1 retain its elapsed time when Continue carries it into the Rewind and Echo chapters. The run timer pauses throughout both story cutscenes, resumes when the next chapter becomes playable, and continues contributing to the final run time without resetting the original run start." },
@@ -701,11 +700,11 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.20.1";
+const GAME_VERSION = "v0.20.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "rewind-final-crossing-v1", label: "Version 0.19.7 to 0.20.1" },
+  { id: "rewind-final-crossing-v1", label: "Version 0.19.7 to 0.20.0" },
   { id: "direct-chapter-timer-v1", label: "Version 0.19.6 to 0.19.6" },
   { id: "chapter-timer-continuation-v1", label: "Version 0.19.5 to 0.19.5" },
   { id: "echo-shortcut-fix-v1", label: "Version 0.19.2 to 0.19.4" },
@@ -737,7 +736,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -786,7 +785,6 @@ let musicStep = 0;
 let nextMusicNoteTime = 0;
 let developmentSequencePosition = 0;
 let levelDeveloperSequencePosition = 0;
-let musicTempoSequencePosition = 0;
 let flightEnabled = false;
 const activeMusicVoices = new Set();
 
@@ -803,7 +801,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -816,9 +814,7 @@ for (const [name, filename] of Object.entries({
   jumpPadBase: "jump-pad-base.svg",
   jumpPadTop: "jump-pad-top.svg",
   switchLeft: "switch-left.svg",
-  switchRight: "switch-right.svg",
-  fragileBlockCracks: "fragile-block-cracks.svg",
-  fragileBlockHalfBroken: "fragile-block-half-broken.svg"
+  switchRight: "switch-right.svg"
 })) {
   const image = new Image();
   image.src = `assets/${filename}`;
@@ -1977,7 +1973,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -2792,28 +2788,9 @@ function trackLevelDeveloperSequence(event) {
   return true;
 }
 
-function trackMusicTempoSequence(event) {
-  if (event.repeat || event.key.length !== 1) return;
-  const sequence = [116, 117, 102, 102];
-  const key = event.key.toLowerCase().charCodeAt(0);
-  musicTempoSequencePosition = key === sequence[musicTempoSequencePosition]
-    ? musicTempoSequencePosition + 1
-    : key === sequence[0] ? 1 : 0;
-  if (musicTempoSequencePosition !== sequence.length) return;
-  musicTempoSequencePosition = 0;
-  Object.values(MUSIC_TRACKS).forEach(track => { track.tempo = 999; });
-  stopMusicVoices();
-  musicStep = 0;
-  if (audioContext) {
-    nextMusicNoteTime = audioContext.currentTime + .02;
-    scheduleMusic();
-  }
-}
-
 addEventListener("keydown", (event) => {
   if (event.target instanceof Element && event.target.matches("input, textarea, select")) return;
   trackDevelopmentSequence(event);
-  trackMusicTempoSequence(event);
   if (trackLevelDeveloperSequence(event)) return;
   if (event.target instanceof Element && event.target.matches("button")) return;
   if (!gameStarted) return;
@@ -3937,6 +3914,25 @@ function drawAssetRectangle(material, x, y, width, height, targetContext = ctx) 
   }
 }
 
+function traceBlockCracks(x, y, width, height) {
+  ctx.beginPath();
+  ctx.moveTo(x + width * .48, y + 1);
+  ctx.lineTo(x + width * .43, y + height * .24);
+  ctx.lineTo(x + width * .55, y + height * .43);
+  ctx.lineTo(x + width * .46, y + height * .68);
+  ctx.lineTo(x + width * .53, y + height - 1);
+  ctx.moveTo(x + width * .43, y + height * .24);
+  ctx.lineTo(x + width * .27, y + height * .34);
+  ctx.lineTo(x + width * .19, y + height * .58);
+  ctx.moveTo(x + width * .55, y + height * .43);
+  ctx.lineTo(x + width * .72, y + height * .31);
+  ctx.lineTo(x + width * .84, y + height * .46);
+  ctx.moveTo(x + width * .46, y + height * .68);
+  ctx.lineTo(x + width * .31, y + height * .82);
+  ctx.moveTo(x + width * .53, y + height * .79);
+  ctx.lineTo(x + width * .71, y + height * .9);
+}
+
 function drawMechanicBlock(block, x, time) {
   const activeDuration = block.breakTrigger === "stand" ? .75 : .24;
   const breakProgress = block.breakTimer === null ? 0 : Math.min(1, 1 - block.breakTimer / activeDuration);
@@ -3952,8 +3948,26 @@ function drawMechanicBlock(block, x, time) {
   ctx.shadowColor = "transparent";
 
   if (block.breakable) {
-    const damageAsset = breakProgress > .3 ? "fragileBlockHalfBroken" : "fragileBlockCracks";
-    drawGameArt(damageAsset, drawX, block.y, block.w, block.h);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#241b18e8";
+    ctx.lineWidth = 5;
+    traceBlockCracks(drawX, block.y, block.w, block.h);
+    ctx.stroke();
+    ctx.strokeStyle = "#f4ddbd99";
+    ctx.lineWidth = 1.25;
+    traceBlockCracks(drawX - 1, block.y, block.w, block.h);
+    ctx.stroke();
+    if (breakProgress > .3) {
+      ctx.strokeStyle = "#241b18c9";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(drawX + block.w * .08, block.y + block.h * .22);
+      ctx.lineTo(drawX + block.w * .2, block.y + block.h * .43);
+      ctx.moveTo(drawX + block.w * .91, block.y + block.h * .66);
+      ctx.lineTo(drawX + block.w * .78, block.y + block.h * .78);
+      ctx.stroke();
+    }
   }
   ctx.restore();
 }
