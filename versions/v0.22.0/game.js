@@ -16,29 +16,24 @@ const restartRunButton = document.querySelector("#restartRunButton");
 const quitButton = document.querySelector("#quitButton");
 const victoryQuitButton = document.querySelector("#victoryQuitButton");
 const continueButton = document.querySelector("#continueButton");
-const introGauntletButton = document.querySelector("#introGauntletButton");
-const introMasteryStatus = document.querySelector("#introMasteryStatus");
-const introSplitSummary = document.querySelector("#message .split-summary");
-const introPublishRun = document.querySelector("#message .publish-run");
 const chapterCompleteMessage = document.querySelector("#chapterCompleteMessage");
 const rewindTutorialSummary = document.querySelector("#rewindTutorialSummary");
-const finalContinueButton = document.querySelector("#finalContinueButton");
-const combinedGauntletButton = document.querySelector("#combinedGauntletButton");
-const combinedMasteryStatus = document.querySelector("#combinedMasteryStatus");
 const replayRewindButton = document.querySelector("#replayRewindButton");
 const rewindMenuButton = document.querySelector("#rewindMenuButton");
 const echoChapterMessage = document.querySelector("#echoChapterMessage");
 const echoChapterSummary = document.querySelector("#echoChapterSummary");
 const echoContinueButton = document.querySelector("#echoContinueButton");
-const rewindGauntletButton = document.querySelector("#rewindGauntletButton");
-const rewindMasteryStatus = document.querySelector("#rewindMasteryStatus");
 const echoMenuButton = document.querySelector("#echoMenuButton");
 const convergenceChapterMessage = document.querySelector("#convergenceChapterMessage");
 const convergenceChapterSummary = document.querySelector("#convergenceChapterSummary");
 const convergenceContinueButton = document.querySelector("#convergenceContinueButton");
-const echoGauntletButton = document.querySelector("#echoGauntletButton");
-const echoMasteryStatus = document.querySelector("#echoMasteryStatus");
 const convergenceMenuButton = document.querySelector("#convergenceMenuButton");
+const gauntletCompleteMessage = document.querySelector("#gauntletCompleteMessage");
+const gauntletCompleteTitle = document.querySelector("#gauntletCompleteTitle");
+const gauntletCompleteSummary = document.querySelector("#gauntletCompleteSummary");
+const replayGauntletButton = document.querySelector("#replayGauntletButton");
+const gauntletRoadmapButton = document.querySelector("#gauntletRoadmapButton");
+const gauntletMenuButton = document.querySelector("#gauntletMenuButton");
 const mainMenu = document.querySelector("#mainMenu");
 const playButton = document.querySelector("#playButton");
 const playChoiceMenu = document.querySelector("#playChoiceMenu");
@@ -103,8 +98,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.22.1", commit: "Pending commit", date: "2026-08-21", message: "Add chapter-end mastery choices", description: "Changed every chapter-completion screen to present two equal side-by-side next steps: Continue the Story follows the existing campaign transition, while Master This Chapter launches that chapter's gauntlet immediately. Completing a gauntlet now returns to its chapter-completion screen with both choices still available, while preserving an in-progress story run and its timer handoff. Gauntlets remain playable from their roadmap branches." },
-  { version: "v0.22.0", commit: "bd03ab2", date: "2026-08-20", message: "Add optional chapter gauntlets", description: "Added four optional gauntlets outside the forty-level campaign: Foundry Circuit combines every introductory mechanic, History Forge demands deliberately created rewind history, Echo Works focuses on long-form loop planning, and Paradox Engine combines echo and rewind with moving blades and state-dependent replay. Each gauntlet unlocks when its chapter is completed, appears as a distinct G1 through G4 branch on that chapter's roadmap, records session completion, and runs with clean standalone run and level timing without changing campaign progression." },
+  { version: "v0.22.0", commit: "Pending commit", date: "2026-08-20", message: "Add optional chapter gauntlets", description: "Added four optional gauntlets outside the forty-level campaign: Foundry Circuit combines every introductory mechanic, History Forge demands deliberately created rewind history, Echo Works focuses on long-form loop planning, and Paradox Engine combines echo and rewind with moving blades and state-dependent replay. Each gauntlet unlocks when its chapter is completed, appears as a distinct G1 through G4 branch on that chapter's roadmap, records session completion, and runs with clean standalone run and level timing without changing campaign progression." },
   { version: "v0.21.5", commit: "890f062", date: "2026-08-20", message: "Add the game favicon", description: "Added a compact browser icon that combines the existing green slime artwork with a simple golden rewind arrow trailing behind it. Connected the SVG favicon to the game page and preserved it through the playable version archive system." },
   { version: "v0.21.4", commit: "9cfee2a", date: "2026-08-20", message: "Fix zero-delay pressure platforms", description: "Corrected pressure-controlled moving platforms so they continue moving whenever their linked plate is actively held, even when configured with no release delay. A zero delay now makes the platform stop immediately after the plate is released instead of preventing movement entirely, restoring level 34's final bridge." },
   { version: "v0.21.3", commit: "ddde822", date: "2026-08-20", message: "Move the Cargo Countermove gate star", description: "Moved level 34's first star out of the raised cargo gate and onto the platform immediately beyond it, keeping the collectible clearly visible and safely reachable after opening the gate." },
@@ -1026,13 +1020,12 @@ let leaderboardReturn = "main";
 let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
-let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.22.1";
+const GAME_VERSION = "v0.22.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "chapter-gauntlets-v1", label: "Version 0.22.0 to 0.22.1" },
+  { id: "chapter-gauntlets-v1", label: "Version 0.22.0 to 0.22.0" },
   { id: "zero-delay-platform-v1", label: "Version 0.21.4 to 0.21.5" },
   { id: "cargo-gate-star-v1", label: "Version 0.21.3 to 0.21.3" },
   { id: "cargo-gate-collision-v1", label: "Version 0.21.2 to 0.21.2" },
@@ -1070,7 +1063,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -1138,7 +1131,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1681,6 +1674,7 @@ function loadLevel(index, keepScore = true) {
   chapterCompleteMessage.hidden = true;
   echoChapterMessage.hidden = true;
   convergenceChapterMessage.hidden = true;
+  gauntletCompleteMessage.hidden = true;
   resetLevelMotion();
   resetPlayer(false, true);
   if (timerRunning && gameStarted) beginLevelTimer();
@@ -2179,34 +2173,9 @@ function startRoadmapRun(index) {
   beginRun(index);
 }
 
-function captureChapterReturnState(chapterIndex) {
-  return {
-    chapterIndex,
-    levelSplits: [...levelSplits],
-    runElapsed,
-    levelElapsed,
-    runStartLevel,
-    countPostRunInRunTimer,
-    totalStars,
-    deaths,
-    finishedRun: finishedRun ? { ...finishedRun, splits: [...finishedRun.splits] } : null,
-    runPublished,
-    runName: runNameInput.value,
-    runNameDisabled: runNameInput.disabled,
-    publishDisabled: publishRunButton.disabled,
-    publishStatus: publishStatus.textContent
-  };
-}
-
-function startChapterGauntlet(chapterIndex) {
-  gauntletChapterReturnState = captureChapterReturnState(chapterIndex);
-  startGauntletRun(CAMPAIGN_LEVEL_COUNT + chapterIndex, true);
-}
-
-function startGauntletRun(index, preserveChapterReturn = false) {
+function startGauntletRun(index) {
   const gauntlet = levels[index];
   if (!gauntlet?.gauntletId || !completedChapters.has(gauntlet.gauntletChapter)) return;
-  if (!preserveChapterReturn) gauntletChapterReturnState = null;
   activeRunConfig = null;
   runLevelQueue = [];
   runQueuePosition = 0;
@@ -2399,7 +2368,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -2548,6 +2517,7 @@ async function publishFinishedRun() {
     if (!response.ok) throw new Error(`Publish failed (${response.status})`);
     runPublished = true;
     publishStatus.textContent = "Run published to the global leaderboard.";
+    continueButton.classList.add("ready");
     if (!continueButton.hidden) continueButton.focus();
     else victoryQuitButton.focus();
   } catch {
@@ -2564,6 +2534,7 @@ function resetFinishedRun() {
   runNameInput.disabled = false;
   publishRunButton.disabled = false;
   publishStatus.textContent = "";
+  continueButton.classList.remove("ready");
   continueButton.hidden = false;
   splitList.replaceChildren();
 }
@@ -2622,10 +2593,6 @@ function showRunResults() {
   prepareAdventureResults();
   won = true;
   message.hidden = false;
-  introSplitSummary.hidden = false;
-  introPublishRun.hidden = false;
-  introMasteryStatus.hidden = !completedGauntlets.has("G1");
-  introMasteryStatus.textContent = completedGauntlets.has("G1") ? "G1 mastered." : "";
   pauseButton.disabled = true;
   restartButton.disabled = true;
   restartRunButton.disabled = true;
@@ -2633,7 +2600,7 @@ function showRunResults() {
   Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
   pressed.jump = false;
   continueButton.hidden = Boolean(activeRunConfig && !runProgress.completedLevels.has(INTRO_LEVEL_COUNT - 1));
-  introGauntletButton.hidden = continueButton.hidden;
+  continueButton.classList.toggle("ready", !finishedRun.eligible);
   if (finishedRun.eligible) runNameInput.focus();
   else if (!continueButton.hidden) continueButton.focus();
   else victoryQuitButton.focus();
@@ -2650,6 +2617,7 @@ function startRewindCutscene() {
   runLevelQueue = [];
   runQueuePosition = 0;
   countPostRunInRunTimer = continuingStoryRun;
+  continueButton.classList.remove("ready");
   won = false;
   cutsceneActive = true;
   gameShell.classList.add("cutscene-playing");
@@ -2667,8 +2635,6 @@ function showEchoChapterResults() {
   if (countPostRunInRunTimer) finishRunTimer();
   won = true;
   echoChapterSummary.textContent = `Level time ${formatRunTime(levelElapsed)}`;
-  rewindMasteryStatus.hidden = !completedGauntlets.has("G2");
-  rewindMasteryStatus.textContent = completedGauntlets.has("G2") ? "G2 mastered." : "";
   echoChapterMessage.hidden = false;
   pauseButton.disabled = true;
   restartButton.disabled = true;
@@ -2685,8 +2651,6 @@ function showConvergenceChapterResults() {
   if (countPostRunInRunTimer) finishRunTimer();
   won = true;
   convergenceChapterSummary.textContent = `Level time ${formatRunTime(levelElapsed)}`;
-  echoMasteryStatus.hidden = !completedGauntlets.has("G3");
-  echoMasteryStatus.textContent = completedGauntlets.has("G3") ? "G3 mastered." : "";
   convergenceChapterMessage.hidden = false;
   pauseButton.disabled = true;
   restartButton.disabled = true;
@@ -2774,95 +2738,38 @@ function finishCombinedChapter() {
   won = true;
   chapterCompleteMessage.hidden = false;
   rewindTutorialSummary.textContent = `Level time ${formatRunTime(levelElapsed)}`;
-  combinedMasteryStatus.hidden = !completedGauntlets.has("G4");
-  combinedMasteryStatus.textContent = completedGauntlets.has("G4") ? "G4 mastered." : "";
   pauseButton.disabled = true;
   restartButton.disabled = true;
   restartRunButton.disabled = true;
   quitButton.disabled = true;
   Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
-  finalContinueButton.focus();
-}
-
-function restoreChapterReturnState() {
-  const state = gauntletChapterReturnState;
-  if (!state) return null;
-  levelSplits = [...state.levelSplits];
-  runElapsed = state.runElapsed;
-  levelElapsed = state.levelElapsed;
-  runStartLevel = state.runStartLevel;
-  countPostRunInRunTimer = state.countPostRunInRunTimer;
-  totalStars = state.totalStars;
-  deaths = state.deaths;
-  finishedRun = state.finishedRun ? { ...state.finishedRun, splits: [...state.finishedRun.splits] } : null;
-  runPublished = state.runPublished;
-  runNameInput.value = state.runName;
-  runNameInput.disabled = state.runNameDisabled;
-  publishRunButton.disabled = state.publishDisabled;
-  publishStatus.textContent = state.publishStatus;
-  timerRunning = false;
-  levelTimerRunning = false;
-  gauntletChapterReturnState = null;
-  updateHud();
-  updateTimerHud();
-  return state;
-}
-
-function showChapterCompletionAfterGauntlet(chapterIndex, gauntletId, gauntletSummary, restoredState) {
-  message.hidden = true;
-  echoChapterMessage.hidden = true;
-  convergenceChapterMessage.hidden = true;
-  chapterCompleteMessage.hidden = true;
-  const statuses = [introMasteryStatus, rewindMasteryStatus, echoMasteryStatus, combinedMasteryStatus];
-  statuses[chapterIndex].textContent = `${gauntletId} mastered · ${gauntletSummary}`;
-  statuses[chapterIndex].hidden = false;
-
-  if (chapterIndex === 0) {
-    message.hidden = false;
-    continueButton.hidden = false;
-    introGauntletButton.hidden = false;
-    introSplitSummary.hidden = !restoredState?.finishedRun;
-    introPublishRun.hidden = !restoredState?.finishedRun;
-    if (restoredState?.finishedRun) renderSplitSummary();
-    else scoreSummary.textContent = gauntletSummary;
-    continueButton.focus();
-  } else if (chapterIndex === 1) {
-    echoChapterMessage.hidden = false;
-    if (!restoredState) echoChapterSummary.textContent = gauntletSummary;
-    echoContinueButton.focus();
-  } else if (chapterIndex === 2) {
-    convergenceChapterMessage.hidden = false;
-    if (!restoredState) convergenceChapterSummary.textContent = gauntletSummary;
-    convergenceContinueButton.focus();
-  } else {
-    chapterCompleteMessage.hidden = false;
-    if (!restoredState) rewindTutorialSummary.textContent = gauntletSummary;
-    finalContinueButton.focus();
-  }
+  replayRewindButton.focus();
 }
 
 function finishGauntlet() {
   completeLevelSplit();
   finishRunTimer();
-  const gauntlet = currentLevel();
-  const gauntletSummary = `Run time ${formatRunTime(runElapsed)} · ${currentLevelStarCount()} stars · ${deaths} deaths`;
-  completedGauntlets.add(gauntlet.gauntletId);
-  const restoredState = restoreChapterReturnState();
-  if (!restoredState) {
-    levelSplits = [];
-    runElapsed = 0;
-    countPostRunInRunTimer = false;
-    runStartLevel = Math.min(CAMPAIGN_LEVEL_COUNT - 1, (gauntlet.gauntletChapter + 1) * ROADMAP_CHAPTER_SIZE);
-    updateTimerHud();
-  }
+  completedGauntlets.add(currentLevel().gauntletId);
   won = true;
+  gauntletCompleteTitle.textContent = `${currentLevel().gauntletId}: ${currentLevel().name} complete.`;
+  gauntletCompleteSummary.textContent = `Run time ${formatRunTime(runElapsed)} · ${currentLevelStarCount()} stars · ${deaths} deaths`;
+  gauntletCompleteMessage.hidden = false;
   pauseButton.disabled = true;
   restartButton.disabled = true;
   restartRunButton.disabled = true;
   quitButton.disabled = true;
   Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
   pressed.jump = false;
-  showChapterCompletionAfterGauntlet(gauntlet.gauntletChapter, gauntlet.gauntletId, gauntletSummary, restoredState);
+  replayGauntletButton.focus();
+}
+
+function returnToGauntletRoadmap() {
+  const chapterIndex = currentLevel().gauntletChapter;
+  quitRun();
+  openRoadmap();
+  roadmapChapterIndex = chapterIndex;
+  renderRoadmap();
+  levelRoadmap.querySelector(".roadmap-gauntlet button:not(:disabled)")?.focus();
 }
 
 function replayCombinedFinale() {
@@ -3393,7 +3300,6 @@ addEventListener("keydown", (event) => {
     if (!echoChapterMessage.hidden) startEchoCutscene();
     else if (!convergenceChapterMessage.hidden) startConvergenceLevel();
     else if (!message.hidden && !continueButton.hidden) startRewindCutscene();
-    else if (!chapterCompleteMessage.hidden) quitRun();
   }
   setKey(event.code, true);
 });
@@ -3438,16 +3344,14 @@ menuTextureButtons.forEach(button => button.addEventListener("click", () => sele
 menuBackdropButtons.forEach(button => button.addEventListener("click", () => selectMenuBackdrop(button.dataset.menuBackdrop)));
 publishRunButton.addEventListener("click", publishFinishedRun);
 continueButton.addEventListener("click", startRewindCutscene);
-introGauntletButton.addEventListener("click", () => startChapterGauntlet(0));
 echoContinueButton.addEventListener("click", startEchoCutscene);
-rewindGauntletButton.addEventListener("click", () => startChapterGauntlet(1));
 echoMenuButton.addEventListener("click", quitRun);
 convergenceContinueButton.addEventListener("click", startConvergenceLevel);
-echoGauntletButton.addEventListener("click", () => startChapterGauntlet(2));
 convergenceMenuButton.addEventListener("click", quitRun);
-finalContinueButton.addEventListener("click", quitRun);
-combinedGauntletButton.addEventListener("click", () => startChapterGauntlet(3));
 replayRewindButton.addEventListener("click", replayCombinedFinale);
+replayGauntletButton.addEventListener("click", startOver);
+gauntletRoadmapButton.addEventListener("click", returnToGauntletRoadmap);
+gauntletMenuButton.addEventListener("click", quitRun);
 rewindMenuButton.addEventListener("click", quitRun);
 runNameInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -3863,7 +3767,6 @@ function startOver() {
 }
 
 function quitRun() {
-  gauntletChapterReturnState = null;
   countPostRunInRunTimer = false;
   resetCutscene();
   developerPanel.hidden = true;
