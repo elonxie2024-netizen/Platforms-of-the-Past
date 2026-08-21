@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.25.0`
+**Current version:** `v0.26.0`
 
 ## How it works
 
@@ -94,7 +94,8 @@ The playable prototype includes:
 - A pause menu that freezes the timer
 - A global, version-separated leaderboard for named full-adventure runs
 - Optional Supabase email/password accounts with persistent sessions, password recovery, private emails, public display names, and cloud progression
-- A versioned, validated level-data format with safe import/export, stable object links, and runtime-state cloning as the foundation for a future visual editor
+- A versioned, validated level-data format with safe import/export, stable object links, and runtime-state cloning
+- A local visual level editor with grid placement, property and path editing, safe links, undo/redo, draft persistence, JSON import/export, and isolated in-engine playtesting
 - A playable archive of every released version
 - A complete in-game changelog based on the Git history
 - Responsive running and jumping with stable high-speed platform-edge landings

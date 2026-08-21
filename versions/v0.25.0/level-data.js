@@ -36,17 +36,17 @@
     movingPlatform: ["x", "y", "width", "height", "material", "motion"],
     controlledPlatform: [
       "x", "y", "width", "height", "material", "target", "controllerIds",
-      "requiresActive", "releaseDelay", "moveDuration", "initialProgress"
+      "requiresActive", "releaseDelay", "moveDuration"
     ],
     rewindPlatform: [
       "x", "y", "width", "height", "material", "target", "controllerId", "speed",
       "releaseDelay", "motionPath", "pathIndex", "autoStart", "autoWhenRidden",
       "carryDuringRewind", "resumeAfterRewind", "loopPath", "carryPlayer"
     ],
-    switch: ["x", "y", "momentary", "pulseDuration", "initialFlipped"],
+    switch: ["x", "y", "momentary", "pulseDuration"],
     pressurePlate: ["x", "y", "width", "filter"],
     enemy: ["x", "surfaceY", "patrolMinX", "patrolMaxX", "direction", "speed", "stopAtBoundary", "rewindable"],
-    movingObstacle: ["x", "y", "size", "speed", "motionPath", "pathIndex", "loopPath", "resumeAfterRewind"]
+    movingObstacle: ["x", "y", "size", "speed", "motionPath", "loopPath", "resumeAfterRewind"]
   };
 
   const CAMPAIGN_LEVELS = Object.freeze({
@@ -348,7 +348,6 @@
       optionalBoolean(object.requiresActive, `${path}.requiresActive`, errors);
       if (object.releaseDelay !== undefined) requireNumber(object.releaseDelay, `${path}.releaseDelay`, errors, 0, 60);
       if (object.moveDuration !== undefined) requireNumber(object.moveDuration, `${path}.moveDuration`, errors, 0.05, 60);
-      if (object.initialProgress !== undefined) requireNumber(object.initialProgress, `${path}.initialProgress`, errors, 0, 1);
     }
     if (object.type === "rewindPlatform") {
       if (object.target === undefined && object.motionPath === undefined) errors.push(`${path} requires target or motionPath.`);
@@ -367,7 +366,6 @@
       requireNumber(object.x, `${path}.x`, errors);
       requireNumber(object.y, `${path}.y`, errors);
       optionalBoolean(object.momentary, `${path}.momentary`, errors);
-      optionalBoolean(object.initialFlipped, `${path}.initialFlipped`, errors);
       if (object.pulseDuration !== undefined) requireNumber(object.pulseDuration, `${path}.pulseDuration`, errors, 0.05, 60);
     }
     if (object.type === "pressurePlate") {
@@ -393,7 +391,6 @@
       requireNumber(object.size, `${path}.size`, errors, 8, 500);
       requireNumber(object.speed, `${path}.speed`, errors, 1, 2000);
       validateMotionPath(object.motionPath, `${path}.motionPath`, errors, true);
-      if (object.pathIndex !== undefined) requireInteger(object.pathIndex, `${path}.pathIndex`, errors, 0, 99);
       optionalBoolean(object.loopPath, `${path}.loopPath`, errors);
       optionalBoolean(object.resumeAfterRewind, `${path}.resumeAfterRewind`, errors);
     }
@@ -453,11 +450,6 @@
         const obtainableStars = level.objects.filter((object) => object.type === "star" || object.type === "enemy").length;
         if (level.settings?.requiredStars > obtainableStars) errors.push("level.settings.requiredStars exceeds the stars available from objects and enemies.");
         if (level.settings?.requiredLevelStars > obtainableStars) errors.push("level.settings.requiredLevelStars exceeds the stars available from objects and enemies.");
-        level.objects.forEach((object, index) => {
-          if (object.pathIndex !== undefined && object.motionPath && object.pathIndex >= object.motionPath.length) {
-            errors.push(`level.objects[${index}].pathIndex must refer to a point in motionPath.`);
-          }
-        });
       }
     } catch {
       errors.push("Level validation failed safely because the supplied value could not be inspected.");

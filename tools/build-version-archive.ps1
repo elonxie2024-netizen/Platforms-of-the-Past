@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $releases = [ordered]@{
+  'v0.25.0' = '88ee70d'
   'v0.24.2' = '5f5f46d'
   'v0.24.1' = '1e74e26'
   'v0.24.0' = '37ddc7d'
@@ -116,7 +117,7 @@ foreach ($release in $releases.GetEnumerator()) {
   $releaseRoot = Join-Path $archiveRoot $release.Key
   New-Item -ItemType Directory -Force -Path $releaseRoot | Out-Null
   $releaseFiles = @('index.html', 'styles.css', 'game.js')
-  foreach ($optionalFile in @('level-data.js', 'account.js')) {
+  foreach ($optionalFile in @('level-data.js', 'account.js', 'editor.css', 'editor.js')) {
     $committedFile = & git -C $repoRoot ls-tree --name-only $release.Value -- $optionalFile
     if ($committedFile -eq $optionalFile) { $releaseFiles += $optionalFile }
   }
@@ -133,8 +134,10 @@ foreach ($release in $releases.GetEnumerator()) {
     $content = $content.Replace('url(assets/', 'url(../assets/')
     if ($file -eq 'index.html') {
       $content = $content.Replace('href="styles.css"', 'href="./styles.css"')
+      $content = $content.Replace('href="editor.css', 'href="./editor.css')
       $content = $content.Replace('src="level-data.js', 'src="./level-data.js')
       $content = $content.Replace('src="account.js', 'src="./account.js')
+      $content = $content.Replace('src="editor.js', 'src="./editor.js')
       $content = $content.Replace('src="game.js', 'src="./game.js')
     }
     [IO.File]::WriteAllText((Join-Path $releaseRoot $file), $content + "`n", [Text.UTF8Encoding]::new($false))

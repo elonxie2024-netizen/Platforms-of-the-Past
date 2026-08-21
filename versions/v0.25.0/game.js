@@ -95,8 +95,6 @@ const nextRoadmapChapterButton = document.querySelector("#nextRoadmapChapterButt
 const roadmapChapterLabel = document.querySelector("#roadmapChapterLabel");
 const roadmapChapterRange = document.querySelector("#roadmapChapterRange");
 const versionsButton = document.querySelector("#versionsButton");
-const levelEditorButton = document.querySelector("#levelEditorButton");
-const editorReturnButton = document.querySelector("#editorReturnButton");
 const versionsMenu = document.querySelector("#versionsMenu");
 const versionsList = document.querySelector("#versionsList");
 const closeVersionsButton = document.querySelector("#closeVersionsButton");
@@ -135,8 +133,7 @@ const resetEmail = document.querySelector("#resetEmail");
 const profileDisplayName = document.querySelector("#profileDisplayName");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.26.0", commit: "Pending commit", date: "2026-08-21", message: "Add the first visual level editor", description: "Added a dedicated local level editor built directly on the safe v0.25.0 level-data schema. Creators can place, select, move, resize, link, and configure campaign mechanics on a grid canvas; edit motion paths and initial states; undo and redo changes; retain a browser-local draft; import and export validated JSON; and playtest through the real game engine without affecting campaign progress, accounts, or leaderboards." },
-  { version: "v0.25.0", commit: "88ee70d", date: "2026-08-21", message: "Add serialized level-data foundation", description: "Added a versioned, JSON-serializable level schema with strict validation, stable object IDs, safe ID-based links, import/export and independent-clone utilities, and a generic adapter into the existing runtime engine. Migrated Dirtbound Trail, Crateyard Climb, Switchback Summit, and Shared History as representative proofs covering static terrain, hazards, stars, crate physics, switches, controlled platforms, Rewind motion history, Rewind fields, and Echo capability. Invalid, unknown, or non-data input now fails with useful errors instead of entering gameplay." },
+  { version: "v0.25.0", commit: "Pending commit", date: "2026-08-21", message: "Add serialized level-data foundation", description: "Added a versioned, JSON-serializable level schema with strict validation, stable object IDs, safe ID-based links, import/export and independent-clone utilities, and a generic adapter into the existing runtime engine. Migrated Dirtbound Trail, Crateyard Climb, Switchback Summit, and Shared History as representative proofs covering static terrain, hazards, stars, crate physics, switches, controlled platforms, Rewind motion history, Rewind fields, and Echo capability. Invalid, unknown, or non-data input now fails with useful errors instead of entering gameplay." },
   { version: "v0.24.2", commit: "5f5f46d", date: "2026-08-21", message: "Polish account controls", description: "Restyled the main-menu account area and authentication forms with spacious pill buttons, clear player identity, stronger game-matched colors, and responsive hover feedback. The account card now matches the rounded, layered visual language of the surrounding game menu and stacks cleanly on narrow screens." },
   { version: "v0.24.1", commit: "1e74e26", date: "2026-08-21", message: "Fix crate-side jump collision", description: "Fixed rising beside a pushed crate being mistaken for an underside collision, which could force the slime through the floor and reset Crateyard Climb without playing the normal death animation. Side contact now remains horizontal while genuine landings and underside impacts continue to resolve normally." },
   { version: "v0.24.0", commit: "37ddc7d", date: "2026-08-21", message: "Add optional Supabase player accounts", description: "Added optional email-and-password accounts with persistent Supabase Auth sessions, email verification messaging, password recovery, private account data, and editable public display names. Guest play remains fully available offline, while signed-in players safely merge guest, cached, and cloud roadmap progress without ever reducing unlocks, completed chapters, or gauntlets. New signed-in leaderboard submissions are tied to the account ID and use its public display name without exposing email addresses." },
@@ -1032,11 +1029,6 @@ const LEVEL_RUNTIME_ADAPTERS = Object.freeze({
     );
     if (object.controllerIds.length > 1) platform.requiredPlateIds = [...object.controllerIds];
     if (object.moveDuration !== undefined) platform.moveDuration = object.moveDuration;
-    platform.initialProgress = object.initialProgress || 0;
-    platform.moveProgress = platform.initialProgress;
-    const eased = platform.moveProgress * platform.moveProgress * (3 - 2 * platform.moveProgress);
-    platform.x = platform.baseX + (platform.targetX - platform.baseX) * eased;
-    platform.y = platform.baseY + (platform.targetY - platform.baseY) * eased;
     return levelObjectId(object, platform);
   },
   rewindPlatform: (object) => {
@@ -1049,18 +1041,14 @@ const LEVEL_RUNTIME_ADAPTERS = Object.freeze({
       if (object[key] !== undefined) options[key] = object[key];
     }
     if (object.motionPath) options.motionPath = object.motionPath.map((point) => ({ ...point }));
-    const platform = W(
+    return levelObjectId(object, W(
       object.x, object.y, target.x, target.y, object.controllerId ?? null,
       object.width, object.height, object.material, object.speed, options
-    );
-    platform.initialPathIndex = object.pathIndex ?? 1;
-    return levelObjectId(object, platform);
+    ));
   },
   switch: (object) => levelObjectId(object, S(object.x, object.y, object.id, {
     ...(object.momentary ? { momentary: true } : {}),
-    ...(object.pulseDuration !== undefined ? { pulseDuration: object.pulseDuration } : {}),
-    initialFlipped: Boolean(object.initialFlipped),
-    flipped: Boolean(object.initialFlipped)
+    ...(object.pulseDuration !== undefined ? { pulseDuration: object.pulseDuration } : {})
   })),
   pressurePlate: (object) => levelObjectId(object, Q(object.x, object.y, object.id, object.width, {
     ...(object.filter === "crate" ? { crateOnly: true } : {}),
@@ -1074,18 +1062,13 @@ const LEVEL_RUNTIME_ADAPTERS = Object.freeze({
     if (object.rewindable === false) enemy.rewindableEnemy = false;
     return levelObjectId(object, enemy);
   },
-  movingObstacle: (object) => {
-    const obstacle = D(
-      object.x, object.y, object.motionPath.map((point) => ({ ...point })), object.speed, object.size,
-      {
-        ...(object.pathIndex !== undefined ? { pathIndex: object.pathIndex } : {}),
-        ...(object.loopPath !== undefined ? { loopPath: object.loopPath } : {}),
-        ...(object.resumeAfterRewind !== undefined ? { resumeAfterRewind: object.resumeAfterRewind } : {})
-      }
-    );
-    obstacle.initialPathIndex = object.pathIndex ?? 1;
-    return levelObjectId(object, obstacle);
-  }
+  movingObstacle: (object) => levelObjectId(object, D(
+    object.x, object.y, object.motionPath.map((point) => ({ ...point })), object.speed, object.size,
+    {
+      ...(object.loopPath !== undefined ? { loopPath: object.loopPath } : {}),
+      ...(object.resumeAfterRewind !== undefined ? { resumeAfterRewind: object.resumeAfterRewind } : {})
+    }
+  ))
 });
 
 const SERIALIZED_LEVEL_SLOTS = new Map([
@@ -1110,9 +1093,6 @@ const levels = legacyLevels.map((level, index) => {
   const dataId = SERIALIZED_LEVEL_SLOTS.get(index);
   return dataId ? loadSerializedCampaignLevel(index, dataId) : level;
 });
-
-let editorPlaytestActive = false;
-let editorPlaytestIndex = -1;
 
 window.PlatformsLevelDev = Object.freeze({
   schemaVersion: window.PlatformsLevelData?.SCHEMA_VERSION,
@@ -1196,13 +1176,13 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.26.0";
+const GAME_VERSION = "v0.25.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
 const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const LEADERBOARD_RULESETS = [
-  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.26.0" },
+  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.25.0" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1245,7 +1225,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -1426,7 +1406,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1445,7 +1425,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -1562,7 +1542,7 @@ function resetLevelMotion() {
   rewindFieldPreview = null;
   if (currentLevel().rewindTutorial) currentLevel().rewindHintUnlocked = false;
   for (const levelSwitch of currentLevel().switches || []) {
-    levelSwitch.flipped = Boolean(levelSwitch.initialFlipped);
+    levelSwitch.flipped = false;
     levelSwitch.activeTimer = 0;
   }
   for (const plate of currentLevel().pressurePlates || []) {
@@ -1586,7 +1566,7 @@ function resetLevelMotion() {
       platform.timelinePlayback = [];
       platform.rewindGrace = 0;
       platform.timelineLocked = false;
-      platform.pathIndex = platform.motionPath ? (platform.initialPathIndex ?? 1) : platform.pathIndex;
+      platform.pathIndex = platform.motionPath ? 1 : platform.pathIndex;
       platform.autoActivated = false;
       if (platform.rewindable) continue;
     }
@@ -1598,10 +1578,9 @@ function resetLevelMotion() {
       platform.lost = false;
     }
     if (platform.controlled) {
-      platform.moveProgress = platform.initialProgress || 0;
-      const eased = platform.moveProgress * platform.moveProgress * (3 - 2 * platform.moveProgress);
-      platform.x = platform.baseX + (platform.targetX - platform.baseX) * eased;
-      platform.y = platform.baseY + (platform.targetY - platform.baseY) * eased;
+      platform.x = platform.baseX;
+      platform.y = platform.baseY;
+      platform.moveProgress = 0;
       platform.releaseTimer = 0;
     }
     if (!platform.moving) continue;
@@ -2176,69 +2155,8 @@ function restartLevel() {
   return true;
 }
 
-function startEditorPlaytest(levelData) {
-  const result = window.PlatformsLevelDev.load(levelData);
-  if (!result.ok) {
-    window.PlatformsEditor?.showAfterPlaytest(`Playtest rejected: ${result.errors.join(" · ")}`);
-    return;
-  }
-  if (editorPlaytestActive) returnFromEditorPlaytest();
-  result.level.editorPlaytest = true;
-  editorPlaytestIndex = levels.length;
-  levels.push(result.level);
-  editorPlaytestActive = true;
-  document.querySelector("#levelEditor").hidden = true;
-  document.querySelector(".touch-controls").hidden = false;
-  document.querySelector(".instructions").hidden = false;
-  mainMenu.hidden = true;
-  editorReturnButton.hidden = false;
-  gameStarted = true;
-  paused = false;
-  activeRunConfig = null;
-  runLevelQueue = [];
-  runQueuePosition = 0;
-  nextLevelIndex = null;
-  levelSplits = [];
-  resetRunProgress();
-  resetRunTimer();
-  loadLevel(editorPlaytestIndex, false);
-  pauseButton.disabled = false;
-  restartButton.disabled = false;
-  restartRunButton.disabled = false;
-  quitButton.disabled = false;
-  startMusic(currentLevel().music || "level1");
-  canvas.focus();
-}
-
-function returnFromEditorPlaytest(note = "Returned from playtest.") {
-  if (!editorPlaytestActive) return;
-  paused = false;
-  pauseMenu.hidden = true;
-  developerPanel.hidden = true;
-  setFlightEnabled(false);
-  clearEchoState();
-  Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
-  pressed.jump = false;
-  gameStarted = false;
-  resetRunTimer();
-  const removeIndex = editorPlaytestIndex;
-  editorPlaytestActive = false;
-  editorPlaytestIndex = -1;
-  levelIndex = 0;
-  if (removeIndex >= 0 && levels[removeIndex]?.editorPlaytest) levels.splice(removeIndex, 1);
-  loadLevel(0, false);
-  pauseButton.disabled = true;
-  restartButton.disabled = true;
-  restartRunButton.disabled = true;
-  quitButton.disabled = true;
-  editorReturnButton.hidden = true;
-  window.PlatformsEditor?.showAfterPlaytest(note);
-}
-
 function updateHud() {
-  levelLabel.textContent = editorPlaytestActive
-    ? `Editor Playtest — ${currentLevel().name}`
-    : currentLevel().gauntletId
+  levelLabel.textContent = currentLevel().gauntletId
     ? `Gauntlet ${currentLevel().gauntletId} — ${currentLevel().name}`
     : `Level ${levelIndex + 1} / ${CAMPAIGN_LEVEL_COUNT} — ${currentLevel().name}`;
   const enemyStarTotal = (currentLevel().enemies || []).length;
@@ -3152,7 +3070,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -4212,8 +4130,6 @@ flightToggleButton.addEventListener("click", () => {
   canvas.focus();
 });
 versionsButton.addEventListener("click", openVersions);
-levelEditorButton.addEventListener("click", () => window.PlatformsEditor?.open());
-editorReturnButton.addEventListener("click", () => returnFromEditorPlaytest("Returned from playtest. Your draft and editor view were preserved."));
 closeVersionsButton.addEventListener("click", closeVersions);
 leaderboardVersion.addEventListener("change", refreshLeaderboard);
 leaderboardRunType.addEventListener("change", refreshLeaderboard);
@@ -4768,15 +4684,6 @@ document.querySelectorAll("[data-control]").forEach((button) => {
 });
 
 function startOver() {
-  if (editorPlaytestActive) {
-    paused = false;
-    pauseMenu.hidden = true;
-    resetRunProgress();
-    resetRunTimer();
-    loadLevel(editorPlaytestIndex, false);
-    canvas.focus();
-    return;
-  }
   resetCutscene();
   paused = false;
   timerWasRunningBeforePause = false;
@@ -4804,10 +4711,6 @@ function startOver() {
 }
 
 function quitRun() {
-  if (editorPlaytestActive) {
-    returnFromEditorPlaytest("Playtest ended. Your draft and editor view were preserved.");
-    return;
-  }
   gauntletChapterReturnState = null;
   countPostRunInRunTimer = false;
   resetCutscene();
@@ -5314,10 +5217,6 @@ function update(dt) {
       (!currentLevel().requiredLevelStars || collectedLevelStars >= currentLevel().requiredLevelStars));
   if (finishRequirementMet && overlaps(box, currentLevel().finish)) {
     playSfx("flag");
-    if (editorPlaytestActive) {
-      returnFromEditorPlaytest("Playtest complete: the exit was reached.");
-      return;
-    }
     const chapterEndIndex = [9, 19, 29, 39].indexOf(levelIndex);
     if (chapterEndIndex >= 0) {
       completeChapter(chapterEndIndex);
@@ -5520,8 +5419,6 @@ function drawAssetRectangle(material, x, y, width, height, targetContext = ctx) 
     }
   }
 }
-
-window.PlatformsGamePreview = Object.freeze({ drawAssetRectangle });
 
 function drawMechanicBlock(block, x, time) {
   const activeDuration = block.breakTrigger === "stand" ? .75 : .24;
@@ -6550,7 +6447,6 @@ function frame(time) {
 }
 
 applyRewindMenuState();
-window.PlatformsEditor?.setPlaytestCallback(startEditorPlaytest);
 populateSpecificLevelChoices();
 populateLeaderboardVersions();
 loadLevel(0, false);

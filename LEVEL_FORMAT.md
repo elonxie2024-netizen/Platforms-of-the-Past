@@ -149,7 +149,7 @@ A switch- or pressure-plate-controlled platform. `target` is its active position
 }
 ```
 
-Multiple controller IDs currently mean that all referenced pressure plates are required. `moveDuration` optionally uses the existing controlled-platform timing rule.
+Multiple controller IDs currently mean that all referenced pressure plates are required. `moveDuration` optionally uses the existing controlled-platform timing rule. `initialProgress` chooses an exact starting point from `0` (base) through `1` (target).
 
 ### `rewindPlatform`
 
@@ -166,7 +166,7 @@ Paths are arrays of plain points:
 
 ### `switch`
 
-Uses its own object `id` as the link target. Optional `momentary` and `pulseDuration` fields use the existing reversible or timed switch rules.
+Uses its own object `id` as the link target. Optional `momentary` and `pulseDuration` fields use the existing reversible or timed switch rules. `initialFlipped` configures its playtest starting state.
 
 ### `pressurePlate`
 
@@ -178,7 +178,7 @@ Defines the existing red slime patrol with `x`, `surfaceY`, `patrolMinX`, `patro
 
 ### `movingObstacle`
 
-Defines the existing dangerous blade using `x`, `y`, `size`, `speed`, `motionPath`, optional `loopPath`, and optional `resumeAfterRewind`. Dangerousness and collision behavior are fixed engine rules.
+Defines the existing dangerous blade using `x`, `y`, `size`, `speed`, `motionPath`, optional `pathIndex`, optional `loopPath`, and optional `resumeAfterRewind`. `pathIndex` selects the first waypoint the blade travels toward. Dangerousness and collision behavior are fixed engine rules.
 
 ## Validation and safe loading
 
@@ -220,6 +220,10 @@ Four existing levels currently load through this format:
 
 All other campaign levels continue using their previous declarations to minimize regression risk.
 
-## Before a visual editor
+## Visual editor
 
-The next release still needs editor UI, placement tools, selection/property panels, undo/redo, camera controls, local draft storage, playtest entry/exit flow, and friendly visual validation messages. Community publishing, browsing, ratings, and arbitrary scripting remain out of scope.
+Version 0.26.0 adds a Level Editor entry to the main menu. It edits this schema directly—there is no editor-only format or executable scripting layer. The canvas supports grid placement, selection, dragging, resizing, ID-based controller and attachment links, motion-path handles, initial states, and the allowlisted level settings above.
+
+The editor keeps one browser-local draft under a separate storage key, with bounded undo/redo history for the current session. Import and export pass through the same validation and cloning utilities as campaign migration. Playtest loads a fresh runtime clone through the generic adapter, then removes it on return; it cannot unlock campaign levels, alter account progress, or submit to leaderboards.
+
+Community publishing, browsing, ratings, comments, collaboration, arbitrary scripting, and account-backed draft storage remain out of scope.
