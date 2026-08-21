@@ -39,12 +39,6 @@ const convergenceContinueButton = document.querySelector("#convergenceContinueBu
 const echoGauntletButton = document.querySelector("#echoGauntletButton");
 const echoMasteryStatus = document.querySelector("#echoMasteryStatus");
 const convergenceMenuButton = document.querySelector("#convergenceMenuButton");
-const gauntletCompleteMessage = document.querySelector("#gauntletCompleteMessage");
-const gauntletCompleteTitle = document.querySelector("#gauntletCompleteTitle");
-const gauntletCompleteSummary = document.querySelector("#gauntletCompleteSummary");
-const replayGauntletButton = document.querySelector("#replayGauntletButton");
-const gauntletRoadmapButton = document.querySelector("#gauntletRoadmapButton");
-const gauntletMenuButton = document.querySelector("#gauntletMenuButton");
 const mainMenu = document.querySelector("#mainMenu");
 const playButton = document.querySelector("#playButton");
 const playChoiceMenu = document.querySelector("#playChoiceMenu");
@@ -109,8 +103,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.22.2", commit: "Pending commit", date: "2026-08-21", message: "Repair chapter puzzles and gameplay state", description: "Repaired six closed collision gates across Chapter 4, moved Convergence's blocked star onto a reachable route, and unlocked later chapters as soon as their finales are completed. Hardened restart, death, rewind, Echo carrying, pointer cleanup, and modal input state. Standalone roadmap gauntlets now use their own results flow while chapter-launched gauntlets still return to the chapter choice screen." },
-  { version: "v0.22.1", commit: "9ad7b44", date: "2026-08-21", message: "Change chapter screens", description: "Changed every chapter-completion screen to present two equal side-by-side next steps: Continue the Story follows the existing campaign transition, while Master This Chapter launches that chapter's gauntlet immediately. Completing a chapter-launched gauntlet returns to its chapter-completion screen with both choices still available while preserving the story run and timer handoff. Gauntlets remain playable from their roadmap branches." },
+  { version: "v0.22.1", commit: "Pending commit", date: "2026-08-21", message: "Add chapter-end mastery choices", description: "Changed every chapter-completion screen to present two equal side-by-side next steps: Continue the Story follows the existing campaign transition, while Master This Chapter launches that chapter's gauntlet immediately. Completing a gauntlet now returns to its chapter-completion screen with both choices still available, while preserving an in-progress story run and its timer handoff. Gauntlets remain playable from their roadmap branches." },
   { version: "v0.22.0", commit: "bd03ab2", date: "2026-08-20", message: "Add optional chapter gauntlets", description: "Added four optional gauntlets outside the forty-level campaign: Foundry Circuit combines every introductory mechanic, History Forge demands deliberately created rewind history, Echo Works focuses on long-form loop planning, and Paradox Engine combines echo and rewind with moving blades and state-dependent replay. Each gauntlet unlocks when its chapter is completed, appears as a distinct G1 through G4 branch on that chapter's roadmap, records session completion, and runs with clean standalone run and level timing without changing campaign progression." },
   { version: "v0.21.5", commit: "890f062", date: "2026-08-20", message: "Add the game favicon", description: "Added a compact browser icon that combines the existing green slime artwork with a simple golden rewind arrow trailing behind it. Connected the SVG favicon to the game page and preserved it through the playable version archive system." },
   { version: "v0.21.4", commit: "9cfee2a", date: "2026-08-20", message: "Fix zero-delay pressure platforms", description: "Corrected pressure-controlled moving platforms so they continue moving whenever their linked plate is actively held, even when configured with no release delay. A zero delay now makes the platform stop immediately after the plate is released instead of preventing movement entirely, restoring level 34's final bridge." },
@@ -696,7 +689,7 @@ const levels = [
       D(390,426,[{ x: 390, y: 426 },{ x: 890, y: 426 }],155,60,{
         loopPath: false, resumeAfterRewind: false
       }),
-      C(1080,170,1080,35,"blade-exit",72,320,"stone",false,.2)
+      C(1080,170,1080,35,"blade-exit",72,320,"stone",true,.2)
     ],
     pressurePlates: [Q(230,478,"blade-exit",150)],
     hazards: [], stars: [[1000,430]], finish: R(1605,400,34,90)
@@ -734,7 +727,7 @@ const levels = [
     postRun: true, rewindChapter: true, rewindTutorial: true, echoChapter: true,
     rewindField: true, rewindFieldRadius: 520, rewindFieldOffset: 180,
     platforms: [
-      R(0,490,420,80,"stone"), C(180,220,180,55,"restored-exit",76,270,"stone",false,.2),
+      R(0,490,420,80,"stone"), C(180,220,180,55,"restored-exit",76,270,"stone",true,.2),
       B(440,430,"impact","grass",120,54), B(580,390,"impact","stone",120,54),
       B(720,430,"impact","crate",120,54), R(860,490,1040,80,"stone")
     ],
@@ -748,7 +741,7 @@ const levels = [
     rewindField: true, rewindFieldRadius: 500, rewindFieldOffset: 190,
     platforms: [
       R(0,490,820,80,"stone"),
-      { ...C(950,235,950,70,"patrol-gate",78,255,"stone",false,0), moveDuration: .32 },
+      { ...C(950,235,950,70,"patrol-gate",78,255,"stone",true,0), moveDuration: .32 },
       R(1030,490,170,80,"stone"),
       C(1230,535,1230,420,"patrol-pulse",190,40,"stone",false,.5),
       R(1460,450,540,120,"stone"),
@@ -805,7 +798,7 @@ const levels = [
         pathIndex: 1, loopPath: true
       }),
       R(1080,490,520,80,"stone"),
-      C(1500,220,1500,55,"replay-exit",76,270,"stone",false,.45),
+      C(1500,220,1500,55,"replay-exit",76,270,"stone",true,.45),
       R(1580,490,620,80,"stone"),
       D(1690,425,[{ x: 1690, y: 425 },{ x: 1980, y: 425 },{ x: 1690, y: 425 }],145,58)
     ],
@@ -831,10 +824,10 @@ const levels = [
         loopPath: false, resumeAfterRewind: false
       }),
       K(2250,430), R(2210,490,700,80,"stone"),
-      C(2910,230,2910,65,"final-cargo",80,260,"stone",false,.3),
+      C(2910,230,2910,65,"final-cargo",80,260,"stone",true,.3),
       B(3040,430,"stand","grass",120,54), B(3180,390,"impact","stone",120,54),
       R(3300,490,650,80,"stone"),
-      C(3950,235,3950,70,"final-enemy",80,255,"stone",false,.3),
+      C(3950,235,3950,70,"final-enemy",80,255,"stone",true,.3),
       R(4030,490,360,80,"stone"),
       W(4420,430,4740,360,"final-exit",170,40,"stone",220),
       D(4590,300,[{ x: 4590, y: 300 },{ x: 4890, y: 410 },{ x: 4590, y: 300 }],155,58),
@@ -850,7 +843,7 @@ const levels = [
       R(520,500,270,70,"lava"), R(1040,500,520,70,"lava"),
       R(2910,500,390,70,"lava"), R(4390,500,660,70,"lava")
     ],
-    stars: [[1120,380],[2010,375],[3090,380],[3240,340],[4800,300]],
+    stars: [[1120,380],[2010,375],[2960,190],[3240,340],[4800,300]],
     finish: R(5310,340,34,90)
   },
   {
@@ -1035,11 +1028,10 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.22.2";
+const GAME_VERSION = "v0.22.1";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "chapter-gate-fixes-v1", label: "Version 0.22.2 to 0.22.2" },
   { id: "chapter-gauntlets-v1", label: "Version 0.22.0 to 0.22.1" },
   { id: "zero-delay-platform-v1", label: "Version 0.21.4 to 0.21.5" },
   { id: "cargo-gate-star-v1", label: "Version 0.21.3 to 0.21.3" },
@@ -1078,7 +1070,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -1146,7 +1138,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1250,7 +1242,6 @@ function resetBreakablePlatforms() {
 }
 
 function startSpikeDeath(hazardId = null) {
-  cancelTimelinePreview();
   clearEchoState();
   deaths++;
   if (hazardId) recordHazardDeath(hazardId);
@@ -1356,14 +1347,14 @@ function updatePressurePlates(dt) {
     const echoOnPlate = Boolean(echo?.grounded) &&
       echo.x + PLAYER_W > plate.x + 4 && echo.x < plate.x + plate.w - 4 &&
       Math.abs(echo.y + PLAYER_H - (plate.y + plate.h)) < 4;
-    const isPressed = plate.enemyOnly ? enemyOnPlate
+    const pressed = plate.enemyOnly ? enemyOnPlate
       : plate.crateOnly ? crateOnPlate
         : playerOnPlate || crateOnPlate || enemyOnPlate || echoOnPlate;
-    if (isPressed && !plate.pressed) recordMechanic("pressure-plate");
-    if (isPressed && currentLevel().showRewindHintOnPlate) currentLevel().rewindHintUnlocked = true;
-    if (isPressed !== plate.pressed) playSfx("switch", isPressed ? .72 : .48);
-    plate.pressed = isPressed;
-    const target = isPressed ? 1 : 0;
+    if (pressed && !plate.pressed) recordMechanic("pressure-plate");
+    if (pressed && currentLevel().showRewindHintOnPlate) currentLevel().rewindHintUnlocked = true;
+    if (pressed !== plate.pressed) playSfx("switch", pressed ? .72 : .48);
+    plate.pressed = pressed;
+    const target = pressed ? 1 : 0;
     plate.pressProgress = Math.max(0, Math.min(1,
       plate.pressProgress + Math.sign(target - plate.pressProgress) * dt * 10
     ));
@@ -1439,7 +1430,7 @@ function movePlatformWithPlayer(platform, nextX, nextY, carryPlayer = true, reco
     player.x += platform.x - oldX;
     player.y += platform.y - oldY;
   }
-  if (echoWasStanding && carryPlayer) {
+  if (echoWasStanding) {
     echo.x += platform.x - oldX;
     echo.y += platform.y - oldY;
   }
@@ -1690,7 +1681,6 @@ function loadLevel(index, keepScore = true) {
   chapterCompleteMessage.hidden = true;
   echoChapterMessage.hidden = true;
   convergenceChapterMessage.hidden = true;
-  gauntletCompleteMessage.hidden = true;
   resetLevelMotion();
   resetPlayer(false, true);
   if (timerRunning && gameStarted) beginLevelTimer();
@@ -1700,18 +1690,13 @@ function loadLevel(index, keepScore = true) {
 }
 
 function restartLevel() {
-  if (!gameStarted || won || cutsceneActive || deathTimer > 0 || levelTransition > 0) return false;
   const gained = currentLevelStarCount();
   totalStars = Math.max(0, totalStars - gained);
   collected.fill(false);
-  levelTransition = 0;
-  nextLevelIndex = null;
-  cancelTimelinePreview();
   resetLevelMotion();
-  resetPlayer(false, true);
+  resetPlayer(true, true);
   beginLevelTimer();
   updateHud();
-  return true;
 }
 
 function updateHud() {
@@ -2214,12 +2199,8 @@ function captureChapterReturnState(chapterIndex) {
 }
 
 function startChapterGauntlet(chapterIndex) {
-  const gauntletIndex = CAMPAIGN_LEVEL_COUNT + chapterIndex;
-  const gauntlet = levels[gauntletIndex];
-  if (!gauntlet?.gauntletId || !completedChapters.has(gauntlet.gauntletChapter)) return false;
   gauntletChapterReturnState = captureChapterReturnState(chapterIndex);
-  startGauntletRun(gauntletIndex, true);
-  return true;
+  startGauntletRun(CAMPAIGN_LEVEL_COUNT + chapterIndex, true);
 }
 
 function startGauntletRun(index, preserveChapterReturn = false) {
@@ -2418,7 +2399,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -2871,6 +2852,7 @@ function finishGauntlet() {
     levelSplits = [];
     runElapsed = 0;
     countPostRunInRunTimer = false;
+    runStartLevel = Math.min(CAMPAIGN_LEVEL_COUNT - 1, (gauntlet.gauntletChapter + 1) * ROADMAP_CHAPTER_SIZE);
     updateTimerHud();
   }
   won = true;
@@ -2880,23 +2862,7 @@ function finishGauntlet() {
   quitButton.disabled = true;
   Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
   pressed.jump = false;
-  if (restoredState) {
-    showChapterCompletionAfterGauntlet(gauntlet.gauntletChapter, gauntlet.gauntletId, gauntletSummary, restoredState);
-  } else {
-    gauntletCompleteTitle.textContent = `${gauntlet.gauntletId}: ${gauntlet.name} complete.`;
-    gauntletCompleteSummary.textContent = gauntletSummary;
-    gauntletCompleteMessage.hidden = false;
-    replayGauntletButton.focus();
-  }
-}
-
-function returnToGauntletRoadmap() {
-  const chapterIndex = currentLevel().gauntletChapter;
-  quitRun();
-  openRoadmap();
-  roadmapChapterIndex = chapterIndex;
-  renderRoadmap();
-  levelRoadmap.querySelector(".roadmap-gauntlet button:not(:disabled)")?.focus();
+  showChapterCompletionAfterGauntlet(gauntlet.gauntletChapter, gauntlet.gauntletId, gauntletSummary, restoredState);
 }
 
 function replayCombinedFinale() {
@@ -3139,7 +3105,6 @@ function resetEchoLoop() {
 }
 
 function setKey(code, down) {
-  if (down && (!gameStarted || paused || won || cutsceneActive || deathTimer > 0 || levelTransition > 0)) return;
   if (down && ["ArrowLeft", "KeyA", "ArrowRight", "KeyD", "ArrowUp", "KeyW", "Space", "ArrowDown", "KeyS", "KeyF", "KeyG"].includes(code)) startRunTimer();
   if (["ArrowLeft", "KeyA"].includes(code)) input.left = down;
   if (["ArrowRight", "KeyD"].includes(code)) input.right = down;
@@ -3269,7 +3234,7 @@ canvas.addEventListener("pointerdown", (event) => {
     else startRewindLevel();
     return;
   }
-  if (!gameStarted || paused || won || deathTimer > 0 || levelTransition > 0) return;
+  if (!gameStarted || paused || won) return;
   const pointer = canvasPointerPosition(event);
   const echoControl = echoPromptButtons().find((button) => pointInsideButton(pointer, button));
   if (echoControl) {
@@ -3314,7 +3279,7 @@ canvas.addEventListener("pointerup", releaseRewindPointer);
 canvas.addEventListener("pointercancel", releaseRewindPointer);
 canvas.addEventListener("lostpointercapture", releaseRewindPointer);
 canvas.addEventListener("pointermove", (event) => {
-  if (!gameStarted || paused || won || cutsceneActive || deathTimer > 0 || levelTransition > 0) {
+  if (!gameStarted || paused || won || cutsceneActive) {
     canvas.style.cursor = "default";
     return;
   }
@@ -3348,7 +3313,7 @@ function setFlightEnabled(enabled) {
 }
 
 function toggleDeveloperPanel() {
-  if (!gameStarted || cutsceneActive || won || deathTimer > 0 || levelTransition > 0) return;
+  if (!gameStarted || cutsceneActive) return;
   developerPanel.hidden = !developerPanel.hidden;
   if (!developerPanel.hidden) flightToggleButton.focus();
   else {
@@ -3358,7 +3323,7 @@ function toggleDeveloperPanel() {
 }
 
 function trackLevelDeveloperSequence(event) {
-  if (!gameStarted || cutsceneActive || won || deathTimer > 0 || levelTransition > 0 || event.repeat || event.key.length !== 1) return false;
+  if (!gameStarted || cutsceneActive || event.repeat || event.key.length !== 1) return false;
   const sequence = [101, 103, 103, 101, 115, 116];
   const key = event.key.toLowerCase().charCodeAt(0);
   levelDeveloperSequencePosition = key === sequence[levelDeveloperSequencePosition]
@@ -3404,16 +3369,6 @@ addEventListener("keydown", (event) => {
     return;
   }
   if (paused) return;
-  if (won) {
-    if (event.code === "Enter") {
-      if (!echoChapterMessage.hidden) startEchoCutscene();
-      else if (!convergenceChapterMessage.hidden) startConvergenceLevel();
-      else if (!message.hidden && !continueButton.hidden) startRewindCutscene();
-      else if (!chapterCompleteMessage.hidden) quitRun();
-    }
-    return;
-  }
-  if (deathTimer > 0 || levelTransition > 0) return;
   if (event.code === "KeyC" && !event.repeat) {
     startRunTimer();
     toggleEchoRecording();
@@ -3434,20 +3389,21 @@ addEventListener("keydown", (event) => {
   }
   if (event.code === "KeyR") restartLevel();
   if (event.code === "KeyT") startOver();
+  if (event.code === "Enter" && won) {
+    if (!echoChapterMessage.hidden) startEchoCutscene();
+    else if (!convergenceChapterMessage.hidden) startConvergenceLevel();
+    else if (!message.hidden && !continueButton.hidden) startRewindCutscene();
+    else if (!chapterCompleteMessage.hidden) quitRun();
+  }
   setKey(event.code, true);
 });
 addEventListener("keyup", (event) => { if (gameStarted) setKey(event.code, false); });
 addEventListener("blur", () => {
   if (input.rewind) commitTimelinePreview();
   Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
-  rewindPointerId = null;
-  forwardPointerId = null;
-  rewindPointerOwnsInput = false;
 });
 restartButton.addEventListener("click", restartLevel);
-restartRunButton.addEventListener("click", () => {
-  if (!won && !cutsceneActive && deathTimer <= 0 && levelTransition <= 0) startOver();
-});
+restartRunButton.addEventListener("click", startOver);
 pauseButton.addEventListener("click", () => setPaused(!paused));
 resumeButton.addEventListener("click", () => setPaused(false));
 pauseRestartLevelButton.addEventListener("click", () => { restartLevel(); setPaused(false); });
@@ -3465,7 +3421,6 @@ closeDeveloperPanelButton.addEventListener("click", () => {
   canvas.focus();
 });
 flightToggleButton.addEventListener("click", () => {
-  if (won || cutsceneActive || deathTimer > 0 || levelTransition > 0) return;
   setFlightEnabled(!flightEnabled);
   canvas.focus();
 });
@@ -3493,9 +3448,6 @@ convergenceMenuButton.addEventListener("click", quitRun);
 finalContinueButton.addEventListener("click", quitRun);
 combinedGauntletButton.addEventListener("click", () => startChapterGauntlet(3));
 replayRewindButton.addEventListener("click", replayCombinedFinale);
-replayGauntletButton.addEventListener("click", startOver);
-gauntletRoadmapButton.addEventListener("click", returnToGauntletRoadmap);
-gauntletMenuButton.addEventListener("click", quitRun);
 rewindMenuButton.addEventListener("click", quitRun);
 runNameInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -3873,7 +3825,6 @@ if (requestFullscreen && exitFullscreen) {
 document.querySelectorAll("[data-control]").forEach((button) => {
   const control = button.dataset.control;
   const set = (down) => {
-    if (down && (!gameStarted || paused || won || cutsceneActive || deathTimer > 0 || levelTransition > 0)) return;
     if (down) startRunTimer();
     if (control === "jump" && down && !input.jump) pressed.jump = true;
     input[control] = down;
@@ -4355,10 +4306,7 @@ function update(dt) {
   if (finishRequirementMet && overlaps(box, currentLevel().finish)) {
     playSfx("flag");
     const chapterEndIndex = [9, 19, 29, 39].indexOf(levelIndex);
-    if (chapterEndIndex >= 0) {
-      completeChapter(chapterEndIndex);
-      unlockThrough(levelIndex + 1);
-    }
+    if (chapterEndIndex >= 0) completeChapter(chapterEndIndex);
     if (currentLevel().gauntletId) {
       finishGauntlet();
     }
