@@ -107,34 +107,9 @@ const leaderboardRunType = document.querySelector("#leaderboardRunType");
 const developerPanel = document.querySelector("#developerPanel");
 const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelButton");
 const flightToggleButton = document.querySelector("#flightToggleButton");
-const accountArea = document.querySelector("#accountArea");
-const accountIdentity = document.querySelector("#accountIdentity");
-const accountNotice = document.querySelector("#accountNotice");
-const signedOutAccountActions = document.querySelector("#signedOutAccountActions");
-const signedInAccountActions = document.querySelector("#signedInAccountActions");
-const signUpButton = document.querySelector("#signUpButton");
-const signInButton = document.querySelector("#signInButton");
-const signOutButton = document.querySelector("#signOutButton");
-const editProfileButton = document.querySelector("#editProfileButton");
-const accountMenu = document.querySelector("#accountMenu");
-const accountMenuTitle = document.querySelector("#accountMenuTitle");
-const accountFormStatus = document.querySelector("#accountFormStatus");
-const closeAccountButton = document.querySelector("#closeAccountButton");
-const signInForm = document.querySelector("#signInForm");
-const signUpForm = document.querySelector("#signUpForm");
-const forgotPasswordForm = document.querySelector("#forgotPasswordForm");
-const newPasswordForm = document.querySelector("#newPasswordForm");
-const profileForm = document.querySelector("#profileForm");
-const forgotPasswordButton = document.querySelector("#forgotPasswordButton");
-const backToSignInButton = document.querySelector("#backToSignInButton");
-const signInEmail = document.querySelector("#signInEmail");
-const signUpDisplayName = document.querySelector("#signUpDisplayName");
-const resetEmail = document.querySelector("#resetEmail");
-const profileDisplayName = document.querySelector("#profileDisplayName");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.24.0", commit: "Pending commit", date: "2026-08-21", message: "Add optional Supabase player accounts", description: "Added optional email-and-password accounts with persistent Supabase Auth sessions, email verification messaging, password recovery, private account data, and editable public display names. Guest play remains fully available offline, while signed-in players safely merge guest, cached, and cloud roadmap progress without ever reducing unlocks, completed chapters, or gauntlets. New signed-in leaderboard submissions are tied to the account ID and use its public display name without exposing email addresses." },
-  { version: "v0.23.2", commit: "8bcf5f8", date: "2026-08-21", message: "Add complete moving-platform crate collision", description: "Made moving platforms collide physically with crates from every direction instead of phasing through them. Platforms now carry crates resting on top, push crates and stable stacks from the sides, lift them from below, and stop when a crate cannot move because solid geometry blocks it. The same collision rules apply to automatic, switch-controlled, pressure-controlled, and rewinding platforms." },
+  { version: "v0.23.2", commit: "Pending commit", date: "2026-08-21", message: "Add complete moving-platform crate collision", description: "Made moving platforms collide physically with crates from every direction instead of phasing through them. Platforms now carry crates resting on top, push crates and stable stacks from the sides, lift them from below, and stop when a crate cannot move because solid geometry blocks it. The same collision rules apply to automatic, switch-controlled, pressure-controlled, and rewinding platforms." },
   { version: "v0.23.1", commit: "3530a03", date: "2026-08-21", message: "Close the History Forge cargo-gate shortcut", description: "Attached a moving spike strip to the top of History Forge's vertical cargo gate. The spikes follow the gate as it rises and prevent using it as a stepping stone, so the crate pressure plate can no longer be bypassed." },
   { version: "v0.23.0", commit: "71759a0", date: "2026-08-21", message: "Add crate gravity", description: "Made pushable crates obey heavy gravity, fall from unsupported ledges, settle on solid geometry and other crates, and ride moving platforms. Crates are now lost when they enter hazards or fall below the map without automatically respawning. Rewind levels record their complete falls and lost state so crates visibly retrace their history back to safety, while non-Rewind crate losses require a level restart. Kept Echo pushing and pressure plates compatible, and raised only Fractured Schedule's short crate channel to preserve its intended break-and-push solution." },
   { version: "v0.22.2", commit: "e06179c", date: "2026-08-21", message: "Repair chapter puzzles and gameplay state", description: "Repaired six closed collision gates across Chapter 4, moved Convergence's blocked star onto a reachable route, and unlocked later chapters as soon as their finales are completed. Hardened restart, death, rewind, Echo carrying, pointer cleanup, and modal input state. Standalone roadmap gauntlets now use their own results flow while chapter-launched gauntlets still return to the chapter choice screen." },
@@ -1066,13 +1041,11 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.24.0";
+const GAME_VERSION = "v0.23.2";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
-const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
-const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const LEADERBOARD_RULESETS = [
-  { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
+  { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.23.2" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
   { id: "chapter-gate-fixes-v1", label: "Version 0.22.2 to 0.22.2" },
@@ -1114,7 +1087,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -1129,12 +1102,6 @@ let awakenedMenuAnimationStart = null;
 let highestUnlockedLevel = 0;
 let completedChapters = new Set();
 let completedGauntlets = new Set();
-let accountSession = null;
-let accountProfile = null;
-let accountInitializationError = null;
-let accountSyncGeneration = 0;
-let accountProgressSyncTimer = null;
-let accountRecoveryActive = false;
 let roadmapChapterIndex = 0;
 let leaderboardEntries = [];
 let leaderboardRequest = 0;
@@ -1177,117 +1144,10 @@ const activeMusicVoices = new Set();
 
 function clearLegacySessionState() {
   try { LEGACY_SESSION_STORAGE_KEYS.forEach(key => localStorage.removeItem(key)); }
-  catch { /* Storage may be unavailable. */ }
+  catch { /* Session state is already kept in memory only. */ }
 }
 
-function normalizedProgress(value = {}) {
-  const completedChapterValues = Array.isArray(value.completedChapters)
-    ? value.completedChapters
-    : Array.isArray(value.completed_chapters) ? value.completed_chapters : [];
-  const completedGauntletValues = Array.isArray(value.completedGauntlets)
-    ? value.completedGauntlets
-    : Array.isArray(value.completed_gauntlets) ? value.completed_gauntlets : [];
-  const highestValue = value.highestUnlockedLevel ?? value.highest_unlocked_level ?? 0;
-  return {
-    highestUnlockedLevel: Math.max(0, Math.min(CAMPAIGN_LEVEL_COUNT - 1, Number.isFinite(Number(highestValue)) ? Math.floor(Number(highestValue)) : 0)),
-    completedChapters: [...new Set(completedChapterValues.map(Number).filter((chapter) => Number.isInteger(chapter) && chapter >= 0 && chapter < GAUNTLET_COUNT))],
-    completedGauntlets: [...new Set(completedGauntletValues.map(String).filter((id) => /^G[1-4]$/.test(id)))],
-    menuCustomizationUnlocked: Boolean(value.menuCustomizationUnlocked ?? value.menu_customization_unlocked),
-    rewindMenuAwakened: Boolean(value.rewindMenuAwakened),
-    menuPlatformTexture: ["grass", "stone", "crate"].includes(value.menuPlatformTexture) ? value.menuPlatformTexture : "grass",
-    menuBackdrop: ["sun", "lava"].includes(value.menuBackdrop) ? value.menuBackdrop : "sun"
-  };
-}
-
-function mergeProgress(...values) {
-  const progressValues = values.filter(Boolean).map(normalizedProgress);
-  if (progressValues.length === 0) return normalizedProgress();
-  return {
-    highestUnlockedLevel: Math.max(...progressValues.map((value) => value.highestUnlockedLevel)),
-    completedChapters: [...new Set(progressValues.flatMap((value) => value.completedChapters))].sort((a, b) => a - b),
-    completedGauntlets: [...new Set(progressValues.flatMap((value) => value.completedGauntlets))].sort(),
-    menuCustomizationUnlocked: progressValues.some((value) => value.menuCustomizationUnlocked),
-    rewindMenuAwakened: progressValues[0].rewindMenuAwakened,
-    menuPlatformTexture: progressValues[0].menuPlatformTexture,
-    menuBackdrop: progressValues[0].menuBackdrop
-  };
-}
-
-function currentProgressSnapshot() {
-  return normalizedProgress({
-    highestUnlockedLevel,
-    completedChapters: [...completedChapters],
-    completedGauntlets: [...completedGauntlets],
-    menuCustomizationUnlocked,
-    rewindMenuAwakened,
-    menuPlatformTexture,
-    menuBackdrop
-  });
-}
-
-function accountProgressPayload(progress = currentProgressSnapshot()) {
-  return {
-    highest_unlocked_level: progress.highestUnlockedLevel,
-    completed_chapters: progress.completedChapters,
-    completed_gauntlets: progress.completedGauntlets,
-    menu_customization_unlocked: progress.menuCustomizationUnlocked
-  };
-}
-
-function applyProgress(progress) {
-  const safe = normalizedProgress(progress);
-  highestUnlockedLevel = safe.highestUnlockedLevel;
-  completedChapters = new Set(safe.completedChapters);
-  completedGauntlets = new Set(safe.completedGauntlets);
-  menuCustomizationUnlocked = safe.menuCustomizationUnlocked;
-  rewindMenuAwakened = safe.rewindMenuAwakened;
-  menuPlatformTexture = safe.menuPlatformTexture;
-  menuBackdrop = safe.menuBackdrop;
-}
-
-function readStoredProgress(key) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? normalizedProgress(JSON.parse(raw)) : normalizedProgress();
-  } catch {
-    return normalizedProgress();
-  }
-}
-
-function activeProgressStorageKey() {
-  return accountSession?.user?.id
-    ? `${ACCOUNT_PROGRESS_STORAGE_PREFIX}${accountSession.user.id}`
-    : GUEST_PROGRESS_STORAGE_KEY;
-}
-
-function writeStoredProgress(key, progress) {
-  try { localStorage.setItem(key, JSON.stringify(normalizedProgress(progress))); }
-  catch { /* Progress remains available in memory when storage is blocked. */ }
-}
-
-function persistProgress(syncAccount = true) {
-  const progress = currentProgressSnapshot();
-  writeStoredProgress(activeProgressStorageKey(), progress);
-  if (syncAccount && accountSession?.user?.id) scheduleAccountProgressSync();
-}
-
-function migrateLegacyGuestProgress() {
-  try {
-    if (localStorage.getItem(GUEST_PROGRESS_STORAGE_KEY) !== null) return;
-    const oldUnlocked = Number(localStorage.getItem("platforms-past-progress-v1"));
-    const oldAwakened = localStorage.getItem("platforms-past-rewind-awakened-v1") === "true";
-    if (!Number.isInteger(oldUnlocked) && !oldAwakened) return;
-    writeStoredProgress(GUEST_PROGRESS_STORAGE_KEY, {
-      highestUnlockedLevel: Number.isInteger(oldUnlocked) ? oldUnlocked : 0,
-      rewindMenuAwakened: oldAwakened,
-      menuCustomizationUnlocked: oldAwakened
-    });
-  } catch { /* Legacy progress remains untouched if storage is unavailable. */ }
-}
-
-migrateLegacyGuestProgress();
 clearLegacySessionState();
-applyProgress(readStoredProgress(GUEST_PROGRESS_STORAGE_KEY));
 
 const spriteSheet = new Image();
 let spritesReady = false;
@@ -1295,7 +1155,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1314,7 +1174,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -2153,211 +2013,8 @@ function renderSplitSummary() {
 function leaderboardHeaders(includeJson = false) {
   return {
     apikey: SUPABASE_PUBLISHABLE_KEY,
-    ...(accountSession?.access_token ? { Authorization: `Bearer ${accountSession.access_token}` } : {}),
     ...(includeJson ? { "Content-Type": "application/json" } : {})
   };
-}
-
-function storedProgressExists(key) {
-  try { return localStorage.getItem(key) !== null; }
-  catch { return false; }
-}
-
-function accountRedirectUrl() {
-  const redirect = new URL(location.href);
-  redirect.search = "";
-  redirect.hash = "";
-  return redirect.href;
-}
-
-function setAccountMessage(message = "", isError = false) {
-  accountFormStatus.textContent = message;
-  accountFormStatus.classList.toggle("error", isError);
-}
-
-function accountFriendlyError(error) {
-  return window.PlatformsAccount?.friendlyError(error) || "That account request could not be completed. Please try again.";
-}
-
-function accountDisplayName() {
-  if (accountProfile?.display_name) return accountProfile.display_name;
-  const metadataName = window.PlatformsAccount?.cleanDisplayName(accountSession?.user?.user_metadata?.display_name);
-  return metadataName || (accountSession?.user?.id ? `Traveler-${accountSession.user.id.slice(0, 6)}` : "");
-}
-
-function applyLeaderboardIdentity() {
-  const signedInName = accountDisplayName();
-  const label = document.querySelector('label[for="runNameInput"]');
-  if (accountSession && signedInName) {
-    runNameInput.value = signedInName;
-    runNameInput.readOnly = true;
-    if (label) label.textContent = "Publishing as";
-  } else {
-    runNameInput.readOnly = false;
-    if (label) label.textContent = "Name this run";
-  }
-}
-
-function renderAccountState(message = "") {
-  const signedIn = Boolean(accountSession?.user);
-  const displayName = accountDisplayName();
-  signedOutAccountActions.hidden = signedIn;
-  signedInAccountActions.hidden = !signedIn;
-  accountIdentity.textContent = signedIn ? displayName || "Signed in" : "Playing as Guest";
-  playButton.textContent = signedIn ? "Play" : "Continue as Guest";
-  restartSessionButton.disabled = signedIn;
-  restartSessionButton.title = signedIn ? "Sign out before resetting guest progress." : "";
-  if (message) accountNotice.textContent = message;
-  else if (!signedIn) accountNotice.textContent = "Account optional";
-  else accountNotice.textContent = "Progress synced";
-  applyLeaderboardIdentity();
-}
-
-function showAccountMode(mode, message = "") {
-  const forms = { signin: signInForm, signup: signUpForm, forgot: forgotPasswordForm, recovery: newPasswordForm, profile: profileForm };
-  const titles = { signin: "Sign In", signup: "Create Account", forgot: "Reset Password", recovery: "Choose New Password", profile: "Player Profile" };
-  Object.entries(forms).forEach(([name, form]) => { form.hidden = name !== mode; });
-  accountMenuTitle.textContent = titles[mode] || "Player Account";
-  setAccountMessage(message);
-  accountMenu.hidden = false;
-  settingsPanel.hidden = true;
-  settingsButton.setAttribute("aria-expanded", "false");
-  if (mode === "profile") profileDisplayName.value = accountDisplayName();
-  const focusTarget = forms[mode]?.querySelector("input, button");
-  focusTarget?.focus();
-}
-
-function closeAccountMenu() {
-  if (accountRecoveryActive && !newPasswordForm.hidden) {
-    setAccountMessage("Finish choosing a new password or refresh to leave recovery mode.", true);
-    return;
-  }
-  accountMenu.hidden = true;
-  setAccountMessage();
-  if (!mainMenu.hidden) playButton.focus();
-}
-
-function setAccountFormBusy(form, busy) {
-  form.querySelectorAll("input, button").forEach((control) => { control.disabled = busy; });
-  closeAccountButton.disabled = busy;
-}
-
-function cleanAuthReturnUrl() {
-  if (!location.search && !location.hash) return;
-  try { history.replaceState({}, document.title, accountRedirectUrl()); }
-  catch { /* A local file preview may not permit URL cleanup. */ }
-}
-
-async function syncProgressWithAccount(session, event = "SIGNED_IN") {
-  const generation = ++accountSyncGeneration;
-  const service = window.PlatformsAccount;
-  if (!session?.user || !service) return;
-  accountSession = session;
-  renderAccountState("Loading account...");
-
-  const userId = session.user.id;
-  const accountKey = `${ACCOUNT_PROGRESS_STORAGE_PREFIX}${userId}`;
-  const guestProgress = readStoredProgress(GUEST_PROGRESS_STORAGE_KEY);
-  const cachedProgress = readStoredProgress(accountKey);
-  const preferenceProgress = storedProgressExists(accountKey) ? cachedProgress : guestProgress;
-  let remoteProgress = null;
-  let syncWarning = "";
-
-  try {
-    accountProfile = await service.loadOrCreateProfile(session.user);
-  } catch (error) {
-    accountProfile = { user_id: userId, display_name: accountDisplayName() };
-    syncWarning = accountFriendlyError(error);
-  }
-
-  try {
-    remoteProgress = await service.loadProgress(userId);
-  } catch (error) {
-    syncWarning = accountFriendlyError(error);
-  }
-  if (generation !== accountSyncGeneration || accountSession?.user?.id !== userId) return;
-
-  const merged = mergeProgress(preferenceProgress, remoteProgress, guestProgress, cachedProgress);
-  applyProgress(merged);
-  writeStoredProgress(accountKey, merged);
-  applyRewindMenuState();
-  if (!roadmapMenu.hidden) renderRoadmap();
-
-  try {
-    const saved = await service.saveProgress(userId, accountProgressPayload(merged));
-    if (saved) {
-      const serverMerged = mergeProgress(merged, saved);
-      applyProgress(serverMerged);
-      writeStoredProgress(accountKey, serverMerged);
-    }
-  } catch (error) {
-    syncWarning = accountFriendlyError(error);
-  }
-  if (generation !== accountSyncGeneration || accountSession?.user?.id !== userId) return;
-
-  let finalMessage = syncWarning;
-  if (event === "PASSWORD_RECOVERY") {
-    accountRecoveryActive = true;
-    showAccountMode("recovery", "The reset link is valid. Choose your new password.");
-  } else if (event === "SIGNED_IN" && /[?#]/.test(location.href)) {
-    finalMessage = "Email verified. Signed in.";
-  }
-  cleanAuthReturnUrl();
-  renderAccountState(finalMessage);
-}
-
-function restoreGuestProgress() {
-  accountSyncGeneration++;
-  accountSession = null;
-  accountProfile = null;
-  accountRecoveryActive = false;
-  if (accountProgressSyncTimer) clearTimeout(accountProgressSyncTimer);
-  applyProgress(readStoredProgress(GUEST_PROGRESS_STORAGE_KEY));
-  applyRewindMenuState();
-  if (!roadmapMenu.hidden) renderRoadmap();
-  renderAccountState();
-}
-
-function scheduleAccountProgressSync() {
-  if (!accountSession?.user?.id || !window.PlatformsAccount?.isAvailable()) return;
-  if (accountProgressSyncTimer) clearTimeout(accountProgressSyncTimer);
-  const userId = accountSession.user.id;
-  accountProgressSyncTimer = setTimeout(async () => {
-    accountProgressSyncTimer = null;
-    if (accountSession?.user?.id !== userId) return;
-    const progress = currentProgressSnapshot();
-    writeStoredProgress(`${ACCOUNT_PROGRESS_STORAGE_PREFIX}${userId}`, progress);
-    try {
-      const saved = await window.PlatformsAccount.saveProgress(userId, accountProgressPayload(progress));
-      if (!saved || accountSession?.user?.id !== userId) return;
-      const merged = mergeProgress(progress, saved);
-      applyProgress(merged);
-      writeStoredProgress(`${ACCOUNT_PROGRESS_STORAGE_PREFIX}${userId}`, merged);
-      accountNotice.textContent = "Progress synced";
-    } catch (error) {
-      accountNotice.textContent = accountFriendlyError(error);
-    }
-  }, 450);
-}
-
-async function initializeAccounts() {
-  renderAccountState();
-  if (!window.PlatformsAccount) {
-    accountInitializationError = new Error("Account service could not be reached.");
-    return;
-  }
-  window.PlatformsAccount.subscribe((event, session) => {
-    setTimeout(() => {
-      if (session?.user) syncProgressWithAccount(session, event);
-      else if (event === "SIGNED_OUT" || event === "INITIAL_SESSION") restoreGuestProgress();
-    }, 0);
-  });
-  try {
-    await window.PlatformsAccount.initialize(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-  } catch (error) {
-    accountInitializationError = error;
-    restoreGuestProgress();
-  }
 }
 
 async function loadGlobalLeaderboard(rulesetId, metric, runType) {
@@ -2431,35 +2088,29 @@ function selectMenuAnimation(mode) {
   if (!menuCustomizationUnlocked) return;
   rewindMenuAwakened = mode === "awakened";
   applyRewindMenuState();
-  persistProgress();
 }
 
 function selectMenuTexture(texture) {
   if (!menuCustomizationUnlocked || !["grass", "stone", "crate"].includes(texture)) return;
   menuPlatformTexture = texture;
   applyRewindMenuState();
-  persistProgress();
 }
 
 function selectMenuBackdrop(backdrop) {
   if (!menuCustomizationUnlocked || !["sun", "lava"].includes(backdrop)) return;
   menuBackdrop = backdrop;
   applyRewindMenuState();
-  persistProgress();
 }
 
 function unlockThrough(index) {
   const unlocked = Math.max(0, Math.min(CAMPAIGN_LEVEL_COUNT - 1, index));
   if (unlocked <= highestUnlockedLevel) return;
   highestUnlockedLevel = unlocked;
-  persistProgress();
 }
 
 function completeChapter(chapterIndex) {
   if (chapterIndex < 0 || chapterIndex >= GAUNTLET_COUNT) return;
-  const previousSize = completedChapters.size;
   completedChapters.add(chapterIndex);
-  if (completedChapters.size !== previousSize) persistProgress();
   if (!roadmapMenu.hidden) renderRoadmap();
 }
 
@@ -2571,7 +2222,6 @@ function updateRunSetup() {
 
 function openPlayChoice() {
   gameStarted = false;
-  accountMenu.hidden = true;
   settingsPanel.hidden = true;
   settingsButton.setAttribute("aria-expanded", "false");
   mainMenu.hidden = true;
@@ -2806,7 +2456,6 @@ function beginRun(index) {
   leaderboardMenu.hidden = true;
   changelogMenu.hidden = true;
   versionsMenu.hidden = true;
-  accountMenu.hidden = true;
   pauseButton.disabled = false;
   restartButton.disabled = false;
   restartRunButton.disabled = false;
@@ -2957,7 +2606,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -3075,7 +2724,7 @@ function setPaused(shouldPause) {
 
 async function publishFinishedRun() {
   if (!finishedRun || runPublished) return;
-  const name = (accountDisplayName() || runNameInput.value).trim().slice(0, 24);
+  const name = runNameInput.value.trim().slice(0, 24);
   if (!name) {
     publishStatus.textContent = "Enter a run name first.";
     runNameInput.focus();
@@ -3100,8 +2749,7 @@ async function publishFinishedRun() {
         stars: finishedRun.stars,
         splits: finishedRun.splits,
         run_type_id: finishedRun.runTypeId,
-        ranking_metric: finishedRun.metric,
-        user_id: accountSession?.user?.id || null
+        ranking_metric: finishedRun.metric
       })
     });
     if (!response.ok) throw new Error(`Publish failed (${response.status})`);
@@ -3112,7 +2760,6 @@ async function publishFinishedRun() {
   } catch {
     publishRunButton.disabled = false;
     runNameInput.disabled = false;
-    applyLeaderboardIdentity();
     publishStatus.textContent = "Could not publish. Check the connection or finish the Supabase setup.";
   }
 }
@@ -3126,7 +2773,6 @@ function resetFinishedRun() {
   publishStatus.textContent = "";
   continueButton.hidden = false;
   splitList.replaceChildren();
-  applyLeaderboardIdentity();
 }
 
 function resetCutscene() {
@@ -3170,7 +2816,6 @@ function prepareAdventureResults() {
   runNameInput.disabled = false;
   publishRunButton.disabled = false;
   publishStatus.textContent = "";
-  applyLeaderboardIdentity();
   if (!finishedRun.eligible) {
     publishStatus.textContent = finishedRun.failureReason
       ? `Not rankable: ${finishedRun.failureReason}.`
@@ -3316,7 +2961,6 @@ function startRewindLevel() {
   rewindMenuAwakened = true;
   applyRewindMenuState();
   unlockThrough(INTRO_LEVEL_COUNT);
-  persistProgress();
   if (!continuingTimedRun) runStartLevel = INTRO_LEVEL_COUNT;
   loadLevel(INTRO_LEVEL_COUNT);
   if (continuingTimedRun) resumeRunTimerForLoadedLevel();
@@ -3363,7 +3007,6 @@ function restoreChapterReturnState() {
   runNameInput.disabled = state.runNameDisabled;
   publishRunButton.disabled = state.publishDisabled;
   publishStatus.textContent = state.publishStatus;
-  applyLeaderboardIdentity();
   timerRunning = false;
   levelTimerRunning = false;
   gauntletChapterReturnState = null;
@@ -3411,7 +3054,6 @@ function finishGauntlet() {
   const gauntlet = currentLevel();
   const gauntletSummary = `Run time ${formatRunTime(runElapsed)} · ${currentLevelStarCount()} stars · ${deaths} deaths`;
   completedGauntlets.add(gauntlet.gauntletId);
-  persistProgress();
   const restoredState = restoreChapterReturnState();
   if (!restoredState) {
     levelSplits = [];
@@ -3883,7 +3525,6 @@ function trackDevelopmentSequence(event) {
   developmentSequencePosition = 0;
   unlockThrough(CAMPAIGN_LEVEL_COUNT - 1);
   completedChapters = new Set(Array.from({ length: GAUNTLET_COUNT }, (_, index) => index));
-  persistProgress();
   if (!roadmapMenu.hidden) renderRoadmap();
 }
 
@@ -4229,145 +3870,6 @@ try {
 } catch { /* Use the default volume. */ }
 setVolume(volumeInput.value);
 
-signUpButton.addEventListener("click", () => showAccountMode("signup"));
-signInButton.addEventListener("click", () => showAccountMode("signin"));
-editProfileButton.addEventListener("click", () => showAccountMode("profile"));
-forgotPasswordButton.addEventListener("click", () => {
-  resetEmail.value = signInEmail.value;
-  showAccountMode("forgot");
-});
-backToSignInButton.addEventListener("click", () => showAccountMode("signin"));
-closeAccountButton.addEventListener("click", closeAccountMenu);
-
-signUpForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const formData = new FormData(signUpForm);
-  const displayName = window.PlatformsAccount?.cleanDisplayName(formData.get("displayName"));
-  const email = String(formData.get("email") || "").trim();
-  const password = String(formData.get("password") || "");
-  if (!displayName) { setAccountMessage("Choose a public display name.", true); return; }
-  if (password.length < 6) { setAccountMessage("Use a password with at least 6 characters.", true); return; }
-  if (accountInitializationError || !window.PlatformsAccount?.isAvailable()) {
-    setAccountMessage(accountFriendlyError(accountInitializationError), true);
-    return;
-  }
-  setAccountFormBusy(signUpForm, true);
-  setAccountMessage("Creating account...");
-  try {
-    const result = await window.PlatformsAccount.signUp(email, password, displayName, accountRedirectUrl());
-    signUpForm.reset();
-    if (result.needsVerification) {
-      setAccountMessage("Account created. Check your email and follow the verification link, then return here to sign in.");
-      accountNotice.textContent = "Check your email to verify your account.";
-    } else {
-      accountMenu.hidden = true;
-      accountNotice.textContent = "Account created. Merging progress...";
-    }
-  } catch (error) {
-    setAccountMessage(accountFriendlyError(error), true);
-  } finally {
-    setAccountFormBusy(signUpForm, false);
-  }
-});
-
-signInForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const formData = new FormData(signInForm);
-  if (accountInitializationError || !window.PlatformsAccount?.isAvailable()) {
-    setAccountMessage(accountFriendlyError(accountInitializationError), true);
-    return;
-  }
-  setAccountFormBusy(signInForm, true);
-  setAccountMessage("Signing in...");
-  try {
-    await window.PlatformsAccount.signIn(String(formData.get("email") || ""), String(formData.get("password") || ""));
-    signInForm.reset();
-    accountMenu.hidden = true;
-    accountNotice.textContent = "Signed in. Merging progress...";
-  } catch (error) {
-    setAccountMessage(accountFriendlyError(error), true);
-  } finally {
-    setAccountFormBusy(signInForm, false);
-  }
-});
-
-forgotPasswordForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const formData = new FormData(forgotPasswordForm);
-  if (accountInitializationError || !window.PlatformsAccount?.isAvailable()) {
-    setAccountMessage(accountFriendlyError(accountInitializationError), true);
-    return;
-  }
-  setAccountFormBusy(forgotPasswordForm, true);
-  setAccountMessage("Sending reset email...");
-  try {
-    await window.PlatformsAccount.sendPasswordReset(String(formData.get("email") || ""), accountRedirectUrl());
-    setAccountMessage("Reset email sent. Open its link on this device to choose a new password.");
-  } catch (error) {
-    setAccountMessage(accountFriendlyError(error), true);
-  } finally {
-    setAccountFormBusy(forgotPasswordForm, false);
-  }
-});
-
-newPasswordForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const formData = new FormData(newPasswordForm);
-  const password = String(formData.get("password") || "");
-  const confirmation = String(formData.get("confirmPassword") || "");
-  if (password.length < 6) { setAccountMessage("Use a password with at least 6 characters.", true); return; }
-  if (password !== confirmation) { setAccountMessage("The passwords do not match.", true); return; }
-  setAccountFormBusy(newPasswordForm, true);
-  setAccountMessage("Updating password...");
-  try {
-    await window.PlatformsAccount.updatePassword(password);
-    accountRecoveryActive = false;
-    newPasswordForm.reset();
-    accountMenu.hidden = true;
-    accountNotice.textContent = "Password updated.";
-  } catch (error) {
-    setAccountMessage(accountFriendlyError(error), true);
-  } finally {
-    setAccountFormBusy(newPasswordForm, false);
-  }
-});
-
-profileForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const displayName = window.PlatformsAccount?.cleanDisplayName(new FormData(profileForm).get("displayName"));
-  if (!displayName) { setAccountMessage("Choose a public display name.", true); return; }
-  if (!accountSession?.user?.id) { setAccountMessage("Sign in before editing your profile.", true); return; }
-  setAccountFormBusy(profileForm, true);
-  setAccountMessage("Saving profile...");
-  try {
-    accountProfile = await window.PlatformsAccount.updateProfile(accountSession.user.id, displayName);
-    renderAccountState("Display name updated.");
-    accountMenu.hidden = true;
-  } catch (error) {
-    setAccountMessage(accountFriendlyError(error), true);
-  } finally {
-    setAccountFormBusy(profileForm, false);
-  }
-});
-
-signOutButton.addEventListener("click", async () => {
-  if (!accountSession?.user?.id || !window.PlatformsAccount?.isAvailable()) return;
-  signOutButton.disabled = true;
-  accountNotice.textContent = "Signing out...";
-  try {
-    await window.PlatformsAccount.saveProgress(accountSession.user.id, accountProgressPayload());
-  } catch (error) {
-    accountNotice.textContent = accountFriendlyError(error);
-  }
-  try {
-    await window.PlatformsAccount.signOut();
-  } catch (error) {
-    accountNotice.textContent = accountFriendlyError(error);
-  } finally {
-    signOutButton.disabled = false;
-  }
-});
-
 playButton.addEventListener("click", openPlayChoice);
 customRunButton.addEventListener("click", openRunSetup);
 roadmapChoiceButton.addEventListener("click", openRoadmap);
@@ -4622,7 +4124,6 @@ function quitRun() {
   leaderboardMenu.hidden = true;
   changelogMenu.hidden = true;
   versionsMenu.hidden = true;
-  accountMenu.hidden = true;
   settingsButton.setAttribute("aria-expanded", "false");
   levelSplits = [];
   activeRunConfig = null;
@@ -4640,12 +4141,6 @@ function quitRun() {
 }
 
 function restartSession() {
-  if (accountSession) {
-    accountNotice.textContent = "Sign out before resetting guest progress.";
-    return;
-  }
-  try { localStorage.removeItem(GUEST_PROGRESS_STORAGE_KEY); }
-  catch { /* The in-memory reset still works when storage is unavailable. */ }
   highestUnlockedLevel = 0;
   completedChapters = new Set();
   completedGauntlets = new Set();
@@ -4657,7 +4152,6 @@ function restartSession() {
   developmentSequencePosition = 0;
   levelDeveloperSequencePosition = 0;
   clearLegacySessionState();
-  persistProgress(false);
   applyRewindMenuState();
   quitRun();
 }
@@ -6330,5 +5824,4 @@ applyRewindMenuState();
 populateSpecificLevelChoices();
 populateLeaderboardVersions();
 loadLevel(0, false);
-initializeAccounts();
 requestAnimationFrame(frame);

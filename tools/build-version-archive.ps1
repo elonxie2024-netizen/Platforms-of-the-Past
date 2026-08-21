@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $releases = [ordered]@{
+  'v0.23.2' = '8bcf5f8'
   'v0.23.1' = '3530a03'
   'v0.23.0' = '71759a0'
   'v0.22.2' = 'e06179c'
@@ -111,7 +112,10 @@ Get-ChildItem -LiteralPath $sourceAssetRoot -File | Copy-Item -Destination $arch
 foreach ($release in $releases.GetEnumerator()) {
   $releaseRoot = Join-Path $archiveRoot $release.Key
   New-Item -ItemType Directory -Force -Path $releaseRoot | Out-Null
-  foreach ($file in @('index.html', 'styles.css', 'game.js')) {
+  $releaseFiles = @('index.html', 'styles.css', 'game.js')
+  $accountFile = & git -C $repoRoot ls-tree --name-only $release.Value -- account.js
+  if ($accountFile -eq 'account.js') { $releaseFiles += 'account.js' }
+  foreach ($file in $releaseFiles) {
     $content = (& git -C $repoRoot show "$($release.Value):$file") -join "`n"
     if ($LASTEXITCODE -ne 0) { throw "Could not read $file from $($release.Value)." }
     if ($file -eq 'game.js') {
@@ -124,6 +128,7 @@ foreach ($release in $releases.GetEnumerator()) {
     $content = $content.Replace('url(assets/', 'url(../assets/')
     if ($file -eq 'index.html') {
       $content = $content.Replace('href="styles.css"', 'href="./styles.css"')
+      $content = $content.Replace('src="account.js', 'src="./account.js')
       $content = $content.Replace('src="game.js', 'src="./game.js')
     }
     [IO.File]::WriteAllText((Join-Path $releaseRoot $file), $content + "`n", [Text.UTF8Encoding]::new($false))
@@ -139,6 +144,9 @@ foreach ($release in $releases.GetEnumerator()) {
   }
   if (-not $generatedIndex.Contains('src="./game.js')) {
     throw "Archived script path is invalid in $($release.Key)."
+  }
+  if ($generatedIndex.Contains('account.js') -and -not (Test-Path -LiteralPath (Join-Path $releaseRoot 'account.js'))) {
+    throw "Archived account script is missing in $($release.Key)."
   }
   if ($generatedGame.Contains('`assets/')) {
     throw "Archived template-literal asset path is invalid in $($release.Key)."

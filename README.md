@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.23.2`
+**Current version:** `v0.24.0`
 
 ## How it works
 
@@ -34,7 +34,9 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Compare your splits.** A second timer tracks the current level and resets whenever you restart that level. The run timer keeps going, while the results screen records the successful attempt for each level.
 
-**Publish a run.** Complete the full adventure from Dirtbound Trail, name the run, and optionally publish it to the global leaderboard. Records are shared across devices, gameplay-changing releases use separate boards, and rankings can be viewed by fastest time, most stars, or highest total score.
+**Publish a run.** Complete the full adventure from Dirtbound Trail and optionally publish it to the global leaderboard. Guests choose a run name; signed-in players publish under their public display name. Records are shared across devices, gameplay-changing releases use separate boards, and rankings can be viewed by fastest time, most stars, or highest total score.
+
+**Use an optional account.** Sign up or sign in with email and password to synchronize roadmap unlocks, completed chapters, and gauntlets through Supabase. Emails remain private, passwords are handled only by Supabase Auth, and guest play continues to work without an account or network connection.
 
 **Play past versions.** Open Versions from the main menu to launch any archived release build in a new tab.
 
@@ -42,7 +44,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Follow development.** Open the changelog from the main menu or pause menu to read every version and Git commit in the game's history.
 
-**Choose your route.** Play lets you choose Custom run or Roadmap. Custom run opens the challenge builder, while Roadmap separates the adventure into Introduction, Rewind, and Echo chapter pages where you can replay completed levels and your next unlocked challenge. Switch pages with the on-screen arrows or the Left and Right Arrow keys. Refreshing or selecting Restart session begins again from Dirtbound Trail.
+**Choose your route.** Play lets you choose Custom run or Roadmap. Custom run opens the challenge builder, while Roadmap separates the adventure into Introduction, Rewind, and Echo chapter pages where you can replay completed levels and your next unlocked challenge. Switch pages with the on-screen arrows or the Left and Right Arrow keys. Guest progress now survives refreshes; Restart session clears it, while signed-in account progress remains protected in the cloud.
 
 **Build a run.** Before starting, combine an objective, a constraint, and a leaderboard metric. Run objectives include completing the full introduction or selected levels, collecting every star, dying once to every placed hazard, and activating every available mechanic. Falls are not placed hazards and do not count. Rankings are separated by challenge and can use Time, Score, or Stars.
 
@@ -72,7 +74,7 @@ The playable prototype includes:
 - A jump pad in level 3 and automatically cycling moving platforms in level 4
 - Required crate-pushing puzzles beginning in level 5; crates are heavy movable steps that fall from unsupported ledges, ride or collide with moving platforms, trigger plates, and retain their motion history for Rewind
 - Asset-textured floating blocks and visibly cracked breakable variants that burst into material-specific debris in level 6
-- A session-based level roadmap with connected numbered stages and progression locks
+- A saved level roadmap with connected numbered stages, progression locks, and safe guest-to-account merging
 - A custom run builder with mix-and-match objectives, constraints, specific level routes, and leaderboard metrics
 - Reversible nearby switches with clickable `E - FLIP` prompts that raise or submerge linked platforms in level 7
 - A completed-run results screen after level 10 with publishing, quitting, and a prominent story Continue button that pulses after publication
@@ -89,6 +91,7 @@ The playable prototype includes:
 - Per-level timing and a complete split summary
 - A pause menu that freezes the timer
 - A global, version-separated leaderboard for named full-adventure runs
+- Optional Supabase email/password accounts with persistent sessions, password recovery, private emails, public display names, and cloud progression
 - A playable archive of every released version
 - A complete in-game changelog based on the Git history
 - Responsive running and jumping with stable high-speed platform-edge landings
@@ -129,6 +132,10 @@ Made by [elonxie2024-netizen](https://github.com/elonxie2024-netizen).
 
 ## Leaderboard maintenance
 
-The public leaderboard tables and access rules are created by [`supabase-setup.sql`](supabase-setup.sql). The displayed game version and the leaderboard ruleset are intentionally separate: cosmetic, texture, audio, menu, and cutscene-only releases keep the existing ruleset, while changes to physics, levels, timing, stars, or scoring must introduce a new ruleset in both the game configuration and Supabase.
+The public leaderboard, account profiles, private progression records, merge function, and access rules are created by [`supabase-setup.sql`](supabase-setup.sql). Run the entire file in the Supabase SQL Editor after updating the project.
+
+In Supabase Authentication settings, keep Email enabled and add `https://elonxie2024-netizen.github.io/Platforms-of-the-Past/` to the allowed redirect URLs. Set it as the Site URL when GitHub Pages is the production host. Email confirmation may remain enabled; the game supports both confirmed-email and immediate-session sign-up configurations. Password reset emails use the same allowed return URL.
+
+The displayed game version and the leaderboard ruleset are intentionally separate: cosmetic, account, texture, audio, menu, and cutscene-only releases keep the existing ruleset, while changes to physics, levels, timing, stars, or scoring must introduce a new ruleset in both the game configuration and Supabase.
 
 Playable release snapshots are generated from their original Git commits by [`tools/build-version-archive.ps1`](tools/build-version-archive.ps1). Run that script after adding a committed release to its version map.

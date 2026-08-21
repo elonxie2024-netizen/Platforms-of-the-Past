@@ -136,8 +136,7 @@ canvas {
   z-index: 6;
   inset: 0;
   display: grid;
-  place-items: safe center;
-  overflow-y: auto;
+  place-items: center;
   padding: clamp(16px, 3vw, 34px);
   text-align: center;
   background:
@@ -281,7 +280,7 @@ canvas {
   bottom: 48px;
   width: 44px;
   height: 44px;
-  background: url("assets/slime-player.svg") center / contain no-repeat;
+  background: url("../assets/slime-player.svg") center / contain no-repeat;
   filter: drop-shadow(0 6px 5px #17482b45);
   will-change: left, bottom, transform;
 }
@@ -354,71 +353,6 @@ canvas {
 }
 
 .menu-actions #playButton { color: #17233b; background: #ffe05d; border-color: transparent; }
-
-.account-area {
-  width: min(500px, 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  padding: 7px 12px;
-  border: 1px solid #ffffff20;
-  border-radius: 14px;
-  color: #dff6ff;
-  background: #07142b99;
-  font-size: .75rem;
-  font-weight: 800;
-}
-
-.account-area > p { margin: 0; }
-.account-area #accountIdentity { color: #8de4ff; }
-.account-actions { display: flex; gap: 6px; }
-.account-actions[hidden], .account-form[hidden] { display: none; }
-.account-actions button {
-  border: 1px solid #ffffff2f;
-  border-radius: 999px;
-  padding: 6px 11px;
-  color: #fff;
-  background: #ffffff10;
-  font-size: .7rem;
-  font-weight: 850;
-  cursor: pointer;
-}
-.account-notice { color: #aebed4; font-size: .68rem; }
-
-.account-panel {
-  width: min(430px, 100%);
-  max-height: calc(100% - 4px);
-  overflow-y: auto;
-}
-.account-form {
-  width: min(350px, 100%);
-  display: grid;
-  gap: 8px;
-  text-align: left;
-}
-.account-form label { color: #dff6ff; font-size: .76rem; font-weight: 850; }
-.account-form input {
-  width: 100%;
-  border: 1px solid #ffffff38;
-  border-radius: 11px;
-  padding: 10px 12px;
-  color: #fff;
-  background: #152846;
-  font: inherit;
-}
-.account-form input:focus { outline: 3px solid #8de4ff; outline-offset: 2px; }
-.account-form p { color: #b8cbe2; font-size: .78rem; line-height: 1.4; text-align: center; }
-.overlay-panel .account-form .text-button {
-  border: 0;
-  padding: 3px;
-  color: #8de4ff;
-  background: transparent;
-  box-shadow: none;
-}
-.account-form-status { min-height: 1.2em; color: #9fe8b2; font-size: .76rem; }
-.account-form-status.error { color: #ffb8b8; }
-.account-panel > .secondary-button { color: #fff; background: #ffffff12; }
 
 .settings-panel {
   width: min(360px, 90%);
@@ -515,8 +449,7 @@ canvas {
   z-index: 8;
   inset: 0;
   display: grid;
-  place-items: safe center;
-  overflow-y: auto;
+  place-items: center;
   padding: clamp(18px, 4vw, 38px);
   text-align: center;
   background: #08132de8;

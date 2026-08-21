@@ -11,7 +11,7 @@ create table if not exists public.leaderboard_rulesets (
 
 insert into public.leaderboard_rulesets (id, label, accepted_versions)
 values
-  ('crate-platform-collision-v1', 'Version 0.23.2 to 0.23.2', array['v0.23.2']),
+  ('crate-platform-collision-v1', 'Version 0.23.2 to 0.24.0', array['v0.23.2', 'v0.24.0']),
   ('history-forge-gate-v1', 'Version 0.23.1 to 0.23.1', array['v0.23.1']),
   ('crate-gravity-v1', 'Version 0.23.0 to 0.23.0', array['v0.23.0']),
   ('chapter-gate-fixes-v1', 'Version 0.22.2 to 0.22.2', array['v0.22.2']),
@@ -55,8 +55,30 @@ set label = excluded.label,
     accepted_versions = excluded.accepted_versions,
     active = true;
 
+create table if not exists public.player_profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  display_name text not null check (
+    char_length(btrim(display_name)) between 1 and 24
+    and display_name !~ '[[:cntrl:]]'
+  ),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.player_progress (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  highest_unlocked_level integer not null default 0 check (highest_unlocked_level >= 0),
+  completed_chapters integer[] not null default '{}',
+  completed_gauntlets text[] not null default '{}',
+  menu_customization_unlocked boolean not null default false,
+  updated_at timestamptz not null default now(),
+  check (completed_chapters <@ array[0, 1, 2, 3]),
+  check (completed_gauntlets <@ array['G1', 'G2', 'G3', 'G4'])
+);
+
 create table if not exists public.leaderboard_scores (
   id bigint generated always as identity primary key,
+  user_id uuid references auth.users(id) on delete set null,
   leaderboard_id text not null references public.leaderboard_rulesets(id),
   game_version text not null check (game_version ~ '^v[0-9]+\.[0-9]+\.[0-9]+$'),
   name text not null check (char_length(btrim(name)) between 1 and 24 and name !~ '[[:cntrl:]]'),
@@ -73,6 +95,8 @@ alter table public.leaderboard_scores
   add column if not exists run_type_id text not null default 'classic';
 alter table public.leaderboard_scores
   add column if not exists ranking_metric text not null default 'time';
+alter table public.leaderboard_scores
+  add column if not exists user_id uuid references auth.users(id) on delete set null;
 
 alter table public.leaderboard_scores
   drop constraint if exists leaderboard_scores_ranking_metric_check;
@@ -96,8 +120,106 @@ create index if not exists leaderboard_scores_rank_idx
 create index if not exists leaderboard_scores_run_type_rank_idx
   on public.leaderboard_scores (leaderboard_id, run_type_id, ranking_metric, seconds asc, score desc, stars desc);
 
+create index if not exists leaderboard_scores_user_idx
+  on public.leaderboard_scores (user_id, created_at desc)
+  where user_id is not null;
+
+create or replace function public.merge_player_progress(
+  p_highest_unlocked_level integer,
+  p_completed_chapters integer[],
+  p_completed_gauntlets text[],
+  p_menu_customization_unlocked boolean
+)
+returns public.player_progress
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  merged public.player_progress;
+  current_user_id uuid := (select auth.uid());
+begin
+  if current_user_id is null then
+    raise exception 'Authentication required';
+  end if;
+
+  insert into public.player_progress as existing (
+    user_id, highest_unlocked_level, completed_chapters, completed_gauntlets,
+    menu_customization_unlocked, updated_at
+  ) values (
+    current_user_id,
+    greatest(0, coalesce(p_highest_unlocked_level, 0)),
+    coalesce(p_completed_chapters, '{}'::integer[]),
+    coalesce(p_completed_gauntlets, '{}'::text[]),
+    coalesce(p_menu_customization_unlocked, false),
+    now()
+  )
+  on conflict (user_id) do update set
+    highest_unlocked_level = greatest(
+      existing.highest_unlocked_level,
+      excluded.highest_unlocked_level
+    ),
+    completed_chapters = array(
+      select distinct chapter
+      from unnest(existing.completed_chapters || excluded.completed_chapters) chapter
+      order by chapter
+    ),
+    completed_gauntlets = array(
+      select distinct gauntlet
+      from unnest(existing.completed_gauntlets || excluded.completed_gauntlets) gauntlet
+      order by gauntlet
+    ),
+    menu_customization_unlocked =
+      existing.menu_customization_unlocked or excluded.menu_customization_unlocked,
+    updated_at = now()
+  returning * into merged;
+
+  return merged;
+end;
+$$;
+
 alter table public.leaderboard_rulesets enable row level security;
 alter table public.leaderboard_scores enable row level security;
+alter table public.player_profiles enable row level security;
+alter table public.player_progress enable row level security;
+
+drop policy if exists "Users can read their own profile" on public.player_profiles;
+create policy "Users can read their own profile"
+  on public.player_profiles for select
+  to authenticated
+  using ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can create their own profile" on public.player_profiles;
+create policy "Users can create their own profile"
+  on public.player_profiles for insert
+  to authenticated
+  with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can update their own profile" on public.player_profiles;
+create policy "Users can update their own profile"
+  on public.player_profiles for update
+  to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can read their own progression" on public.player_progress;
+create policy "Users can read their own progression"
+  on public.player_progress for select
+  to authenticated
+  using ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can create their own progression" on public.player_progress;
+create policy "Users can create their own progression"
+  on public.player_progress for insert
+  to authenticated
+  with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can update their own progression" on public.player_progress;
+create policy "Users can update their own progression"
+  on public.player_progress for update
+  to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 drop policy if exists "Anyone can read leaderboard rulesets" on public.leaderboard_rulesets;
 create policy "Anyone can read leaderboard rulesets"
@@ -123,10 +245,25 @@ create policy "Anyone can submit validated scores"
         and ruleset.active
         and game_version = any(ruleset.accepted_versions)
     )
+    and (
+      ((select auth.uid()) is null and user_id is null)
+      or (
+        user_id = (select auth.uid())
+        and name = (
+          select profile.display_name
+          from public.player_profiles profile
+          where profile.user_id = (select auth.uid())
+        )
+      )
+    )
   );
 
 grant select on public.leaderboard_rulesets to anon, authenticated;
 grant select, insert on public.leaderboard_scores to anon, authenticated;
 grant usage, select on sequence public.leaderboard_scores_id_seq to anon, authenticated;
+grant select, insert, update on public.player_profiles to authenticated;
+grant select, insert, update on public.player_progress to authenticated;
+revoke all on function public.merge_player_progress(integer, integer[], text[], boolean) from public;
+grant execute on function public.merge_player_progress(integer, integer[], text[], boolean) to authenticated;
 
--- Intentionally grant no update or delete permissions to public visitors.
+-- Intentionally grant no update or delete permissions to public leaderboard visitors.
