@@ -92,8 +92,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.21.5", commit: "Pending commit", date: "2026-08-20", message: "Add the game favicon", description: "Added a compact browser icon that combines the existing green slime artwork with a simple golden rewind arrow trailing behind it. Connected the SVG favicon to the game page and preserved it through the playable version archive system." },
-  { version: "v0.21.4", commit: "9cfee2a", date: "2026-08-20", message: "Fix zero-delay pressure platforms", description: "Corrected pressure-controlled moving platforms so they continue moving whenever their linked plate is actively held, even when configured with no release delay. A zero delay now makes the platform stop immediately after the plate is released instead of preventing movement entirely, restoring level 34's final bridge." },
+  { version: "v0.21.4", commit: "Pending commit", date: "2026-08-20", message: "Fix zero-delay pressure platforms", description: "Corrected pressure-controlled moving platforms so they continue moving whenever their linked plate is actively held, even when configured with no release delay. A zero delay now makes the platform stop immediately after the plate is released instead of preventing movement entirely, restoring level 34's final bridge." },
   { version: "v0.21.3", commit: "ddde822", date: "2026-08-20", message: "Move the Cargo Countermove gate star", description: "Moved level 34's first star out of the raised cargo gate and onto the platform immediately beyond it, keeping the collectible clearly visible and safely reachable after opening the gate." },
   { version: "v0.21.2", commit: "0b2ead2", date: "2026-08-20", message: "Restore the Cargo Countermove gate collision", description: "Made level 34's lowered cargo gate solid before its crate pressure plate is activated. The player must now push the crate onto the plate to raise the gate instead of walking through it while inactive." },
   { version: "v0.21.1", commit: "5893c80", date: "2026-08-20", message: "Fix the Blade Recall corridor", description: "Moved the blade's fully rewound position farther from the lower corridor entrance, leaving a safe and forgiving gap for the player to enter. The low ceiling still prevents jumping over the blade, so rewinding it remains required." },
@@ -904,11 +903,11 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.21.5";
+const GAME_VERSION = "v0.21.4";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "zero-delay-platform-v1", label: "Version 0.21.4 to 0.21.5" },
+  { id: "zero-delay-platform-v1", label: "Version 0.21.4 to 0.21.4" },
   { id: "cargo-gate-star-v1", label: "Version 0.21.3 to 0.21.3" },
   { id: "cargo-gate-collision-v1", label: "Version 0.21.2 to 0.21.2" },
   { id: "blade-recall-corridor-v1", label: "Version 0.21.1 to 0.21.1" },
@@ -945,7 +944,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -1011,7 +1010,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -2192,7 +2191,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
