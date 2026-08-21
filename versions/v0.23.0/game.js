@@ -109,8 +109,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.23.1", commit: "Pending commit", date: "2026-08-21", message: "Close the History Forge cargo-gate shortcut", description: "Attached a moving spike strip to the top of History Forge's vertical cargo gate. The spikes follow the gate as it rises and prevent using it as a stepping stone, so the crate pressure plate can no longer be bypassed." },
-  { version: "v0.23.0", commit: "71759a0", date: "2026-08-21", message: "Add crate gravity", description: "Made pushable crates obey heavy gravity, fall from unsupported ledges, settle on solid geometry and other crates, and ride moving platforms. Crates are now lost when they enter hazards or fall below the map without automatically respawning. Rewind levels record their complete falls and lost state so crates visibly retrace their history back to safety, while non-Rewind crate losses require a level restart. Kept Echo pushing and pressure plates compatible, and raised only Fractured Schedule's short crate channel to preserve its intended break-and-push solution." },
+  { version: "v0.23.0", commit: "Pending commit", date: "2026-08-21", message: "Add crate gravity", description: "Made pushable crates obey heavy gravity, fall from unsupported ledges, settle on solid geometry and other crates, and ride moving platforms. Crates are now lost when they enter hazards or fall below the map without automatically respawning. Rewind levels record their complete falls and lost state so crates visibly retrace their history back to safety, while non-Rewind crate losses require a level restart. Kept Echo pushing and pressure plates compatible, and raised only Fractured Schedule's short crate channel to preserve its intended break-and-push solution." },
   { version: "v0.22.2", commit: "e06179c", date: "2026-08-21", message: "Repair chapter puzzles and gameplay state", description: "Repaired six closed collision gates across Chapter 4, moved Convergence's blocked star onto a reachable route, and unlocked later chapters as soon as their finales are completed. Hardened restart, death, rewind, Echo carrying, pointer cleanup, and modal input state. Standalone roadmap gauntlets now use their own results flow while chapter-launched gauntlets still return to the chapter choice screen." },
   { version: "v0.22.1", commit: "9ad7b44", date: "2026-08-21", message: "Change chapter screens", description: "Changed every chapter-completion screen to present two equal side-by-side next steps: Continue the Story follows the existing campaign transition, while Master This Chapter launches that chapter's gauntlet immediately. Completing a chapter-launched gauntlet returns to its chapter-completion screen with both choices still available while preserving the story run and timer handoff. Gauntlets remain playable from their roadmap branches." },
   { version: "v0.22.0", commit: "bd03ab2", date: "2026-08-20", message: "Add optional chapter gauntlets", description: "Added four optional gauntlets outside the forty-level campaign: Foundry Circuit combines every introductory mechanic, History Forge demands deliberately created rewind history, Echo Works focuses on long-form loop planning, and Paradox Engine combines echo and rewind with moving blades and state-dependent replay. Each gauntlet unlocks when its chapter is completed, appears as a distinct G1 through G4 branch on that chapter's roadmap, records session completion, and runs with clean standalone run and level timing without changing campaign progression." },
@@ -906,7 +905,7 @@ const levels = [
       Q(3860,478,"g2-enemy",110,{ enemyOnly: true }), Q(4320,478,"g2-exit",120)
     ],
     enemies: [ER(3440,490,3380,3990,1,76,{ stopAtBoundary: true })],
-    hazards: [R(500,500,750,70,"lava"), R(2700,500,540,70,"lava"), R(4510,500,490,70,"lava"), A("g2-cargo",0,-18,80)],
+    hazards: [R(500,500,750,70,"lava"), R(2700,500,540,70,"lava"), R(4510,500,490,70,"lava")],
     stars: [[640,375],[1320,440],[2110,245],[2965,295],[3895,420],[4870,320]],
     finish: R(5120,360,34,90)
   },
@@ -1040,11 +1039,10 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.23.1";
+const GAME_VERSION = "v0.23.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
   { id: "chapter-gate-fixes-v1", label: "Version 0.22.2 to 0.22.2" },
   { id: "chapter-gauntlets-v1", label: "Version 0.22.0 to 0.22.1" },
@@ -1085,7 +1083,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -1153,7 +1151,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1172,7 +1170,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -2488,7 +2486,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
