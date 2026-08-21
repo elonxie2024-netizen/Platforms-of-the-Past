@@ -11,7 +11,6 @@ const scoreSummary = document.querySelector("#scoreSummary");
 const gameShell = document.querySelector(".game-shell");
 const gameFrame = document.querySelector(".game-frame");
 const fullscreenButton = document.querySelector("#fullscreenButton");
-const screenModeLabel = document.querySelector("#screenModeLabel");
 const pauseButton = document.querySelector("#pauseButton");
 const restartButton = document.querySelector("#restartButton");
 const restartRunButton = document.querySelector("#restartRunButton");
@@ -137,8 +136,7 @@ const resetEmail = document.querySelector("#resetEmail");
 const profileDisplayName = document.querySelector("#profileDisplayName");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.26.2", commit: "Pending commit", date: "2026-08-21", message: "Add explicit small and large screen layouts", description: "Added an always-visible Large Screen button with the X shortcut. Small Screen preserves the v0.26.1 layout while Large Screen uses true browser fullscreen, removes the outer shell, and scales menus, buttons, level name, run time, level time, stars, and fullscreen controls by the game canvas's exact rendered-width-to-960px asset ratio. Pause, Restart, Restart Run, and Quit remain inside the game screen and now use solid high-contrast styling against bright skies." },
-  { version: "v0.26.1", commit: "269d11b", date: "2026-08-21", message: "Add screen sizing", description: "Expanded the Level Editor and game frame while reducing the unused outer border, creating the original smaller screen layout preserved in the version archive." },
+  { version: "v0.26.1", commit: "Pending commit", date: "2026-08-21", message: "Expand the editor and game layout", description: "Moved the Level Editor into a nearly full-window workspace with a four-pixel outer edge, narrower tool and property panels, and a canvas that scales to fill all remaining space without empty letterboxing. Reduced the normal page's outer shell, enlarged the game frame, returned Pause, Restart, Restart Run, and Quit to the game screen, and scaled those controls plus the level name, run time, level time, stars, and fullscreen control by the same factor as the 960px game assets." },
   { version: "v0.26.0", commit: "0146ac8", date: "2026-08-21", message: "Add the first visual level editor", description: "Added a dedicated local level editor built directly on the safe v0.25.0 level-data schema. Creators can place, select, move, resize, link, and configure campaign mechanics on a grid canvas; edit motion paths and initial states; undo and redo changes; retain a browser-local draft; import and export validated JSON; and playtest through the real game engine without affecting campaign progress, accounts, or leaderboards." },
   { version: "v0.25.0", commit: "88ee70d", date: "2026-08-21", message: "Add serialized level-data foundation", description: "Added a versioned, JSON-serializable level schema with strict validation, stable object IDs, safe ID-based links, import/export and independent-clone utilities, and a generic adapter into the existing runtime engine. Migrated Dirtbound Trail, Crateyard Climb, Switchback Summit, and Shared History as representative proofs covering static terrain, hazards, stars, crate physics, switches, controlled platforms, Rewind motion history, Rewind fields, and Echo capability. Invalid, unknown, or non-data input now fails with useful errors instead of entering gameplay." },
   { version: "v0.24.2", commit: "5f5f46d", date: "2026-08-21", message: "Polish account controls", description: "Restyled the main-menu account area and authentication forms with spacious pill buttons, clear player identity, stronger game-matched colors, and responsive hover feedback. The account card now matches the rounded, layered visual language of the surrounding game menu and stacks cleanly on narrow screens." },
@@ -1200,13 +1198,13 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.26.2";
+const GAME_VERSION = "v0.26.1";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
 const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const LEADERBOARD_RULESETS = [
-  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.26.2" },
+  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.26.1" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1249,7 +1247,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -1430,7 +1428,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1449,7 +1447,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -3156,7 +3154,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -4743,12 +4741,10 @@ async function toggleFullscreen() {
 
 function updateFullscreenButton() {
   const active = fullscreenElement() === gameShell;
-  const label = active ? "Switch to small screen" : "Switch to large screen";
+  const label = active ? "Exit full screen" : "Enter full screen";
   fullscreenButton.setAttribute("aria-label", label);
   fullscreenButton.title = label;
   fullscreenButton.setAttribute("aria-pressed", String(active));
-  screenModeLabel.textContent = active ? "Small Screen" : "Large Screen";
-  syncGameUiScale();
 }
 
 if (requestFullscreen && exitFullscreen) {
@@ -4758,12 +4754,6 @@ if (requestFullscreen && exitFullscreen) {
 } else {
   fullscreenButton.hidden = true;
 }
-
-addEventListener("keydown", (event) => {
-  if (event.code !== "KeyX" || event.repeat || ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) return;
-  event.preventDefault();
-  toggleFullscreen();
-});
 
 document.querySelectorAll("[data-control]").forEach((button) => {
   const control = button.dataset.control;
@@ -6562,10 +6552,9 @@ function frame(time) {
 }
 
 function syncGameUiScale() {
-  const largeScreen = fullscreenElement() === gameShell;
-  const assetScale = largeScreen ? gameFrame.getBoundingClientRect().width / canvas.width : 1;
+  const assetScale = Math.max(1, gameFrame.getBoundingClientRect().width / canvas.width);
   gameFrame.style.setProperty("--game-ui-scale", String(assetScale));
-  gameFrame.classList.toggle("large-game-screen", largeScreen);
+  gameFrame.classList.toggle("large-game-screen", assetScale > 1.001);
 }
 
 new ResizeObserver(syncGameUiScale).observe(gameFrame);
