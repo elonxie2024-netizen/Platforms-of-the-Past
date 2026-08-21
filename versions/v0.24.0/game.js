@@ -133,8 +133,7 @@ const resetEmail = document.querySelector("#resetEmail");
 const profileDisplayName = document.querySelector("#profileDisplayName");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.24.1", commit: "Pending commit", date: "2026-08-21", message: "Fix crate-side jump collision", description: "Fixed rising beside a pushed crate being mistaken for an underside collision, which could force the slime through the floor and reset Crateyard Climb without playing the normal death animation. Side contact now remains horizontal while genuine landings and underside impacts continue to resolve normally." },
-  { version: "v0.24.0", commit: "37ddc7d", date: "2026-08-21", message: "Add optional Supabase player accounts", description: "Added optional email-and-password accounts with persistent Supabase Auth sessions, email verification messaging, password recovery, private account data, and editable public display names. Guest play remains fully available offline, while signed-in players safely merge guest, cached, and cloud roadmap progress without ever reducing unlocks, completed chapters, or gauntlets. New signed-in leaderboard submissions are tied to the account ID and use its public display name without exposing email addresses." },
+  { version: "v0.24.0", commit: "Pending commit", date: "2026-08-21", message: "Add optional Supabase player accounts", description: "Added optional email-and-password accounts with persistent Supabase Auth sessions, email verification messaging, password recovery, private account data, and editable public display names. Guest play remains fully available offline, while signed-in players safely merge guest, cached, and cloud roadmap progress without ever reducing unlocks, completed chapters, or gauntlets. New signed-in leaderboard submissions are tied to the account ID and use its public display name without exposing email addresses." },
   { version: "v0.23.2", commit: "8bcf5f8", date: "2026-08-21", message: "Add complete moving-platform crate collision", description: "Made moving platforms collide physically with crates from every direction instead of phasing through them. Platforms now carry crates resting on top, push crates and stable stacks from the sides, lift them from below, and stop when a crate cannot move because solid geometry blocks it. The same collision rules apply to automatic, switch-controlled, pressure-controlled, and rewinding platforms." },
   { version: "v0.23.1", commit: "3530a03", date: "2026-08-21", message: "Close the History Forge cargo-gate shortcut", description: "Attached a moving spike strip to the top of History Forge's vertical cargo gate. The spikes follow the gate as it rises and prevent using it as a stepping stone, so the crate pressure plate can no longer be bypassed." },
   { version: "v0.23.0", commit: "71759a0", date: "2026-08-21", message: "Add crate gravity", description: "Made pushable crates obey heavy gravity, fall from unsupported ledges, settle on solid geometry and other crates, and ride moving platforms. Crates are now lost when they enter hazards or fall below the map without automatically respawning. Rewind levels record their complete falls and lost state so crates visibly retrace their history back to safety, while non-Rewind crate losses require a level restart. Kept Echo pushing and pressure plates compatible, and raised only Fractured Schedule's short crate channel to preserve its intended break-and-push solution." },
@@ -1067,13 +1066,12 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.24.1";
+const GAME_VERSION = "v0.24.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
 const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const LEADERBOARD_RULESETS = [
-  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.24.1" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1116,7 +1114,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -1297,7 +1295,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1316,7 +1314,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -2959,7 +2957,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -4758,9 +4756,6 @@ function moveActorAndCollideX(actor, dt, allowPush = true) {
 }
 
 function moveActorAndCollideY(actor, dt) {
-  const previousY = actor.y;
-  const previousBottom = actor.y + PLAYER_H;
-  const verticalVelocity = actor.vy;
   actor.y += actor.vy * dt;
   actor.grounded = false;
   let landedOn = null;
@@ -4768,19 +4763,15 @@ function moveActorAndCollideY(actor, dt) {
   for (const solid of currentLevel().platforms) {
     if (!platformHasCollision(solid)) continue;
     if (!overlaps(box, solid)) continue;
-    if (verticalVelocity > 0 && previousBottom <= solid.y + PLATFORM_TOP_GRACE) {
-      const impactSpeed = verticalVelocity;
+    if (actor.vy > 0) {
+      const impactSpeed = actor.vy;
       const surface = solid.material || solid.kind;
       const landingKind = surface === "crate" ? "crate" : surface === "grass" ? "grass" : "stone";
       landedOn = { platform: solid, kind: landingKind, impactSpeed, intensity: Math.max(.45, Math.min(1, impactSpeed / 700)) };
       actor.y = solid.y - PLAYER_H;
       actor.grounded = true;
     }
-    else if (verticalVelocity < 0 && previousY >= solid.y + solid.h - 2) {
-      actor.y = solid.y + solid.h;
-    } else {
-      continue;
-    }
+    else if (actor.vy < 0) actor.y = solid.y + solid.h;
     actor.vy = 0;
     box.y = actor.y;
   }
