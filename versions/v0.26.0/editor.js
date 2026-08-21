@@ -3,7 +3,6 @@
 (() => {
   const api = window.PlatformsLevelData;
   const host = document.querySelector("#levelEditor");
-  document.querySelector(".game-shell").append(host);
   const STORAGE_KEY = "platforms-past-level-editor-draft-v1";
   const GRID = 20;
   const WORLD_H = 570;
@@ -19,8 +18,8 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/player-slime.svg", enemy: "assets/enemy-slime.svg", switch: "assets/switch.svg",
-    pressurePlate: "assets/pressure-plate.svg", jumpPad: "assets/jump-pad.svg", blade: "assets/moving-blade.svg"
+    player: "../assets/player-slime.svg", enemy: "../assets/enemy-slime.svg", switch: "../assets/switch.svg",
+    pressurePlate: "../assets/pressure-plate.svg", jumpPad: "../assets/jump-pad.svg", blade: "../assets/moving-blade.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
@@ -38,7 +37,7 @@
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.26.1</strong>
+      <strong>Level Editor · v0.26.0</strong>
       <button data-action="new">New</button><button data-action="clear">Clear</button>
       <button data-action="undo">Undo</button><button data-action="redo">Redo</button>
       <button data-action="import">Import</button><button data-action="export">Export</button>
@@ -484,13 +483,7 @@
     if(RESIZABLE.has(object.type)){ctx.fillStyle="#f4c95d";ctx.fillRect(r.x-cameraX+r.width-6,r.y+r.height-6,12,12);}
   }
   function draw() { if(host.hidden)return; drawGrid(); drawLinks(); data.objects.forEach(drawObject); drawObject({type:"exit",...data.exit});drawObject({type:"spawn",...data.spawn});drawSelection(); }
-  function resizeCanvas() {
-    const rect = canvas.getBoundingClientRect();
-    canvas.height = WORLD_H;
-    canvas.width = Math.max(640, Math.min(1600, Math.round(WORLD_H * rect.width / Math.max(1, rect.height))));
-    cameraX = Math.min(cameraX, Math.max(0, data.width - canvas.width));
-    draw();
-  }
+  function resizeCanvas() { canvas.width=960;canvas.height=WORLD_H;draw(); }
   function refresh() { host.querySelector('[data-action="undo"]').disabled=!undoStack.length;host.querySelector('[data-action="redo"]').disabled=!redoStack.length; renderInspector();validate();draw(); }
 
   function newLevel(clearOnly = false) {
@@ -505,7 +498,7 @@
     const action=event.target.closest("[data-action]")?.dataset.action;if(!action)return;
     if(action==="new")newLevel(false);else if(action==="clear")newLevel(true);else if(action==="undo")undo();else if(action==="redo")redo();else if(action==="import")importInput.click();else if(action==="export")exportData();
     else if(action==="snap"){snap=!snap;event.target.textContent=`Snap: ${snap?"On":"Off"}`;statusNote=`Grid snapping ${snap?"enabled":"disabled"}.`;refresh();}
-    else if(action==="playtest"){const result=validate();if(result.valid&&playtestCallback){document.body.classList.remove("editor-open");playtestCallback(clone(data));}}
+    else if(action==="playtest"){const result=validate();if(result.valid&&playtestCallback)playtestCallback(clone(data));}
     else if(action==="close")close();
   });
   importInput.addEventListener("change",()=>{importFile(importInput.files[0]);importInput.value="";});
@@ -518,9 +511,9 @@
   });
   new ResizeObserver(resizeCanvas).observe(canvas);
 
-  function open() { document.body.classList.add("editor-open");document.querySelector("#mainMenu").hidden=true;host.hidden=false;document.querySelector(".touch-controls").hidden=true;document.querySelector(".instructions").hidden=true;requestAnimationFrame(()=>{resizeCanvas();refresh();}); }
-  function close() { document.body.classList.remove("editor-open");host.hidden=true;document.querySelector("#mainMenu").hidden=false;document.querySelector(".touch-controls").hidden=false;document.querySelector(".instructions").hidden=false;document.querySelector("#levelEditorButton")?.focus(); }
-  function showAfterPlaytest(note="Returned from playtest.") { document.body.classList.add("editor-open");host.hidden=false;document.querySelector(".touch-controls").hidden=true;document.querySelector(".instructions").hidden=true;statusNote=note;requestAnimationFrame(()=>{resizeCanvas();refresh();}); }
+  function open() { document.querySelector("#mainMenu").hidden=true;host.hidden=false;document.querySelector(".touch-controls").hidden=true;document.querySelector(".instructions").hidden=true;requestAnimationFrame(()=>{resizeCanvas();refresh();}); }
+  function close() { host.hidden=true;document.querySelector("#mainMenu").hidden=false;document.querySelector(".touch-controls").hidden=false;document.querySelector(".instructions").hidden=false;document.querySelector("#levelEditorButton")?.focus(); }
+  function showAfterPlaytest(note="Returned from playtest.") { host.hidden=false;document.querySelector(".touch-controls").hidden=true;document.querySelector(".instructions").hidden=true;statusNote=note;requestAnimationFrame(()=>{resizeCanvas();refresh();}); }
 
   restore(); setTool("select");
   window.PlatformsEditor=Object.freeze({ open, close, showAfterPlaytest, getDraft:()=>clone(data), setPlaytestCallback:(callback)=>{playtestCallback=callback;} });

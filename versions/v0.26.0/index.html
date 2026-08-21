@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#11182d">
   <title>Platforms of the Past</title>
-  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="editor.css?v=0.26.1">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./editor.css?v=0.26.0">
 </head>
 <body>
   <main class="game-shell">
@@ -16,15 +16,15 @@
         <p class="eyebrow">A time-bending platform adventure</p>
         <h1>Platforms of the Past</h1>
       </div>
-    </header>
-
-    <section class="game-frame" aria-label="Platforms of the Past game">
-      <div class="header-actions in-game-actions">
+      <div class="header-actions">
         <button id="pauseButton" class="restart" type="button" aria-label="Pause the game" disabled>Pause <kbd>P</kbd></button>
         <button id="restartButton" class="restart" type="button" aria-label="Restart the current level" disabled>Restart <kbd>R</kbd></button>
         <button id="restartRunButton" class="restart" type="button" aria-label="Restart the whole run and timer" disabled>Restart run <kbd>T</kbd></button>
         <button id="quitButton" class="quit-button" type="button" disabled>Quit</button>
       </div>
+    </header>
+
+    <section class="game-frame" aria-label="Platforms of the Past game">
       <div class="hud" aria-live="polite">
         <span id="levelLabel">Level 1 / 5</span>
         <span id="timerLabel">Run 0:00.0</span>
@@ -41,7 +41,7 @@
       </button>
       <div id="mainMenu" class="main-menu">
         <div class="menu-panel">
-          <p class="menu-version">v0.26.1</p>
+          <p class="menu-version">v0.26.0</p>
           <h2>Platforms of the Past</h2>
           <div class="menu-stage" role="img" aria-label="A green slime endlessly jumping between two grassy platforms">
             <div class="menu-sun" aria-hidden="true"></div>
@@ -362,9 +362,9 @@
 
     <p class="instructions"><strong>Move</strong> A / D or arrows <span aria-hidden="true">&bull;</span> <strong>Jump</strong> W / Up / Space <span aria-hidden="true">&bull;</span> <strong>Interact</strong> E <span aria-hidden="true">&bull;</span> <strong>Pause</strong> P <span aria-hidden="true">&bull;</span> <strong>Restart level</strong> R <span aria-hidden="true">&bull;</span> <strong>Restart run</strong> T</p>
   </main>
-  <script src="level-data.js?v=0.26.1"></script>
-  <script src="account.js?v=0.26.1"></script>
-  <script src="editor.js?v=0.26.1"></script>
-  <script src="game.js?v=0.26.1"></script>
+  <script src="./level-data.js?v=0.26.0"></script>
+  <script src="./account.js?v=0.26.0"></script>
+  <script src="./editor.js?v=0.26.0"></script>
+  <script src="./game.js?v=0.26.0"></script>
 </body>
 </html>
