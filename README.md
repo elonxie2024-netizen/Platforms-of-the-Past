@@ -6,9 +6,9 @@ A browser-based platformer where the world changes across time. Run, jump, avoid
 
 No install, download, or plugins. It runs entirely in the browser.
 
-> **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic.
+> **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.21.5`
+**Current version:** `v0.22.0`
 
 ## How it works
 

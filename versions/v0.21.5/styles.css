@@ -280,7 +280,7 @@ canvas {
   bottom: 48px;
   width: 44px;
   height: 44px;
-  background: url("assets/slime-player.svg") center / contain no-repeat;
+  background: url("../assets/slime-player.svg") center / contain no-repeat;
   filter: drop-shadow(0 6px 5px #17482b45);
   will-change: left, bottom, transform;
 }
@@ -672,8 +672,6 @@ canvas {
 .roadmap-lines { position: absolute; inset: 0; width: 100%; height: 100%; }
 .roadmap-lines polyline { fill: none; stroke: #52647d; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 2 3; }
 .roadmap-lines polyline.unlocked { stroke: #44bfea; stroke-dasharray: none; filter: drop-shadow(0 0 3px #44bfea66); }
-.roadmap-lines polyline.gauntlet-branch { stroke: #8f7a48; stroke-dasharray: 1.5 3; }
-.roadmap-lines polyline.gauntlet-branch.unlocked { stroke: #ffe05d; stroke-dasharray: none; filter: drop-shadow(0 0 4px #ffe05d66); }
 
 .roadmap-level {
   position: absolute;
@@ -711,18 +709,6 @@ canvas {
 }
 
 .roadmap-level.locked .level-name { color: #7f8ba0; }
-.roadmap-gauntlet button {
-  width: 66px;
-  border-color: #ffe05d;
-  border-radius: 16px;
-  color: #302006;
-  background: #f5c54e;
-  box-shadow: inset 0 2px #fff3a0, 0 0 0 5px #ffe05d20, 0 8px 18px #0005;
-}
-.roadmap-gauntlet button:hover { background: #ffe27a; }
-.roadmap-gauntlet .level-name { color: #fff0a8; }
-.roadmap-gauntlet.completed button { color: #102b21; background: #7ce18d; border-color: #b7f5bd; }
-.roadmap-gauntlet.locked button { border-color: #756f62; background: #4c4a45; }
 .roadmap-lock { width: 18px; height: 18px; fill: currentColor; }
 .roadmap-panel > .secondary-button { color: #fff; background: #ffffff14; }
 
@@ -976,7 +962,6 @@ canvas {
   .roadmap-note { display: none; }
   .level-roadmap { min-height: 210px; }
   .roadmap-level button { width: 43px; height: 43px; border-width: 2px; }
-  .roadmap-gauntlet button { width: 58px; }
   .roadmap-level .level-name { max-width: 58px; font-size: .56rem; }
   .play-choice-actions { grid-template-columns: 1fr; }
   .play-choice-actions button { min-height: 96px; }

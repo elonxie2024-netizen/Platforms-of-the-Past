@@ -28,12 +28,6 @@ const convergenceChapterMessage = document.querySelector("#convergenceChapterMes
 const convergenceChapterSummary = document.querySelector("#convergenceChapterSummary");
 const convergenceContinueButton = document.querySelector("#convergenceContinueButton");
 const convergenceMenuButton = document.querySelector("#convergenceMenuButton");
-const gauntletCompleteMessage = document.querySelector("#gauntletCompleteMessage");
-const gauntletCompleteTitle = document.querySelector("#gauntletCompleteTitle");
-const gauntletCompleteSummary = document.querySelector("#gauntletCompleteSummary");
-const replayGauntletButton = document.querySelector("#replayGauntletButton");
-const gauntletRoadmapButton = document.querySelector("#gauntletRoadmapButton");
-const gauntletMenuButton = document.querySelector("#gauntletMenuButton");
 const mainMenu = document.querySelector("#mainMenu");
 const playButton = document.querySelector("#playButton");
 const playChoiceMenu = document.querySelector("#playChoiceMenu");
@@ -98,8 +92,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.22.0", commit: "Pending commit", date: "2026-08-20", message: "Add optional chapter gauntlets", description: "Added four optional gauntlets outside the forty-level campaign: Foundry Circuit combines every introductory mechanic, History Forge demands deliberately created rewind history, Echo Works focuses on long-form loop planning, and Paradox Engine combines echo and rewind with moving blades and state-dependent replay. Each gauntlet unlocks when its chapter is completed, appears as a distinct G1 through G4 branch on that chapter's roadmap, records session completion, and runs with clean standalone run and level timing without changing campaign progression." },
-  { version: "v0.21.5", commit: "890f062", date: "2026-08-20", message: "Add the game favicon", description: "Added a compact browser icon that combines the existing green slime artwork with a simple golden rewind arrow trailing behind it. Connected the SVG favicon to the game page and preserved it through the playable version archive system." },
+  { version: "v0.21.5", commit: "Pending commit", date: "2026-08-20", message: "Add the game favicon", description: "Added a compact browser icon that combines the existing green slime artwork with a simple golden rewind arrow trailing behind it. Connected the SVG favicon to the game page and preserved it through the playable version archive system." },
   { version: "v0.21.4", commit: "9cfee2a", date: "2026-08-20", message: "Fix zero-delay pressure platforms", description: "Corrected pressure-controlled moving platforms so they continue moving whenever their linked plate is actively held, even when configured with no release delay. A zero delay now makes the platform stop immediately after the plate is released instead of preventing movement entirely, restoring level 34's final bridge." },
   { version: "v0.21.3", commit: "ddde822", date: "2026-08-20", message: "Move the Cargo Countermove gate star", description: "Moved level 34's first star out of the raised cargo gate and onto the platform immediately beyond it, keeping the collectible clearly visible and safely reachable after opening the gate." },
   { version: "v0.21.2", commit: "0b2ead2", date: "2026-08-20", message: "Restore the Cargo Countermove gate collision", description: "Made level 34's lowered cargo gate solid before its crate pressure plate is activated. The player must now push the crate onto the plate to raise the gate instead of walking through it while inactive." },
@@ -220,8 +213,6 @@ const DEATH_DURATION = 0.42;
 const CUTSCENE_DURATION = 10.4;
 const ECHO_CUTSCENE_DURATION = 9.2;
 const INTRO_LEVEL_COUNT = 10;
-const CAMPAIGN_LEVEL_COUNT = 40;
-const GAUNTLET_COUNT = 4;
 
 const R = (x, y, w, h, kind = "grass") => ({ x, y, w, h, kind });
 const P = (x, y, w = 60, h = 60) => ({
@@ -839,114 +830,6 @@ const levels = [
     ],
     stars: [[1120,380],[2010,375],[2960,190],[3240,340],[4800,300]],
     finish: R(5310,340,34,90)
-  },
-  {
-    name: "Foundry Circuit", gauntletId: "G1", gauntletChapter: 0,
-    width: 4800, start: [55,448], music: "level3", theme: "lava", requiredLevelStars: 8,
-    platforms: [
-      R(0,490,420,80,"stone"),
-      M(520,365,170,40,"x",70,1.05,0,"stone"), R(790,340,180,230,"stone"),
-      M(1040,400,170,40,"y",62,1.2,-Math.PI/2,"grass"), R(1240,490,940,80,"stone"),
-      P(1450,430), C(2100,230,2100,55,"g1-cargo",80,260,"stone",false,.35),
-      R(2180,490,300,80,"stone"), F(2520,410,"stone",120,54),
-      B(2680,370,"stand","grass",120,54), F(2840,410,"crate",120,54),
-      B(3000,360,"impact","stone",120,54), R(3180,490,400,80,"stone"),
-      C(3620,525,3620,390,"g1-switch",180,40,"stone",false,.4),
-      M(3890,375,160,40,"y",58,1.1,Math.PI/2,"grass"), R(4110,490,690,80,"stone"),
-      C(4370,235,4370,60,"g1-plate",78,255,"stone",false,.3)
-    ],
-    jumpPads: [R(330,470,62,20,"jump-pad")],
-    switches: [S(3370,446,"g1-switch")],
-    pressurePlates: [Q(1780,478,"g1-cargo",130,{ crateOnly: true }), Q(4200,478,"g1-plate",120)],
-    enemies: [E(3260,490,3210,3510,1,78), E(4500,490,4450,4660,-1,82)],
-    hazards: [
-      R(420,500,820,70,"lava"), R(2480,500,700,70,"lava"),
-      R(3580,500,530,70,"lava"), R(2140,472,40,18), R(4050,472,60,18)
-    ],
-    stars: [[355,410],[650,300],[1125,300],[1540,385],[2350,430],[2740,315],[3970,305],[4580,400]],
-    finish: R(4720,400,34,90)
-  },
-  {
-    name: "History Forge", gauntletId: "G2", gauntletChapter: 1,
-    width: 5200, start: [55,448], music: "level2", theme: "rewind", postRun: true,
-    rewindChapter: true, rewindTutorial: true, rewindField: true, rewindFieldRadius: 560,
-    rewindFieldOffset: 190, requiredLevelStars: 6,
-    platforms: [
-      R(0,490,500,80,"stone"),
-      W(560,430,1040,430,"g2-launch",180,40,"stone",235,{ releaseDelay: 2.8 }),
-      R(1250,490,1200,80,"stone"), K(1640,430), R(2050,300,180,270,"stone"),
-      C(2370,230,2370,55,"g2-cargo",80,260,"stone",false,.35),
-      R(2450,490,250,80,"stone"), B(2740,410,"stand","grass",130,54),
-      B(2910,350,"impact","stone",130,54), F(3080,410,"crate",120,54),
-      R(3240,490,980,80,"stone"),
-      C(4180,230,4180,55,"g2-enemy",78,260,"stone",false,.3),
-      R(4260,490,250,80,"stone"), W(4540,430,4820,370,"g2-exit",170,40,"stone",220,{ releaseDelay: 2.5 }),
-      R(5000,450,200,120,"stone")
-    ],
-    pressurePlates: [
-      Q(150,478,"g2-launch",300), Q(1630,478,"g2-cargo",110,{ crateOnly: true }),
-      Q(3860,478,"g2-enemy",110,{ enemyOnly: true }), Q(4320,478,"g2-exit",120)
-    ],
-    enemies: [ER(3440,490,3380,3990,1,76,{ stopAtBoundary: true })],
-    hazards: [R(500,500,750,70,"lava"), R(2700,500,540,70,"lava"), R(4510,500,490,70,"lava")],
-    stars: [[640,375],[1320,440],[2110,245],[2965,295],[3895,420],[4870,320]],
-    finish: R(5120,360,34,90)
-  },
-  {
-    name: "Echo Works", gauntletId: "G3", gauntletChapter: 2,
-    width: 5400, start: [55,448], music: "level1", theme: "lava", postRun: true,
-    echoChapter: true, echoCanPushCrates: true, requiredLevelStars: 6,
-    platforms: [
-      R(0,490,500,80,"stone"), C(530,530,530,410,"g3-entry",220,40,"stone",true,.25),
-      R(790,490,760,80,"stone"), C(1580,520,1580,345,"g3-pulse",180,40,"grass",false,.2),
-      R(1830,490,1200,80,"stone"), K(2180,430),
-      { ...C(2990,230,2990,55,"g3-both",80,260,"stone",false,.3), requiredPlateIds: ["g3-echo","g3-cargo"] },
-      R(3070,490,760,80,"stone"),
-      C(3860,430,4260,360,"g3-route",180,40,"stone",false,1.1),
-      R(4440,490,960,80,"stone"), C(4740,235,4740,60,"g3-final",80,255,"stone",false,.3)
-    ],
-    switches: [S(1240,446,"g3-pulse",{ momentary: true, pulseDuration: 1.35 }), S(4580,446,"g3-final",{ momentary: true, pulseDuration: 1.4 })],
-    pressurePlates: [
-      Q(200,478,"g3-entry",150), Q(2470,478,"g3-echo",130),
-      Q(2740,478,"g3-cargo",130,{ crateOnly: true }), Q(3470,478,"g3-route",150)
-    ],
-    enemies: [E(1030,490,900,1380,1,78), E(3290,490,3180,3700,-1,82), E(4930,490,4860,5240,1,84)],
-    hazards: [R(500,500,290,70,"lava"), R(1550,500,280,70,"lava"), R(3830,500,610,70,"lava"), R(4780,472,70,18)],
-    stars: [[620,365],[1310,400],[1900,440],[2830,420],[4200,305],[5110,400]],
-    finish: R(5310,400,34,90)
-  },
-  {
-    name: "Paradox Engine", gauntletId: "G4", gauntletChapter: 3,
-    width: 6200, start: [55,448], music: "level3", theme: "lava", postRun: true,
-    rewindChapter: true, rewindTutorial: true, echoChapter: true, echoCanPushCrates: true,
-    rewindField: true, rewindFieldRadius: 570, rewindFieldOffset: 200, requiredLevelStars: 7,
-    platforms: [
-      R(0,490,500,80,"stone"), W(540,430,1050,430,"g4-entry",180,40,"stone",230,{ releaseDelay: 2.7 }),
-      R(1250,490,380,80,"stone"), R(1510,380,250,190,"stone"),
-      B(1760,380,"stand","grass",180,54), R(1760,490,180,80,"stone"), R(1940,380,360,40,"stone"),
-      C(1940,450,1940,380,"g4-restore",180,40,"stone",false,.15), F(2360,410,"stone",100,54), R(2520,490,850,80,"stone"),
-      D(2720,426,[{ x: 2720, y: 426 },{ x: 3210, y: 426 }],165,60,{ loopPath: false, resumeAfterRewind: false }),
-      R(2860,360,510,40,"stone"), C(3370,230,3370,55,"g4-blade",80,260,"stone",false,.3),
-      R(3450,490,870,80,"stone"), K(3710,430), R(4140,300,180,270,"stone"),
-      C(4380,520,4380,380,"g4-pulse",180,40,"grass",false,.25),
-      C(4660,230,4660,55,"g4-cargo",80,260,"stone",false,.3),
-      R(4740,490,300,80,"stone"),
-      W(5070,430,5480,350,"g4-final",180,40,"stone",220,{ releaseDelay: 2.8 }),
-      D(5260,290,[{ x: 5260, y: 290 },{ x: 5580, y: 410 },{ x: 5260, y: 290 }],155,58),
-      R(5700,450,500,120,"stone")
-    ],
-    switches: [S(2080,336,"g4-restore",{ momentary: true, pulseDuration: 1.25 }), S(3560,446,"g4-pulse",{ momentary: true, pulseDuration: 1.35 })],
-    pressurePlates: [
-      Q(190,478,"g4-entry",170), Q(2610,478,"g4-blade",130),
-      Q(3710,478,"g4-cargo",120,{ crateOnly: true }), Q(4860,478,"g4-final",130)
-    ],
-    enemies: [ER(4800,490,4760,4980,-1,80,{ stopAtBoundary: true })],
-    hazards: [
-      R(500,500,750,70,"lava"), R(1630,500,130,70,"lava"), R(1940,500,580,70,"lava"), R(2860,342,510,18),
-      R(4320,500,340,70,"lava"), R(5040,500,660,70,"lava"), R(3410,472,40,18), R(4690,472,50,18)
-    ],
-    stars: [[650,375],[1840,450],[2180,300],[3260,420],[4210,245],[4510,420],[5540,300]],
-    finish: R(6110,360,34,90)
   }
 ];
 
@@ -1021,11 +904,10 @@ let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.22.0";
+const GAME_VERSION = "v0.21.5";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "chapter-gauntlets-v1", label: "Version 0.22.0 to 0.22.0" },
   { id: "zero-delay-platform-v1", label: "Version 0.21.4 to 0.21.5" },
   { id: "cargo-gate-star-v1", label: "Version 0.21.3 to 0.21.3" },
   { id: "cargo-gate-collision-v1", label: "Version 0.21.2 to 0.21.2" },
@@ -1063,7 +945,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -1076,8 +958,6 @@ let menuPlatformTexture = "grass";
 let menuBackdrop = "sun";
 let awakenedMenuAnimationStart = null;
 let highestUnlockedLevel = 0;
-let completedChapters = new Set();
-let completedGauntlets = new Set();
 let roadmapChapterIndex = 0;
 let leaderboardEntries = [];
 let leaderboardRequest = 0;
@@ -1131,7 +1011,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1674,7 +1554,6 @@ function loadLevel(index, keepScore = true) {
   chapterCompleteMessage.hidden = true;
   echoChapterMessage.hidden = true;
   convergenceChapterMessage.hidden = true;
-  gauntletCompleteMessage.hidden = true;
   resetLevelMotion();
   resetPlayer(false, true);
   if (timerRunning && gameStarted) beginLevelTimer();
@@ -1694,9 +1573,7 @@ function restartLevel() {
 }
 
 function updateHud() {
-  levelLabel.textContent = currentLevel().gauntletId
-    ? `Gauntlet ${currentLevel().gauntletId} — ${currentLevel().name}`
-    : `Level ${levelIndex + 1} / ${CAMPAIGN_LEVEL_COUNT} — ${currentLevel().name}`;
+  levelLabel.textContent = `Level ${levelIndex + 1} / ${levels.length} — ${currentLevel().name}`;
   const enemyStarTotal = (currentLevel().enemies || []).length;
   starLabel.textContent = `Stars ${currentLevelStarCount()} / ${collected.length + enemyStarTotal}`;
 }
@@ -1793,7 +1670,7 @@ function renderSplitSummary() {
     if (!Number.isFinite(resultSplits[index])) return;
     const item = document.createElement("li");
     const name = document.createElement("span");
-    name.textContent = `${level.gauntletId || index + 1}. ${level.name}`;
+    name.textContent = `${index + 1}. ${level.name}`;
     const time = document.createElement("strong");
     time.textContent = formatRunTime(resultSplits[index]);
     item.append(name, time);
@@ -1894,15 +1771,9 @@ function selectMenuBackdrop(backdrop) {
 }
 
 function unlockThrough(index) {
-  const unlocked = Math.max(0, Math.min(CAMPAIGN_LEVEL_COUNT - 1, index));
+  const unlocked = Math.max(0, Math.min(levels.length - 1, index));
   if (unlocked <= highestUnlockedLevel) return;
   highestUnlockedLevel = unlocked;
-}
-
-function completeChapter(chapterIndex) {
-  if (chapterIndex < 0 || chapterIndex >= GAUNTLET_COUNT) return;
-  completedChapters.add(chapterIndex);
-  if (!roadmapMenu.hidden) renderRoadmap();
 }
 
 function resetRunProgress() {
@@ -2046,26 +1917,18 @@ function closeRunSetup() {
 const ROADMAP_CHAPTER_SIZE = 10;
 const ROADMAP_CHAPTERS = ["Introduction", "Rewind", "Echo", "Rewind + Echo"];
 const ROADMAP_POINTS = [
-  [10, 20], [30, 20], [50, 20], [70, 20], [90, 20],
-  [10, 58], [30, 58], [50, 58], [70, 58], [90, 58]
+  [10, 27], [30, 27], [50, 27], [70, 27], [90, 27],
+  [10, 72], [30, 72], [50, 72], [70, 72], [90, 72]
 ];
-const ROADMAP_GAUNTLET_POINT = [50, 87];
-const ROADMAP_GAUNTLETS = Array.from({ length: GAUNTLET_COUNT }, (_, chapterIndex) => ({
-  chapterIndex,
-  levelIndex: CAMPAIGN_LEVEL_COUNT + chapterIndex,
-  id: `G${chapterIndex + 1}`
-}));
 
 function renderRoadmap() {
   levelRoadmap.replaceChildren();
-  const lastChapter = ROADMAP_CHAPTERS.length - 1;
+  const lastChapter = Math.ceil(levels.length / ROADMAP_CHAPTER_SIZE) - 1;
   const chapterStart = roadmapChapterIndex * ROADMAP_CHAPTER_SIZE;
-  const chapterLevels = levels.slice(chapterStart, Math.min(CAMPAIGN_LEVEL_COUNT, chapterStart + ROADMAP_CHAPTER_SIZE));
+  const chapterLevels = levels.slice(chapterStart, chapterStart + ROADMAP_CHAPTER_SIZE);
   const chapterEnd = chapterStart + chapterLevels.length;
-  const gauntlet = ROADMAP_GAUNTLETS[roadmapChapterIndex];
-  const gauntletLevel = levels[gauntlet.levelIndex];
   roadmapChapterLabel.textContent = ROADMAP_CHAPTERS[roadmapChapterIndex] || `Chapter ${roadmapChapterIndex + 1}`;
-  roadmapChapterRange.textContent = `Levels ${chapterStart + 1}-${chapterEnd} · Optional ${gauntlet.id}`;
+  roadmapChapterRange.textContent = `Levels ${chapterStart + 1}-${chapterEnd}`;
   previousRoadmapChapterButton.disabled = roadmapChapterIndex === 0;
   nextRoadmapChapterButton.disabled = roadmapChapterIndex >= lastChapter;
   levelRoadmap.setAttribute("aria-label", `${roadmapChapterLabel.textContent} roadmap, levels ${chapterStart + 1} through ${chapterEnd}`);
@@ -2081,11 +1944,6 @@ function renderRoadmap() {
     if (chapterStart + index < highestUnlockedLevel) line.classList.add("unlocked");
     svg.append(line);
   }
-  const gauntletLine = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-  gauntletLine.classList.add("gauntlet-branch");
-  gauntletLine.setAttribute("points", `${ROADMAP_POINTS[ROADMAP_POINTS.length - 1].join(",")} ${ROADMAP_GAUNTLET_POINT.join(",")}`);
-  if (completedChapters.has(roadmapChapterIndex)) gauntletLine.classList.add("unlocked");
-  svg.append(gauntletLine);
   levelRoadmap.append(svg);
 
   chapterLevels.forEach((level, index) => {
@@ -2111,34 +1969,10 @@ function renderRoadmap() {
     node.append(button, name);
     levelRoadmap.append(node);
   });
-
-  const gauntletLocked = !completedChapters.has(roadmapChapterIndex);
-  const gauntletComplete = completedGauntlets.has(gauntlet.id);
-  const gauntletNode = document.createElement("div");
-  gauntletNode.className = `roadmap-level roadmap-gauntlet${gauntletLocked ? " locked" : ""}${gauntletComplete ? " completed" : ""}`;
-  gauntletNode.style.left = `${ROADMAP_GAUNTLET_POINT[0]}%`;
-  gauntletNode.style.top = `${ROADMAP_GAUNTLET_POINT[1]}%`;
-  const gauntletButton = document.createElement("button");
-  gauntletButton.type = "button";
-  gauntletButton.disabled = gauntletLocked;
-  gauntletButton.setAttribute("aria-label", gauntletLocked
-    ? `${gauntlet.id}, locked until this chapter is complete`
-    : `Play ${gauntlet.id}: ${gauntletLevel.name}${gauntletComplete ? ", completed" : ""}`);
-  if (gauntletLocked) {
-    gauntletButton.innerHTML = '<svg class="roadmap-lock" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1.5A1.5 1.5 0 0 1 20 11.5v8A1.5 1.5 0 0 1 18.5 21h-13A1.5 1.5 0 0 1 4 19.5v-8A1.5 1.5 0 0 1 5.5 10H7Zm3 0h4V7a2 2 0 1 0-4 0v3Z"/></svg>';
-  } else {
-    gauntletButton.textContent = gauntletComplete ? `${gauntlet.id} ✓` : gauntlet.id;
-    gauntletButton.addEventListener("click", () => startGauntletRun(gauntlet.levelIndex));
-  }
-  const gauntletName = document.createElement("span");
-  gauntletName.className = "level-name";
-  gauntletName.textContent = gauntletLocked ? `${gauntlet.id} Gauntlet` : gauntletLevel.name;
-  gauntletNode.append(gauntletButton, gauntletName);
-  levelRoadmap.append(gauntletNode);
 }
 
 function setRoadmapChapter(index) {
-  const lastChapter = ROADMAP_CHAPTERS.length - 1;
+  const lastChapter = Math.ceil(levels.length / ROADMAP_CHAPTER_SIZE) - 1;
   const nextIndex = Math.max(0, Math.min(lastChapter, index));
   if (nextIndex === roadmapChapterIndex) return false;
   roadmapChapterIndex = nextIndex;
@@ -2152,7 +1986,7 @@ function openRoadmap() {
   settingsButton.setAttribute("aria-expanded", "false");
   mainMenu.hidden = true;
   playChoiceMenu.hidden = true;
-  const lastChapter = ROADMAP_CHAPTERS.length - 1;
+  const lastChapter = Math.ceil(levels.length / ROADMAP_CHAPTER_SIZE) - 1;
   roadmapChapterIndex = Math.min(lastChapter, Math.floor(highestUnlockedLevel / ROADMAP_CHAPTER_SIZE));
   renderRoadmap();
   roadmapMenu.hidden = false;
@@ -2170,16 +2004,6 @@ function startRoadmapRun(index) {
   runLevelQueue = [];
   runQueuePosition = 0;
   countPostRunInRunTimer = index >= INTRO_LEVEL_COUNT;
-  beginRun(index);
-}
-
-function startGauntletRun(index) {
-  const gauntlet = levels[index];
-  if (!gauntlet?.gauntletId || !completedChapters.has(gauntlet.gauntletChapter)) return;
-  activeRunConfig = null;
-  runLevelQueue = [];
-  runQueuePosition = 0;
-  countPostRunInRunTimer = true;
   beginRun(index);
 }
 
@@ -2368,7 +2192,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -2746,36 +2570,10 @@ function finishCombinedChapter() {
   replayRewindButton.focus();
 }
 
-function finishGauntlet() {
-  completeLevelSplit();
-  finishRunTimer();
-  completedGauntlets.add(currentLevel().gauntletId);
-  won = true;
-  gauntletCompleteTitle.textContent = `${currentLevel().gauntletId}: ${currentLevel().name} complete.`;
-  gauntletCompleteSummary.textContent = `Run time ${formatRunTime(runElapsed)} · ${currentLevelStarCount()} stars · ${deaths} deaths`;
-  gauntletCompleteMessage.hidden = false;
-  pauseButton.disabled = true;
-  restartButton.disabled = true;
-  restartRunButton.disabled = true;
-  quitButton.disabled = true;
-  Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
-  pressed.jump = false;
-  replayGauntletButton.focus();
-}
-
-function returnToGauntletRoadmap() {
-  const chapterIndex = currentLevel().gauntletChapter;
-  quitRun();
-  openRoadmap();
-  roadmapChapterIndex = chapterIndex;
-  renderRoadmap();
-  levelRoadmap.querySelector(".roadmap-gauntlet button:not(:disabled)")?.focus();
-}
-
 function replayCombinedFinale() {
   chapterCompleteMessage.hidden = true;
   won = false;
-  loadLevel(CAMPAIGN_LEVEL_COUNT - 1);
+  loadLevel(levels.length - 1);
   pauseButton.disabled = false;
   restartButton.disabled = false;
   restartRunButton.disabled = false;
@@ -3207,8 +3005,7 @@ function trackDevelopmentSequence(event) {
     : key === sequence[0] ? 1 : 0;
   if (developmentSequencePosition !== sequence.length) return;
   developmentSequencePosition = 0;
-  unlockThrough(CAMPAIGN_LEVEL_COUNT - 1);
-  completedChapters = new Set(Array.from({ length: GAUNTLET_COUNT }, (_, index) => index));
+  unlockThrough(levels.length - 1);
   if (!roadmapMenu.hidden) renderRoadmap();
 }
 
@@ -3349,9 +3146,6 @@ echoMenuButton.addEventListener("click", quitRun);
 convergenceContinueButton.addEventListener("click", startConvergenceLevel);
 convergenceMenuButton.addEventListener("click", quitRun);
 replayRewindButton.addEventListener("click", replayCombinedFinale);
-replayGauntletButton.addEventListener("click", startOver);
-gauntletRoadmapButton.addEventListener("click", returnToGauntletRoadmap);
-gauntletMenuButton.addEventListener("click", quitRun);
 rewindMenuButton.addEventListener("click", quitRun);
 runNameInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -3808,8 +3602,6 @@ function quitRun() {
 
 function restartSession() {
   highestUnlockedLevel = 0;
-  completedChapters = new Set();
-  completedGauntlets = new Set();
   menuCustomizationUnlocked = false;
   rewindMenuAwakened = false;
   menuPlatformTexture = "grass";
@@ -4208,12 +4000,7 @@ function update(dt) {
       (!currentLevel().requiredLevelStars || collectedLevelStars >= currentLevel().requiredLevelStars));
   if (finishRequirementMet && overlaps(box, currentLevel().finish)) {
     playSfx("flag");
-    const chapterEndIndex = [9, 19, 29, 39].indexOf(levelIndex);
-    if (chapterEndIndex >= 0) completeChapter(chapterEndIndex);
-    if (currentLevel().gauntletId) {
-      finishGauntlet();
-    }
-    else if (activeRunConfig) {
+    if (activeRunConfig) {
       completeLevelSplit();
       runProgress.completedLevels.add(levelIndex);
       unlockThrough(levelIndex + 1);
@@ -4227,7 +4014,7 @@ function update(dt) {
     else if (currentLevel().rewindChapter || currentLevel().echoChapter) {
       if (levelIndex === 19) showEchoChapterResults();
       else if (levelIndex === 29) showConvergenceChapterResults();
-      else if (levelIndex === CAMPAIGN_LEVEL_COUNT - 1) finishCombinedChapter();
+      else if (levelIndex === levels.length - 1) finishCombinedChapter();
       else {
         completeLevelSplit();
         unlockThrough(levelIndex + 1);
