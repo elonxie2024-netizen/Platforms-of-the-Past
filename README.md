@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.23.1`
+**Current version:** `v0.23.2`
 
 ## How it works
 
@@ -70,7 +70,7 @@ The playable prototype includes:
 
 - Ten introductory levels that introduce the terrain textures and mechanics, then test them in longer combined challenges
 - A jump pad in level 3 and automatically cycling moving platforms in level 4
-- Required crate-pushing puzzles beginning in level 5; crates are heavy movable steps that fall from unsupported ledges, ride platforms, trigger plates, and retain their motion history for Rewind
+- Required crate-pushing puzzles beginning in level 5; crates are heavy movable steps that fall from unsupported ledges, ride or collide with moving platforms, trigger plates, and retain their motion history for Rewind
 - Asset-textured floating blocks and visibly cracked breakable variants that burst into material-specific debris in level 6
 - A session-based level roadmap with connected numbered stages and progression locks
 - A custom run builder with mix-and-match objectives, constraints, specific level routes, and leaderboard metrics

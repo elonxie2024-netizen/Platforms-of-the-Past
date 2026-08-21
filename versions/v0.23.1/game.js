@@ -109,8 +109,7 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.23.2", commit: "Pending commit", date: "2026-08-21", message: "Add complete moving-platform crate collision", description: "Made moving platforms collide physically with crates from every direction instead of phasing through them. Platforms now carry crates resting on top, push crates and stable stacks from the sides, lift them from below, and stop when a crate cannot move because solid geometry blocks it. The same collision rules apply to automatic, switch-controlled, pressure-controlled, and rewinding platforms." },
-  { version: "v0.23.1", commit: "3530a03", date: "2026-08-21", message: "Close the History Forge cargo-gate shortcut", description: "Attached a moving spike strip to the top of History Forge's vertical cargo gate. The spikes follow the gate as it rises and prevent using it as a stepping stone, so the crate pressure plate can no longer be bypassed." },
+  { version: "v0.23.1", commit: "Pending commit", date: "2026-08-21", message: "Close the History Forge cargo-gate shortcut", description: "Attached a moving spike strip to the top of History Forge's vertical cargo gate. The spikes follow the gate as it rises and prevent using it as a stepping stone, so the crate pressure plate can no longer be bypassed." },
   { version: "v0.23.0", commit: "71759a0", date: "2026-08-21", message: "Add crate gravity", description: "Made pushable crates obey heavy gravity, fall from unsupported ledges, settle on solid geometry and other crates, and ride moving platforms. Crates are now lost when they enter hazards or fall below the map without automatically respawning. Rewind levels record their complete falls and lost state so crates visibly retrace their history back to safety, while non-Rewind crate losses require a level restart. Kept Echo pushing and pressure plates compatible, and raised only Fractured Schedule's short crate channel to preserve its intended break-and-push solution." },
   { version: "v0.22.2", commit: "e06179c", date: "2026-08-21", message: "Repair chapter puzzles and gameplay state", description: "Repaired six closed collision gates across Chapter 4, moved Convergence's blocked star onto a reachable route, and unlocked later chapters as soon as their finales are completed. Hardened restart, death, rewind, Echo carrying, pointer cleanup, and modal input state. Standalone roadmap gauntlets now use their own results flow while chapter-launched gauntlets still return to the chapter choice screen." },
   { version: "v0.22.1", commit: "9ad7b44", date: "2026-08-21", message: "Change chapter screens", description: "Changed every chapter-completion screen to present two equal side-by-side next steps: Continue the Story follows the existing campaign transition, while Master This Chapter launches that chapter's gauntlet immediately. Completing a chapter-launched gauntlet returns to its chapter-completion screen with both choices still available while preserving the story run and timer handoff. Gauntlets remain playable from their roadmap branches." },
@@ -1041,11 +1040,10 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.23.2";
+const GAME_VERSION = "v0.23.1";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
-  { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.23.2" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
   { id: "chapter-gate-fixes-v1", label: "Version 0.22.2 to 0.22.2" },
@@ -1087,7 +1085,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -1155,7 +1153,7 @@ spriteSheet.addEventListener("load", () => {
   spritesReady = true;
   renderMenuPlatformAssets();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1174,7 +1172,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -1471,158 +1469,44 @@ function resolveCrateTerrainOverlap(crate) {
   }
 }
 
-function moveCrateFromSolid(crate, dx, dy, movingSolid, movedCrates, visiting = new Set()) {
-  if (crate.lost || crate.timelinePreview || crate.timelinePlayback?.length > 0 || visiting.has(crate)) return false;
-  visiting.add(crate);
-
-  const riders = currentLevel().platforms.filter((candidate) =>
-    candidate !== crate && candidate !== movingSolid && candidate.pushable &&
-    crateStandingOn(candidate, crate)
-  );
-  for (const rider of riders) {
-    if (!moveCrateFromSolid(rider, dx, dy, movingSolid, movedCrates, visiting)) return false;
-  }
-
-  const candidate = { x: crate.x + dx, y: crate.y + dy, w: crate.w, h: crate.h };
-  if (candidate.x < 0 || candidate.x + candidate.w > currentLevel().width) return false;
-  for (const solid of currentLevel().platforms) {
-    if (solid === crate || solid === movingSolid || visiting.has(solid) || !platformHasCollision(solid)) continue;
-    if (!overlaps(candidate, solid)) continue;
-    if (!solid.pushable) return false;
-    let pushX = 0;
-    let pushY = 0;
-    if (Math.abs(dx) >= Math.abs(dy) && dx !== 0) {
-      pushX = dx > 0 ? candidate.x + crate.w - solid.x : candidate.x - (solid.x + solid.w);
-    } else if (dy !== 0) {
-      pushY = dy > 0 ? candidate.y + crate.h - solid.y : candidate.y - (solid.y + solid.h);
-    } else {
-      return false;
-    }
-    if (!moveCrateFromSolid(solid, pushX, pushY, movingSolid, movedCrates, visiting)) return false;
-  }
-
-  crate.x = candidate.x;
-  crate.y = candidate.y;
-  if (dy !== 0) crate.vy = 0;
-  movedCrates.add(crate);
-  visiting.delete(crate);
-  return true;
-}
-
-function pushOverlappingCrateFromSolid(platform, crate, oldX, oldY, dx, dy, movedCrates) {
-  const cameFromLeft = dx > 0 && oldX + platform.w <= crate.x + 1;
-  const cameFromRight = dx < 0 && oldX >= crate.x + crate.w - 1;
-  const cameFromAbove = dy > 0 && oldY + platform.h <= crate.y + 1;
-  const cameFromBelow = dy < 0 && oldY >= crate.y + crate.h - 1;
-  if (cameFromLeft || cameFromRight) {
-    const targetX = cameFromLeft ? platform.x + platform.w : platform.x - crate.w;
-    return moveCrateFromSolid(crate, targetX - crate.x, 0, platform, movedCrates);
-  }
-  if (cameFromAbove || cameFromBelow) {
-    const targetY = cameFromAbove ? platform.y + platform.h : platform.y - crate.h;
-    const moved = moveCrateFromSolid(crate, 0, targetY - crate.y, platform, movedCrates);
-    if (moved && cameFromBelow) {
-      crate.grounded = true;
-      crate.vy = 0;
-    }
-    return moved;
-  }
-
-  const pushLeft = platform.x - crate.w - crate.x;
-  const pushRight = platform.x + platform.w - crate.x;
-  const pushUp = platform.y - crate.h - crate.y;
-  const pushDown = platform.y + platform.h - crate.y;
-  const correction = [
-    { dx: pushLeft, dy: 0 }, { dx: pushRight, dy: 0 },
-    { dx: 0, dy: pushUp }, { dx: 0, dy: pushDown }
-  ].sort((left, right) => Math.hypot(left.dx, left.dy) - Math.hypot(right.dx, right.dy))[0];
-  return moveCrateFromSolid(crate, correction.dx, correction.dy, platform, movedCrates);
-}
-
 function movePlatformWithPlayer(platform, nextX, nextY, carryPlayer = true, recordMotion = true) {
   const oldX = platform.x;
   const oldY = platform.y;
-  const totalDx = nextX - oldX;
-  const totalDy = nextY - oldY;
-  const steps = Math.max(1, Math.ceil(Math.max(Math.abs(totalDx), Math.abs(totalDy))));
-  const stepX = totalDx / steps;
-  const stepY = totalDy / steps;
-  const movedCrates = new Set();
-  let blocked = false;
-
-  for (let stepIndex = 0; stepIndex < steps; stepIndex++) {
-    const stepOldX = platform.x;
-    const stepOldY = platform.y;
-    const crateStates = currentLevel().platforms
-      .filter((candidate) => candidate.pushable)
-      .map((crate) => ({ crate, x: crate.x, y: crate.y, vy: crate.vy, grounded: crate.grounded }));
-    const playerState = { x: player.x, y: player.y };
-    const echoState = echo ? { x: echo.x, y: echo.y } : null;
-    const wasStanding = player.grounded &&
-      Math.abs(player.y + PLAYER_H - stepOldY) < 3 &&
-      player.x + PLAYER_W > stepOldX && player.x < stepOldX + platform.w;
-    const echoWasStanding = echo?.grounded &&
-      Math.abs(echo.y + PLAYER_H - stepOldY) < 3 &&
-      echo.x + PLAYER_W > stepOldX && echo.x < stepOldX + platform.w;
-    const supportedCrates = currentLevel().platforms.filter((crate) =>
-      crate !== platform && crate.pushable && crateStandingOn(crate, platform, stepOldX, stepOldY)
-    );
-
-    platform.x += stepX;
-    platform.y += stepY;
-    let cratesMoved = true;
-    for (const crate of supportedCrates) {
-      if (!moveCrateFromSolid(crate, stepX, stepY, platform, movedCrates)) {
-        cratesMoved = false;
-        break;
-      }
-      crate.vy = 0;
-      crate.grounded = true;
-    }
-    if (cratesMoved) {
-      for (const crate of currentLevel().platforms.filter((candidate) =>
-        candidate !== platform && candidate.pushable && !candidate.lost && overlaps(candidate, platform)
-      )) {
-        if (!pushOverlappingCrateFromSolid(platform, crate, stepOldX, stepOldY, stepX, stepY, movedCrates)) {
-          cratesMoved = false;
-          break;
-        }
-      }
-    }
-
-    if (!cratesMoved) {
-      platform.x = stepOldX;
-      platform.y = stepOldY;
-      for (const state of crateStates) {
-        state.crate.x = state.x;
-        state.crate.y = state.y;
-        state.crate.vy = state.vy;
-        state.crate.grounded = state.grounded;
-      }
-      player.x = playerState.x;
-      player.y = playerState.y;
-      if (echo && echoState) {
-        echo.x = echoState.x;
-        echo.y = echoState.y;
-      }
-      blocked = true;
-      break;
-    }
-
-    if (wasStanding && carryPlayer) {
-      if (platform.moving) recordMechanic("moving-platform");
-      player.x += stepX;
-      player.y += stepY;
-    }
-    if (echoWasStanding && carryPlayer) {
-      echo.x += stepX;
-      echo.y += stepY;
-    }
+  const wasStanding = player.grounded &&
+    Math.abs(player.y + PLAYER_H - oldY) < 3 &&
+    player.x + PLAYER_W > oldX && player.x < oldX + platform.w;
+  const echoWasStanding = echo?.grounded &&
+    Math.abs(echo.y + PLAYER_H - oldY) < 3 &&
+    echo.x + PLAYER_W > oldX && echo.x < oldX + platform.w;
+  const supportedCrates = carryPlayer
+    ? currentLevel().platforms.filter((crate) =>
+      crate !== platform && crate.pushable && crateStandingOn(crate, platform, oldX, oldY)
+    )
+    : [];
+  platform.x = nextX;
+  platform.y = nextY;
+  if (wasStanding && carryPlayer) {
+    if (platform.moving) recordMechanic("moving-platform");
+    player.x += platform.x - oldX;
+    player.y += platform.y - oldY;
   }
-
-  for (const crate of movedCrates) recordPlatformMotion(crate, true);
+  if (echoWasStanding && carryPlayer) {
+    echo.x += platform.x - oldX;
+    echo.y += platform.y - oldY;
+  }
+  for (const crate of supportedCrates) {
+    movePlatformWithPlayer(
+      crate,
+      crate.x + platform.x - oldX,
+      crate.y + platform.y - oldY,
+      true,
+      true
+    );
+    crate.vy = 0;
+    crate.grounded = true;
+    resolveCrateTerrainOverlap(crate);
+  }
   if (recordMotion) recordPlatformMotion(platform);
-  return !blocked;
 }
 
 function rewindPlateActive(platform) {
@@ -1765,17 +1649,15 @@ function updateMovingPlatforms(dt) {
       else platform.releaseTimer = Math.max(0, platform.releaseTimer - dt);
       const targetProgress = linkedControlActive(platform) || platform.releaseTimer > 0 ? 1 : 0;
       if (platform.moveProgress === targetProgress) continue;
-      const previousProgress = platform.moveProgress;
       platform.moveProgress = Math.max(0, Math.min(1,
         platform.moveProgress + Math.sign(targetProgress - platform.moveProgress) * dt / (platform.moveDuration || 1.15)
       ));
       const eased = platform.moveProgress * platform.moveProgress * (3 - 2 * platform.moveProgress);
-      const movedFully = movePlatformWithPlayer(
+      movePlatformWithPlayer(
         platform,
         platform.baseX + (platform.targetX - platform.baseX) * eased,
         platform.baseY + (platform.targetY - platform.baseY) * eased
       );
-      if (!movedFully) platform.moveProgress = previousProgress;
       continue;
     }
     if (!platform.moving) continue;
@@ -2606,7 +2488,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
