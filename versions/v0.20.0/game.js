@@ -817,7 +817,7 @@ for (const [name, filename] of Object.entries({
   switchRight: "switch-right.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 

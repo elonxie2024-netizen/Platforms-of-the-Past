@@ -821,7 +821,7 @@ for (const [name, filename] of Object.entries({
   fragileBlockHalfBroken: "fragile-block-half-broken.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 

@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $releases = [ordered]@{
+  'v0.22.2' = 'e06179c'
   'v0.22.1' = '9ad7b44'
   'v0.22.0' = 'bd03ab2'
   'v0.21.5' = '890f062'
@@ -117,7 +118,7 @@ foreach ($release in $releases.GetEnumerator()) {
       $content = $content.Replace('versions/${version}/', '../${version}/index.html')
     }
     # Every archive uses its own code and styles, plus one shared asset directory under /versions.
-    $content = $content.Replace('"assets/', '"../assets/').Replace("'assets/", "'../assets/")
+    $content = $content.Replace('"assets/', '"../assets/').Replace("'assets/", "'../assets/").Replace('`assets/', '`../assets/')
     $content = $content.Replace('url(assets/', 'url(../assets/')
     if ($file -eq 'index.html') {
       $content = $content.Replace('href="styles.css"', 'href="./styles.css"')
@@ -136,6 +137,9 @@ foreach ($release in $releases.GetEnumerator()) {
   }
   if (-not $generatedIndex.Contains('src="./game.js')) {
     throw "Archived script path is invalid in $($release.Key)."
+  }
+  if ($generatedGame.Contains('`assets/')) {
+    throw "Archived template-literal asset path is invalid in $($release.Key)."
   }
 }
 

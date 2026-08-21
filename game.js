@@ -109,7 +109,8 @@ const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelBu
 const flightToggleButton = document.querySelector("#flightToggleButton");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.22.2", commit: "Pending commit", date: "2026-08-21", message: "Repair chapter puzzles and gameplay state", description: "Repaired six closed collision gates across Chapter 4, moved Convergence's blocked star onto a reachable route, and unlocked later chapters as soon as their finales are completed. Hardened restart, death, rewind, Echo carrying, pointer cleanup, and modal input state. Standalone roadmap gauntlets now use their own results flow while chapter-launched gauntlets still return to the chapter choice screen." },
+  { version: "v0.23.0", commit: "Pending commit", date: "2026-08-21", message: "Add crate gravity", description: "Made pushable crates obey heavy gravity, fall from unsupported ledges, settle on solid geometry and other crates, and ride moving platforms. Crates are now lost when they enter hazards or fall below the map without automatically respawning. Rewind levels record their complete falls and lost state so crates visibly retrace their history back to safety, while non-Rewind crate losses require a level restart. Kept Echo pushing and pressure plates compatible, and raised only Fractured Schedule's short crate channel to preserve its intended break-and-push solution." },
+  { version: "v0.22.2", commit: "e06179c", date: "2026-08-21", message: "Repair chapter puzzles and gameplay state", description: "Repaired six closed collision gates across Chapter 4, moved Convergence's blocked star onto a reachable route, and unlocked later chapters as soon as their finales are completed. Hardened restart, death, rewind, Echo carrying, pointer cleanup, and modal input state. Standalone roadmap gauntlets now use their own results flow while chapter-launched gauntlets still return to the chapter choice screen." },
   { version: "v0.22.1", commit: "9ad7b44", date: "2026-08-21", message: "Change chapter screens", description: "Changed every chapter-completion screen to present two equal side-by-side next steps: Continue the Story follows the existing campaign transition, while Master This Chapter launches that chapter's gauntlet immediately. Completing a chapter-launched gauntlet returns to its chapter-completion screen with both choices still available while preserving the story run and timer handoff. Gauntlets remain playable from their roadmap branches." },
   { version: "v0.22.0", commit: "bd03ab2", date: "2026-08-20", message: "Add optional chapter gauntlets", description: "Added four optional gauntlets outside the forty-level campaign: Foundry Circuit combines every introductory mechanic, History Forge demands deliberately created rewind history, Echo Works focuses on long-form loop planning, and Paradox Engine combines echo and rewind with moving blades and state-dependent replay. Each gauntlet unlocks when its chapter is completed, appears as a distinct G1 through G4 branch on that chapter's roadmap, records session completion, and runs with clean standalone run and level timing without changing campaign progression." },
   { version: "v0.21.5", commit: "890f062", date: "2026-08-20", message: "Add the game favicon", description: "Added a compact browser icon that combines the existing green slime artwork with a simple golden rewind arrow trailing behind it. Connected the SVG favicon to the game page and preserved it through the playable version archive system." },
@@ -226,6 +227,8 @@ const AIR_ACCEL = 1450;
 const FRICTION = 2600;
 const JUMP_SPEED = 720;
 const JUMP_PAD_SPEED = 1120;
+const CRATE_GRAVITY = 2300;
+const CRATE_MAX_FALL_SPEED = 1050;
 const COYOTE_TIME = 0.1;
 const JUMP_BUFFER = 0.12;
 const PLATFORM_TOP_GRACE = 10;
@@ -239,6 +242,7 @@ const GAUNTLET_COUNT = 4;
 const R = (x, y, w, h, kind = "grass") => ({ x, y, w, h, kind });
 const P = (x, y, w = 60, h = 60) => ({
   x, y, w, h, kind: "crate", pushable: true, baseX: x, baseY: y,
+  vy: 0, grounded: false, lost: false,
   rewindableManual: true, motionHistory: [], timelinePreview: false,
   previewCursor: 0, previewLatest: 0, previewAccumulator: 0, previewPaused: false,
   timelinePlayback: [], rewindGrace: 0, timelineLocked: false, speed: 330
@@ -782,7 +786,7 @@ const levels = [
     echoCanPushCrates: true, rewindField: true, rewindFieldRadius: 500, rewindFieldOffset: 190,
     platforms: [
       R(0,490,650,80,"stone"), K(330,430),
-      B(650,430,"impact","stone",120,54), R(600,520,250,50,"stone"),
+      B(650,430,"impact","stone",120,54), R(600,490,250,80,"stone"),
       C(850,220,850,55,"schedule-switch",74,270,"stone",false,.65),
       R(850,490,510,80,"stone"),
       W(1390,430,1680,430,"schedule-plate",170,40,"stone",225),
@@ -1035,10 +1039,11 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.22.2";
+const GAME_VERSION = "v0.23.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const LEADERBOARD_RULESETS = [
+  { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
   { id: "chapter-gate-fixes-v1", label: "Version 0.22.2 to 0.22.2" },
   { id: "chapter-gauntlets-v1", label: "Version 0.22.0 to 0.22.1" },
   { id: "zero-delay-platform-v1", label: "Version 0.21.4 to 0.21.5" },
@@ -1078,7 +1083,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -1205,7 +1210,8 @@ function linkedControlActive(platform) {
 }
 
 function platformHasCollision(platform) {
-  return !platform.nonSolid && !platform.broken && (!platform.requiresActive || linkedControlActive(platform));
+  return !platform.nonSolid && !platform.broken && !platform.lost &&
+    (!platform.requiresActive || linkedControlActive(platform));
 }
 
 function resetEnemies(resetRewards = false) {
@@ -1310,6 +1316,9 @@ function resetLevelMotion() {
     if (platform.pushable) {
       platform.x = platform.baseX;
       platform.y = platform.baseY;
+      platform.vy = 0;
+      platform.grounded = false;
+      platform.lost = false;
     }
     if (platform.controlled) {
       platform.x = platform.baseX;
@@ -1345,7 +1354,7 @@ function updatePressurePlates(dt) {
       player.x + PLAYER_W > plate.x + 4 && player.x < plate.x + plate.w - 4 &&
       Math.abs(player.y + PLAYER_H - (plate.y + plate.h)) < 4;
     const crateOnPlate = currentLevel().platforms.some((platform) =>
-      platform.pushable && !platform.broken &&
+      platform.pushable && !platform.broken && !platform.lost &&
       platform.x + platform.w > plate.x + 4 && platform.x < plate.x + plate.w - 4 &&
       Math.abs(platform.y + platform.h - (plate.y + plate.h)) < 4
     );
@@ -1394,6 +1403,9 @@ function currentTimelineObjects() {
 function timelineSnapshot(object) {
   return {
     x: object.x, y: object.y, time: levelMotionTime,
+    ...(object.pushable ? {
+      vy: object.vy, grounded: object.grounded, lost: object.lost
+    } : {}),
     ...(object.rewindableEnemy ? {
       direction: object.direction, alive: object.alive, stopped: object.stopped,
       starDropped: object.starDropped, starX: object.starX, starY: object.starY
@@ -1416,11 +1428,43 @@ function recordPlatformMotion(platform, force = false) {
   const stateChanged = platform.rewindableState && previous?.broken !== platform.broken;
   const enemyChanged = platform.rewindableEnemy &&
     (previous?.alive !== platform.alive || previous?.stopped !== platform.stopped);
-  if (!force && !moved && !stateChanged && !enemyChanged) return;
+  const crateChanged = platform.pushable &&
+    (previous?.lost !== platform.lost || previous?.grounded !== platform.grounded);
+  if (!force && !moved && !stateChanged && !enemyChanged && !crateChanged) return;
   if (!force && levelMotionTime - platform.motionLastRecordedAt < 1 / 30) return;
   platform.motionHistory.push(timelineSnapshot(platform));
   if (platform.motionHistory.length > 900) platform.motionHistory.shift();
   platform.motionLastRecordedAt = levelMotionTime;
+}
+
+function crateStandingOn(crate, support, supportX = support.x, supportY = support.y) {
+  return !crate.lost && crate.grounded &&
+    Math.abs(crate.y + crate.h - supportY) < 3 &&
+    crate.x + crate.w > supportX && crate.x < supportX + support.w;
+}
+
+function resolveCrateTerrainOverlap(crate) {
+  if (crate.lost) return;
+  for (let pass = 0; pass < 4; pass++) {
+    const solid = currentLevel().platforms.find((candidate) =>
+      candidate !== crate && platformHasCollision(candidate) && overlaps(crate, candidate)
+    );
+    if (!solid) return;
+    const shifts = [
+      { axis: "x", value: solid.x - crate.w - crate.x },
+      { axis: "x", value: solid.x + solid.w - crate.x },
+      { axis: "y", value: solid.y - crate.h - crate.y },
+      { axis: "y", value: solid.y + solid.h - crate.y }
+    ];
+    const shift = shifts.reduce((smallest, candidate) =>
+      Math.abs(candidate.value) < Math.abs(smallest.value) ? candidate : smallest
+    );
+    crate[shift.axis] += shift.value;
+    if (shift.axis === "y") {
+      crate.vy = 0;
+      crate.grounded = shift.value < 0;
+    }
+  }
 }
 
 function movePlatformWithPlayer(platform, nextX, nextY, carryPlayer = true, recordMotion = true) {
@@ -1432,6 +1476,11 @@ function movePlatformWithPlayer(platform, nextX, nextY, carryPlayer = true, reco
   const echoWasStanding = echo?.grounded &&
     Math.abs(echo.y + PLAYER_H - oldY) < 3 &&
     echo.x + PLAYER_W > oldX && echo.x < oldX + platform.w;
+  const supportedCrates = carryPlayer
+    ? currentLevel().platforms.filter((crate) =>
+      crate !== platform && crate.pushable && crateStandingOn(crate, platform, oldX, oldY)
+    )
+    : [];
   platform.x = nextX;
   platform.y = nextY;
   if (wasStanding && carryPlayer) {
@@ -1442,6 +1491,18 @@ function movePlatformWithPlayer(platform, nextX, nextY, carryPlayer = true, reco
   if (echoWasStanding && carryPlayer) {
     echo.x += platform.x - oldX;
     echo.y += platform.y - oldY;
+  }
+  for (const crate of supportedCrates) {
+    movePlatformWithPlayer(
+      crate,
+      crate.x + platform.x - oldX,
+      crate.y + platform.y - oldY,
+      true,
+      true
+    );
+    crate.vy = 0;
+    crate.grounded = true;
+    resolveCrateTerrainOverlap(crate);
   }
   if (recordMotion) recordPlatformMotion(platform);
 }
@@ -1474,6 +1535,7 @@ function updateTimelinePlayback(platform, dt) {
   const step = Math.min(distance, (platform.speed || 260) * 2 * dt);
   const nextX = distance <= .01 ? target.x : platform.x + dx / distance * step;
   const nextY = distance <= .01 ? target.y : platform.y + dy / distance * step;
+  if (platform.pushable && target.lost === false) platform.lost = false;
   if (platform.rewindableEnemy) {
     platform.x = nextX;
     platform.y = nextY;
@@ -1484,6 +1546,11 @@ function updateTimelinePlayback(platform, dt) {
     movePlatformWithPlayer(platform, nextX, nextY, Boolean(platform.carryDuringRewind), false);
   }
   if (distance <= step + .01) {
+    if (platform.pushable) {
+      platform.vy = target.vy || 0;
+      platform.grounded = Boolean(target.grounded);
+      platform.lost = Boolean(target.lost);
+    }
     if (platform.rewindableEnemy) {
       if (typeof target.direction === "number") platform.direction = target.direction;
       if (typeof target.alive === "boolean") platform.alive = target.alive;
@@ -1498,6 +1565,7 @@ function updateTimelinePlayback(platform, dt) {
     }
     platform.timelinePlayback.shift();
     if (platform.timelinePlayback.length === 0) {
+      if (platform.pushable && !platform.lost) resolveCrateTerrainOverlap(platform);
       platform.rewindGrace = .85;
       if (platform.resumeAfterRewind === false) platform.timelineLocked = true;
       playSfx("rewind-release");
@@ -3972,7 +4040,53 @@ function actorBox(actor) {
   return { x: actor.x, y: actor.y, w: PLAYER_W, h: PLAYER_H };
 }
 
+function loseCrate(crate) {
+  if (crate.lost) return;
+  crate.lost = true;
+  crate.grounded = false;
+  crate.vy = 0;
+  recordPlatformMotion(crate, true);
+}
+
+function crateTouchesHazard(crate) {
+  return currentLevel().hazards.some((hazard) => overlaps(crate, resolvedHazard(hazard)));
+}
+
+function updateCrates(dt) {
+  for (const crate of currentLevel().platforms.filter((platform) => platform.pushable)) {
+    if (crate.timelinePreview || crate.timelinePlayback?.length > 0 || crate.lost) continue;
+
+    const oldY = crate.y;
+    const oldBottom = crate.y + crate.h;
+    crate.vy = Math.min(CRATE_MAX_FALL_SPEED, (crate.vy || 0) + CRATE_GRAVITY * dt);
+    const nextY = crate.y + crate.vy * dt;
+    const nextBottom = nextY + crate.h;
+    const support = currentLevel().platforms
+      .filter((candidate) =>
+        candidate !== crate && platformHasCollision(candidate) &&
+        crate.x + crate.w > candidate.x + 1 && crate.x < candidate.x + candidate.w - 1 &&
+        candidate.y >= oldBottom - 2 && candidate.y <= nextBottom + 1
+      )
+      .sort((left, right) => left.y - right.y)[0];
+
+    if (support) {
+      const wasGrounded = crate.grounded;
+      movePlatformWithPlayer(crate, crate.x, support.y - crate.h, true, false);
+      crate.vy = 0;
+      crate.grounded = true;
+      if (!wasGrounded || Math.abs(crate.y - oldY) >= .5) recordPlatformMotion(crate, true);
+    } else {
+      movePlatformWithPlayer(crate, crate.x, nextY, true, false);
+      crate.grounded = false;
+      recordPlatformMotion(crate);
+    }
+
+    if (crateTouchesHazard(crate) || crate.y > VIEW_H + 100) loseCrate(crate);
+  }
+}
+
 function tryPushCrate(crate, distance) {
+  if (crate.lost || crate.timelinePreview || crate.timelinePlayback?.length > 0) return false;
   const candidate = { x: crate.x + distance, y: crate.y, w: crate.w, h: crate.h };
   if (candidate.x < 0 || candidate.x + candidate.w > currentLevel().width) return false;
   for (const solid of currentLevel().platforms) {
@@ -3980,8 +4094,10 @@ function tryPushCrate(crate, distance) {
     if (!platformHasCollision(solid)) continue;
     if (overlaps(candidate, solid)) return false;
   }
-  crate.x = candidate.x;
-  recordPlatformMotion(crate);
+  movePlatformWithPlayer(crate, candidate.x, crate.y, true, true);
+  crate.vy = Math.max(0, crate.vy || 0);
+  crate.grounded = false;
+  recordPlatformMotion(crate, true);
   recordMechanic("crate");
   return true;
 }
@@ -4259,6 +4375,7 @@ function update(dt) {
   updateMomentarySwitches(dt);
   updatePressurePlates(dt);
   updateMovingPlatforms(dt);
+  updateCrates(dt);
 
   const wasGrounded = player.grounded;
   const previousPlayerBottom = player.y + PLAYER_H;
@@ -4590,7 +4707,7 @@ function drawMovingObstacle(obstacle, x, time) {
 }
 
 function drawPlatform(p, time) {
-  if (p.broken) return;
+  if (p.broken || p.lost) return;
   const x = p.x - cameraX;
   if (x + p.w < -80 || x > VIEW_W + 80) return;
   if (p.kind === "moving-obstacle") {
