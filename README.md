@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.24.2`
+**Current version:** `v0.25.0`
 
 ## How it works
 
@@ -39,6 +39,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 **Use an optional account.** Sign up or sign in with email and password to synchronize roadmap unlocks, completed chapters, and gauntlets through Supabase. Emails remain private, passwords are handled only by Supabase Auth, and guest play continues to work without an account or network connection.
 
 **Play past versions.** Open Versions from the main menu to launch any archived release build in a new tab.
+
+**Build on serialized levels.** The first level-data foundation represents gameplay as validated JSON-compatible objects with stable IDs and safe links. Four campaign levels now prove the format while the remaining levels continue through the legacy declarations. See [`LEVEL_FORMAT.md`](LEVEL_FORMAT.md) for the complete schema and development utilities.
 
 **Customize the menu.** After completing the final cutscene, switch between the original and awakened animations, choose grass, stone, or crate platforms from the game assets, and swap the sunny backdrop for the lava-dark sky.
 
@@ -92,6 +94,7 @@ The playable prototype includes:
 - A pause menu that freezes the timer
 - A global, version-separated leaderboard for named full-adventure runs
 - Optional Supabase email/password accounts with persistent sessions, password recovery, private emails, public display names, and cloud progression
+- A versioned, validated level-data format with safe import/export, stable object links, and runtime-state cloning as the foundation for a future visual editor
 - A playable archive of every released version
 - A complete in-game changelog based on the Git history
 - Responsive running and jumping with stable high-speed platform-edge landings
