@@ -29,7 +29,7 @@ The implementation and representative campaign data live in [`level-data.js`](le
 }
 ```
 
-- `id` is a stable machine-readable ID using lowercase letters, numbers, and hyphens.
+- `id` is any non-empty text identifier. IDs are case-sensitive and must be unique where they share an object namespace.
 - `name` is the player-facing name.
 - `width` is the horizontal world size.
 - `spawn` is the slime's top-left starting position.

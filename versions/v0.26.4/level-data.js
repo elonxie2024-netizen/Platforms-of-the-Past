@@ -4,6 +4,7 @@
   const SCHEMA_VERSION = 1;
   const MAX_JSON_LENGTH = 1_000_000;
   const MAX_OBJECTS = 600;
+  const ID_PATTERN = /^[a-z][a-z0-9-]{0,63}$/;
   const MATERIALS = new Set(["grass", "stone", "crate"]);
   const OBJECT_TYPES = new Set([
     "platform", "floatingPlatform", "crate", "breakableBlock", "jumpPad",
@@ -207,8 +208,8 @@
   }
 
   function requireId(value, path, errors) {
-    if (typeof value !== "string" || value.trim().length === 0) {
-      errors.push(`${path} must be a non-empty ID.`);
+    if (typeof value !== "string" || !ID_PATTERN.test(value)) {
+      errors.push(`${path} must start with a lowercase letter and use only lowercase letters, numbers, and hyphens.`);
       return false;
     }
     return true;
