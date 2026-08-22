@@ -22,11 +22,11 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/slime-player.svg", enemy: "assets/slime-enemy.svg",
-    switch: "assets/switch-left.svg", pressurePlateBase: "assets/pressure-plate-base.svg",
-    pressurePlateTop: "assets/pressure-plate-top.svg", jumpPadBase: "assets/jump-pad-base.svg",
-    jumpPadTop: "assets/jump-pad-top.svg", blade: "assets/moving-obstacle.svg",
-    cracks: "assets/fragile-block-cracks.svg"
+    player: "../assets/slime-player.svg", enemy: "../assets/slime-enemy.svg",
+    switch: "../assets/switch-left.svg", pressurePlateBase: "../assets/pressure-plate-base.svg",
+    pressurePlateTop: "../assets/pressure-plate-top.svg", jumpPadBase: "../assets/jump-pad-base.svg",
+    jumpPadTop: "../assets/jump-pad-top.svg", blade: "../assets/moving-obstacle.svg",
+    cracks: "../assets/fragile-block-cracks.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
@@ -48,7 +48,7 @@
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.26.4</strong>
+      <strong>Level Editor · v0.26.3</strong>
       <button data-action="new">New</button><button data-action="clear">Clear</button>
       <button data-action="undo">Undo</button><button data-action="redo">Redo</button>
       <button data-action="import">Import</button><button data-action="export">Export</button>
@@ -146,18 +146,6 @@
 
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
   function snapValue(value) { return snap ? Math.round(value / GRID) * GRID : Math.round(value); }
-  function normalizeId(value, fallback = "item") {
-    let normalized = String(value || "")
-      .normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-    if (!normalized) normalized = fallback;
-    if (!/^[a-z]/.test(normalized)) normalized = `${fallback}-${normalized}`;
-    return normalized.slice(0, 64).replace(/-+$/g, "") || fallback;
-  }
   function allIds() { return new Set([data.exit.id, ...data.objects.map((object) => object.id)]); }
   function nextId(type) { let index = 1; const ids = allIds(); while (ids.has(`${type}-${index}`)) index++; return `${type}-${index}`; }
   function selectionObject() {
@@ -174,16 +162,8 @@
   function restore() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY); if (!saved) return;
-      const savedDraft = JSON.parse(saved);
-      const repairedId = normalizeId(savedDraft?.id, "my-level");
-      const repaired = savedDraft?.id !== repairedId;
-      if (savedDraft && typeof savedDraft === "object" && !Array.isArray(savedDraft)) savedDraft.id = repairedId;
-      const result = api.importLevel(JSON.stringify(savedDraft));
-      if (result.ok) {
-        data = result.level;
-        statusNote = repaired ? `Restored the local draft and formatted its level ID as “${repairedId}”.` : "Restored the local editor draft.";
-        if (repaired) persist();
-      }
+      const result = api.importLevel(saved);
+      if (result.ok) { data = result.level; statusNote = "Restored the local editor draft."; }
       else statusNote = `Saved draft was invalid: ${result.errors[0]}`;
     } catch { statusNote = "Saved draft could not be read safely."; }
   }
@@ -460,8 +440,8 @@
     commit(() => setPath(selectionObject(), key, parsed), `Changed ${key}.`);
   }
   function renameId(input) {
-    const object = selectionObject(); const old = object.id; const next = normalizeId(input.value, object.type === "exit" ? "level-exit" : object.type || "item");
-    if (next !== old && allIds().has(next)) { statusNote = `The ID “${next}” is already used. Choose a different one.`; return refresh(); }
+    const object = selectionObject(); const next = input.value.trim(); const old = object.id;
+    if (!/^[a-z][a-z0-9-]{0,63}$/.test(next) || (next !== old && allIds().has(next))) { statusNote = "IDs must be unique lowercase words, numbers, and hyphens."; return refresh(); }
     commit(() => {
       if (selected === "@exit") data.exit.id = next;
       else { object.id = next; selected = next; }
@@ -470,7 +450,7 @@
         if (item.attachedTo === old) item.attachedTo = next;
         if (item.controllerIds) item.controllerIds = item.controllerIds.map((id) => id === old ? next : id);
       });
-    }, next === input.value.trim() ? `Renamed ${old} and updated its links.` : `Formatted the ID as “${next}” and updated its links.`);
+    }, `Renamed ${old} and updated its links.`);
   }
 
   function controllerLinks(object) {
@@ -547,10 +527,7 @@
     data.settings.rewind ||= {};
     data.settings.rewind.field ||= {};
     data.settings.echo ||= {};
-    field("Level ID (auto-formatted)", "id", data.id, { type: "text", change: (input) => {
-      const normalized = normalizeId(input.value, "my-level");
-      commit(() => data.id = normalized, normalized === input.value.trim() ? "Changed the level ID." : `Formatted the level ID as “${normalized}”.`);
-    } });
+    field("Level ID", "id", data.id, { type: "text", change: (input) => commit(() => data.id = input.value.trim(), "Changed the level ID.") });
     field("Name", "name", data.name, { type: "text", change: (input) => commit(() => data.name = input.value, "Changed the level name.") });
     field("World width", "width", data.width, { change: (input) => commit(() => { data.width = Number(input.value); clampCamera(); }, "Changed world width; out-of-bounds objects are reported below.") });
     field("Music", "settings.music", data.settings.music, { values: [["level1","Trail"],["level2","Rewind"],["level3","Lava"]], change: (input) => commit(() => data.settings.music = input.value, "Changed music.") });
