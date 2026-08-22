@@ -12,7 +12,7 @@
   ]);
   const ROOT_KEYS = new Set(["schemaVersion", "id", "name", "width", "spawn", "exit", "settings", "objects"]);
   const SPAWN_KEYS = new Set(["x", "y"]);
-  const EXIT_KEYS = new Set(["id", "x", "y", "width", "height", "control"]);
+  const EXIT_KEYS = new Set(["id", "x", "y", "width", "height"]);
   const SETTINGS_KEYS = new Set([
     "music", "theme", "postRun", "requiredStars", "requiredLevelStars",
     "rewind", "echo", "gauntlet"
@@ -23,7 +23,6 @@
   const GAUNTLET_KEYS = new Set(["id", "chapter"]);
   const POINT_KEYS = new Set(["x", "y"]);
   const MOTION_KEYS = new Set(["axis", "range", "speed", "phase"]);
-  const CONTROL_KEYS = new Set(["controllerIds", "target", "releaseDelay", "moveDuration", "initialProgress"]);
   const COMMON_OBJECT_KEYS = ["id", "type"];
   const OBJECT_KEYS = {
     platform: ["x", "y", "width", "height", "material"],
@@ -283,20 +282,6 @@
     }
   }
 
-  function validateControl(control, path, errors, references) {
-    if (!rejectUnknownKeys(control, CONTROL_KEYS, path, errors)) return;
-    validatePoint(control.target, `${path}.target`, errors);
-    if (!Array.isArray(control.controllerIds) || control.controllerIds.length < 1 || control.controllerIds.length > 8) {
-      errors.push(`${path}.controllerIds must contain one to eight switch or pressure-plate IDs.`);
-    } else {
-      control.controllerIds.forEach((id, index) => requireId(id, `${path}.controllerIds[${index}]`, errors));
-      references.push({ path: `${path}.controllerIds`, ids: control.controllerIds, types: new Set(["switch", "pressurePlate"]) });
-    }
-    if (control.releaseDelay !== undefined) requireNumber(control.releaseDelay, `${path}.releaseDelay`, errors, 0, 60);
-    if (control.moveDuration !== undefined) requireNumber(control.moveDuration, `${path}.moveDuration`, errors, 0.05, 60);
-    if (control.initialProgress !== undefined) requireNumber(control.initialProgress, `${path}.initialProgress`, errors, 0, 1);
-  }
-
   function validateObject(object, index, errors, ids, references) {
     const path = `level.objects[${index}]`;
     if (!isPlainObject(object)) {
@@ -310,7 +295,7 @@
       errors.push(`${path}.type is unsupported.`);
       return;
     }
-    const allowed = new Set([...COMMON_OBJECT_KEYS, ...OBJECT_KEYS[object.type], "control"]);
+    const allowed = new Set([...COMMON_OBJECT_KEYS, ...OBJECT_KEYS[object.type]]);
     rejectUnknownKeys(object, allowed, path, errors);
 
     if (["platform", "floatingPlatform", "crate", "breakableBlock", "jumpPad", "movingPlatform", "controlledPlatform", "rewindPlatform"].includes(object.type)) {
@@ -411,11 +396,6 @@
       optionalBoolean(object.loopPath, `${path}.loopPath`, errors);
       optionalBoolean(object.resumeAfterRewind, `${path}.resumeAfterRewind`, errors);
     }
-    if (object.control !== undefined) {
-      if (object.type === "controlledPlatform") errors.push(`${path} already has built-in controlled movement and cannot add a second control.`);
-      if (object.type === "hazard" && object.attachedTo !== undefined) errors.push(`${path} cannot be attached and directly controlled at the same time.`);
-      validateControl(object.control, `${path}.control`, errors, references);
-    }
   }
 
   function validateMotionPath(path, label, errors, required = false) {
@@ -449,7 +429,6 @@
         const ids = new Map([[level.exit?.id, "exit"]]);
         const references = [];
         level.objects.forEach((object, index) => validateObject(object, index, errors, ids, references));
-        if (level.exit?.control !== undefined) validateControl(level.exit.control, "level.exit.control", errors, references);
         for (const reference of references) {
           for (const id of reference.ids) {
             const targetType = ids.get(id);
@@ -468,9 +447,7 @@
               if (typeof point.x === "number" && (point.x < 0 || point.x > level.width)) errors.push(`${path}.motionPath[${pointIndex}].x must be inside the level width.`);
             }
             if (object.target && typeof object.target.x === "number" && (object.target.x < 0 || object.target.x > level.width)) errors.push(`${path}.target.x must be inside the level width.`);
-            if (object.control?.target && typeof object.control.target.x === "number" && (object.control.target.x < 0 || object.control.target.x > level.width)) errors.push(`${path}.control.target.x must be inside the level width.`);
           });
-          if (level.exit?.control?.target && (level.exit.control.target.x < 0 || level.exit.control.target.x > level.width)) errors.push("level.exit.control.target.x must be inside the level width.");
         }
         const obtainableStars = level.objects.filter((object) => object.type === "star" || object.type === "enemy").length;
         if (level.settings?.requiredStars > obtainableStars) errors.push("level.settings.requiredStars exceeds the stars available from objects and enemies.");

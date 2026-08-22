@@ -151,6 +151,31 @@ A switch- or pressure-plate-controlled platform. `target` is its active position
 
 Multiple controller IDs currently mean that all referenced pressure plates are required. `moveDuration` optionally uses the existing controlled-platform timing rule. `initialProgress` chooses an exact starting point from `0` (base) through `1` (target).
 
+### Controlled movement on any object
+
+Every supported object type, plus the exit flag, may receive an optional `control` block. This uses the same switch/pressure-plate rule without changing the object's identity or collision behavior. For example, these spikes travel upward while `danger-plate` is active:
+
+```json
+{
+  "id": "rising-spikes",
+  "type": "hazard",
+  "hazard": "spikes",
+  "x": 620,
+  "y": 472,
+  "width": 90,
+  "height": 18,
+  "control": {
+    "controllerIds": ["danger-plate"],
+    "target": { "x": 620, "y": 350 },
+    "releaseDelay": 0,
+    "moveDuration": 1.15,
+    "initialProgress": 0
+  }
+}
+```
+
+All listed controllers must be active. `releaseDelay` keeps the target active briefly after release, `moveDuration` is travel time in seconds, and `initialProgress` selects the starting point from base (`0`) to target (`1`). An attached hazard cannot also have direct controlled movement; the editor detaches it before adding a control. Adding this block to an automatic platform, Rewind platform, blade, or enemy overrides its ordinary automatic route while preserving its normal object behavior and timeline history.
+
 ### `rewindPlatform`
 
 A moving platform with recorded motion history. It may use a `target`, a `motionPath`, or both. Supported established flags are `controllerId`, `speed`, `releaseDelay`, `pathIndex`, `autoStart`, `autoWhenRidden`, `carryDuringRewind`, `resumeAfterRewind`, `loopPath`, and `carryPlayer`.
@@ -222,10 +247,10 @@ All other campaign levels continue using their previous declarations to minimize
 
 ## Visual editor
 
-Version 0.26.0 adds a Level Editor entry to the main menu. It edits this schema directly—there is no editor-only format or executable scripting layer. The canvas supports grid placement, selection, dragging, resizing, ID-based controller and attachment links, motion-path handles, initial states, and the allowlisted level settings above.
+Version 0.26.0 adds a Level Editor entry to the main menu. It edits this schema directly—there is no editor-only format or executable scripting layer. The canvas supports grid placement, selection, dragging, resizing, ID-based controller and attachment links, motion-path handles, initial states, and the allowlisted level settings above. Controlled movement can be added to every placed object and the exit, with controller links and target positions edited directly in the inspector or canvas.
 
 Version 0.26.3 makes the editor preview use the same shared game assets as playtest mode. Its bounded world viewport supports two-axis panning, zooming, fitting the complete level with visible exterior space, and dragging the right world boundary to edit the schema-backed `width`. The vertical world size remains the engine's fixed 570-pixel editor space and is intentionally not added to the serialized schema.
 
-The editor keeps one browser-local draft under a separate storage key, with bounded undo/redo history for the current session. Import and export pass through the same validation and cloning utilities as campaign migration. Playtest loads a fresh runtime clone through the generic adapter, then removes it on return; it cannot unlock campaign levels, alter account progress, or submit to leaderboards.
+The editor keeps a browser-local workspace containing multiple independent level drafts. The toolbar can create, switch, duplicate, delete, import, and export levels; older single-draft storage migrates into the workspace automatically. Undo/redo history remains bounded to the currently edited level and resets when switching levels so changes cannot cross between drafts. Import and export pass through the same validation and cloning utilities as campaign migration. Playtest loads a fresh runtime clone through the generic adapter, then removes it on return; it cannot unlock campaign levels, alter account progress, or submit to leaderboards.
 
 Community publishing, browsing, ratings, comments, collaboration, arbitrary scripting, and account-backed draft storage remain out of scope.

@@ -139,8 +139,7 @@ const resetEmail = document.querySelector("#resetEmail");
 const profileDisplayName = document.querySelector("#profileDisplayName");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.26.6", commit: "Pending commit", date: "2026-08-22", message: "Expand level-editor projects and controls", description: "Added a persistent multi-level editor workspace with a level picker plus New, Duplicate, Delete, Import, and Export actions, so creators can keep several independent local levels in progress without overwriting one another. Existing single drafts migrate automatically. Also fixed enemy placement data, audited every palette mechanic, and made controlled movement available for spikes, lava, stars, crates, blocks, pads, enemies, switches, pressure plates, automatic objects, ordinary platforms, and the exit through selectable controllers and draggable targets." },
-  { version: "v0.26.5", commit: "7c3c271", date: "2026-08-22", message: "Allow unrestricted custom-level IDs", description: "Removed the lowercase-and-hyphen ID format restriction from the editor and serialized level validator. Level, object, exit, controller, and attachment IDs may now contain uppercase letters, spaces, numbers, punctuation, Unicode, or any other text; only empty and duplicate IDs remain invalid so linked mechanics stay unambiguous." },
+  { version: "v0.26.5", commit: "Pending commit", date: "2026-08-22", message: "Allow unrestricted custom-level IDs", description: "Removed the lowercase-and-hyphen ID format restriction from the editor and serialized level validator. Level, object, exit, controller, and attachment IDs may now contain uppercase letters, spaces, numbers, punctuation, Unicode, or any other text; only empty and duplicate IDs remain invalid so linked mechanics stay unambiguous." },
   { version: "v0.26.4", commit: "eb8d470", date: "2026-08-22", message: "Prevent invalid editor IDs from blocking playtests", description: "Made level and object IDs automatically convert ordinary names into safe lowercase hyphenated IDs, so capital letters and spaces no longer disable Playtest. Existing local drafts affected by the invalid Level ID bug are repaired during restoration, while duplicate object IDs still produce a clear warning and preserve link integrity." },
   { version: "v0.26.3", commit: "f7fc1f6", date: "2026-08-22", message: "Rebuild the level editor viewport", description: "Replaced placeholder editor drawings with the same terrain, character, mechanic, collectible, hazard, and exit assets used during gameplay. Added a polished bounded world canvas with adaptive major and minor grid lines, dark space beyond the level, reliable zoom controls, a Fit Level view that shows the entire world and its borders, draggable level-width control, two-axis panning, and draggable palette and properties panel dividers whose layout is saved locally." },
   { version: "v0.26.2", commit: "8385534", date: "2026-08-22", message: "Complete interface-wide fullscreen scaling", description: "Made the fullscreen control available above the main menu, roadmap, account screens, overlays, editor, end screens, and gameplay. Browser fullscreen now targets the game frame and uniformly scales one shared surface containing the canvas and every interface object. Returned Pause, Restart, Restart Run, and Quit to the game screen, enlarged them with the interface in fullscreen, and strengthened their contrast against bright level backgrounds." },
@@ -1012,28 +1011,6 @@ const legacyLevels = [
 
 function levelObjectId(object, runtimeObject) {
   runtimeObject.levelObjectId = object.id;
-  if (object.control) {
-    const baseX = Array.isArray(runtimeObject) ? runtimeObject[0] : runtimeObject.x;
-    const baseY = Array.isArray(runtimeObject) ? runtimeObject[1] : runtimeObject.y;
-    runtimeObject.editorControl = {
-      controllerIds: [...object.control.controllerIds],
-      baseX,
-      baseY,
-      targetX: object.control.target.x,
-      targetY: object.control.target.y,
-      releaseDelay: object.control.releaseDelay || 0,
-      releaseTimer: 0,
-      moveDuration: object.control.moveDuration || 1.15,
-      initialProgress: object.control.initialProgress || 0,
-      moveProgress: object.control.initialProgress || 0
-    };
-    const progress = runtimeObject.editorControl.moveProgress;
-    const eased = progress * progress * (3 - 2 * progress);
-    const initialX = baseX + (runtimeObject.editorControl.targetX - baseX) * eased;
-    const initialY = baseY + (runtimeObject.editorControl.targetY - baseY) * eased;
-    if (Array.isArray(runtimeObject)) { runtimeObject[0] = initialX; runtimeObject[1] = initialY; }
-    else { runtimeObject.x = initialX; runtimeObject.y = initialY; }
-  }
   return runtimeObject;
 }
 
@@ -1052,7 +1029,7 @@ const LEVEL_RUNTIME_ADAPTERS = Object.freeze({
   hazard: (object) => object.attachedTo
     ? levelObjectId(object, A(object.attachedTo, object.offsetX || 0, object.offsetY || 0, object.width, object.height))
     : levelObjectId(object, R(object.x, object.y, object.width, object.height, object.hazard === "lava" ? "lava" : "grass")),
-  star: (object) => levelObjectId(object, [object.x, object.y]),
+  star: (object) => [object.x, object.y],
   movingPlatform: (object) => levelObjectId(object, M(
     object.x, object.y, object.width, object.height,
     object.motion.axis, object.motion.range, object.motion.speed, object.motion.phase || 0, object.material
@@ -1228,13 +1205,13 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.26.6";
+const GAME_VERSION = "v0.26.5";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
 const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const LEADERBOARD_RULESETS = [
-  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.26.6" },
+  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.26.5" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1277,7 +1254,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
+  "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
   "v0.4.4", "v0.4.3", "v0.4.2", "v0.4.1", "v0.4.0", "v0.3.2", "v0.3.1", "v0.3.0",
@@ -1459,7 +1436,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1478,7 +1455,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -1519,79 +1496,6 @@ function linkedControlActive(platform) {
   return Boolean(linkedSwitch?.flipped || linkedPlateActive);
 }
 
-function editorControlledObjects() {
-  const level = currentLevel();
-  return [
-    level.finish,
-    ...(level.platforms || []),
-    ...(level.hazards || []),
-    ...(level.stars || []),
-    ...(level.jumpPads || []),
-    ...(level.switches || []),
-    ...(level.pressurePlates || []),
-    ...(level.enemies || [])
-  ].filter((object) => object?.editorControl);
-}
-
-function editorControlActive(control) {
-  return control.controllerIds.every((id) => {
-    const levelSwitch = currentLevel().switches?.find((candidate) => candidate.id === id);
-    const pressurePlate = currentLevel().pressurePlates?.find((candidate) => candidate.id === id);
-    return Boolean(levelSwitch?.flipped || pressurePlate?.pressed);
-  });
-}
-
-function setEditorControlledPosition(object, x, y) {
-  if (Array.isArray(object)) { object[0] = x; object[1] = y; }
-  else { object.x = x; object.y = y; }
-}
-
-function applyEditorControlledPosition(object) {
-  const control = object.editorControl;
-  if (!control) return;
-  const eased = control.moveProgress * control.moveProgress * (3 - 2 * control.moveProgress);
-  setEditorControlledPosition(
-    object,
-    control.baseX + (control.targetX - control.baseX) * eased,
-    control.baseY + (control.targetY - control.baseY) * eased
-  );
-}
-
-function resetEditorControlledObjects() {
-  for (const object of editorControlledObjects()) {
-    const control = object.editorControl;
-    control.moveProgress = control.initialProgress;
-    control.releaseTimer = 0;
-    applyEditorControlledPosition(object);
-  }
-}
-
-function updateEditorControlledObjects(dt) {
-  const platforms = currentLevel().platforms || [];
-  for (const object of editorControlledObjects()) {
-    const control = object.editorControl;
-    if (platforms.includes(object) && isTimelineObject(object)) {
-      if (object.timelinePreview) updateTimelinePreview(object, dt);
-      else if (object.timelinePlayback?.length > 0) updateTimelinePlayback(object, dt);
-      if (object.timelinePreview || object.timelinePlayback?.length > 0) continue;
-    }
-    if (editorControlActive(control)) control.releaseTimer = control.releaseDelay;
-    else control.releaseTimer = Math.max(0, control.releaseTimer - dt);
-    const targetProgress = editorControlActive(control) || control.releaseTimer > 0 ? 1 : 0;
-    if (control.moveProgress === targetProgress) continue;
-    const previousProgress = control.moveProgress;
-    control.moveProgress = Math.max(0, Math.min(1,
-      control.moveProgress + Math.sign(targetProgress - control.moveProgress) * dt / control.moveDuration
-    ));
-    const eased = control.moveProgress * control.moveProgress * (3 - 2 * control.moveProgress);
-    const nextX = control.baseX + (control.targetX - control.baseX) * eased;
-    const nextY = control.baseY + (control.targetY - control.baseY) * eased;
-    const solidPlatform = platforms.includes(object) && platformHasCollision(object);
-    if (solidPlatform && !movePlatformWithPlayer(object, nextX, nextY)) control.moveProgress = previousProgress;
-    else if (!solidPlatform) setEditorControlledPosition(object, nextX, nextY);
-  }
-}
-
 function platformHasCollision(platform) {
   return !platform.nonSolid && !platform.broken && !platform.lost &&
     (!platform.requiresActive || linkedControlActive(platform));
@@ -1613,7 +1517,6 @@ function resetEnemies(resetRewards = false) {
     enemy.starDropped = false;
     if (resetRewards) enemy.starCollected = false;
     if (enemy.rewindableEnemy) resetPlatformMotionHistory(enemy);
-    applyEditorControlledPosition(enemy);
   }
 }
 
@@ -1731,7 +1634,6 @@ function resetLevelMotion() {
     enemy.timelinePlayback = [];
     resetPlatformMotionHistory(enemy);
   }
-  resetEditorControlledObjects();
 }
 
 function updatePressurePlates(dt) {
@@ -2133,7 +2035,6 @@ function updateRewindablePlatform(platform, dt) {
 function updateMovingPlatforms(dt) {
   levelMotionTime += dt;
   for (const platform of currentLevel().platforms) {
-    if (platform.editorControl) continue;
     if (isTimelineObject(platform)) {
       if (platform.rewindableManual || platform.rewindableState) {
         if (platform.timelinePreview) updateTimelinePreview(platform, dt);
@@ -2177,7 +2078,7 @@ function updateEnemies(dt, previousPlayerBottom) {
       updateTimelinePreview(enemy, dt);
     } else if (enemy.timelinePlayback?.length > 0) {
       updateTimelinePlayback(enemy, dt);
-    } else if (enemy.alive && !enemy.stopped && !enemy.editorControl) {
+    } else if (enemy.alive && !enemy.stopped) {
       const nextX = enemy.x + enemy.direction * enemy.speed * dt;
       const candidate = { x: nextX, y: enemy.y, w: enemy.w, h: enemy.h };
       const reachedBoundary = nextX < enemy.minX || nextX > enemy.maxX;
@@ -3261,7 +3162,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -5081,7 +4982,7 @@ function crateTouchesHazard(crate) {
 
 function updateCrates(dt) {
   for (const crate of currentLevel().platforms.filter((platform) => platform.pushable)) {
-    if (crate.editorControl || crate.timelinePreview || crate.timelinePlayback?.length > 0 || crate.lost) continue;
+    if (crate.timelinePreview || crate.timelinePlayback?.length > 0 || crate.lost) continue;
 
     const oldY = crate.y;
     const oldBottom = crate.y + crate.h;
@@ -5408,7 +5309,6 @@ function update(dt) {
   captureEchoFrame();
   updateMomentarySwitches(dt);
   updatePressurePlates(dt);
-  updateEditorControlledObjects(dt);
   updateMovingPlatforms(dt);
   updateCrates(dt);
 

@@ -3,8 +3,7 @@
 (() => {
   const api = window.PlatformsLevelData;
   const host = document.querySelector("#levelEditor");
-  const LEGACY_STORAGE_KEY = "platforms-past-level-editor-draft-v1";
-  const STORAGE_KEY = "platforms-past-level-editor-workspace-v2";
+  const STORAGE_KEY = "platforms-past-level-editor-draft-v1";
   const LAYOUT_STORAGE_KEY = "platforms-past-level-editor-layout-v1";
   const GRID = 20;
   const WORLD_H = 570;
@@ -23,19 +22,16 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/slime-player.svg", enemy: "assets/slime-enemy.svg",
-    switch: "assets/switch-left.svg", pressurePlateBase: "assets/pressure-plate-base.svg",
-    pressurePlateTop: "assets/pressure-plate-top.svg", jumpPadBase: "assets/jump-pad-base.svg",
-    jumpPadTop: "assets/jump-pad-top.svg", blade: "assets/moving-obstacle.svg",
-    cracks: "assets/fragile-block-cracks.svg"
+    player: "../assets/slime-player.svg", enemy: "../assets/slime-enemy.svg",
+    switch: "../assets/switch-left.svg", pressurePlateBase: "../assets/pressure-plate-base.svg",
+    pressurePlateTop: "../assets/pressure-plate-top.svg", jumpPadBase: "../assets/jump-pad-base.svg",
+    jumpPadTop: "../assets/jump-pad-top.svg", blade: "../assets/moving-obstacle.svg",
+    cracks: "../assets/fragile-block-cracks.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
 
   let data = freshLevel();
-  let drafts = [];
-  let activeDraftKey = "";
-  let draftSerial = Date.now();
   let selected = "@spawn";
   let tool = "select";
   let cameraX = 0;
@@ -52,9 +48,8 @@
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.26.6</strong>
-      <label class="editor-level-picker"><span>Level</span><select data-role="draft-picker" aria-label="Level being edited"></select></label>
-      <button data-action="new">New</button><button data-action="duplicate">Duplicate</button><button data-action="delete-draft">Delete</button><button data-action="clear">Clear</button>
+      <strong>Level Editor · v0.26.5</strong>
+      <button data-action="new">New</button><button data-action="clear">Clear</button>
       <button data-action="undo">Undo</button><button data-action="redo">Redo</button>
       <button data-action="import">Import</button><button data-action="export">Export</button>
       <button data-action="snap">Snap: On</button>
@@ -86,7 +81,6 @@
   const fields = host.querySelector(".editor-fields");
   const status = host.querySelector(".editor-status");
   const importInput = host.querySelector('[data-role="import"]');
-  const draftPicker = host.querySelector('[data-role="draft-picker"]');
   const viewport = host.querySelector(".editor-viewport");
   const zoomOutput = host.querySelector('[data-role="zoom"]');
 
@@ -151,27 +145,6 @@
   }
 
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
-  function nextDraftKey() {
-    let key;
-    do key = `draft-${draftSerial++}`; while (drafts.some((draft) => draft.key === key));
-    return key;
-  }
-  function activeDraft() { return drafts.find((draft) => draft.key === activeDraftKey) || null; }
-  function uniqueLevelIdentity(baseName = "My Level", baseId = "my-level") {
-    const ids = new Set(drafts.map((draft) => draft.level.id));
-    let index = 1, id = baseId;
-    while (ids.has(id)) id = `${baseId}-${++index}`;
-    return { id, name: index === 1 ? baseName : `${baseName} ${index}` };
-  }
-  function syncDraftPicker() {
-    draftPicker.replaceChildren(...drafts.map((draft, index) => {
-      const option = new Option(draft.level.name || draft.level.id || `Untitled Level ${index + 1}`, draft.key);
-      option.title = draft.level.id;
-      return option;
-    }));
-    draftPicker.value = activeDraftKey;
-    host.querySelector('[data-action="delete-draft"]').disabled = drafts.length <= 1;
-  }
   function snapValue(value) { return snap ? Math.round(value / GRID) * GRID : Math.round(value); }
   function allIds() { return new Set([data.exit.id, ...data.objects.map((object) => object.id)]); }
   function nextId(type) { let index = 1; const ids = allIds(); while (ids.has(`${type}-${index}`)) index++; return `${type}-${index}`; }
@@ -184,60 +157,15 @@
   function serialize() { return JSON.stringify(data); }
 
   function persist() {
-    const current = activeDraft();
-    if (current) current.level = data;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, activeDraftKey, drafts }));
-      localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(data));
-    } catch { statusNote = "Draft changed, but browser storage is full or unavailable."; }
-  }
-  function repairKnownEditorData(level) {
-    if (!level || typeof level !== "object" || !Array.isArray(level.objects)) return false;
-    let repaired = false;
-    level.objects.forEach((object) => {
-      if (object?.type !== "enemy" || !Object.prototype.hasOwnProperty.call(object, "y")) return;
-      if (!Number.isFinite(object.surfaceY) && Number.isFinite(object.y)) object.surfaceY = object.y + 42;
-      delete object.y;
-      repaired = true;
-    });
-    return repaired;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch { statusNote = "Draft changed, but browser storage is unavailable."; }
   }
   function restore() {
     try {
-      const savedWorkspace = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-      let repairedCount = 0, rejectedCount = 0, restoredStoredDraft = false;
-      if (savedWorkspace?.version === 2 && Array.isArray(savedWorkspace.drafts)) {
-        for (const saved of savedWorkspace.drafts) {
-          if (!saved || typeof saved.key !== "string") { rejectedCount++; continue; }
-          const candidate = clone(saved.level);
-          if (repairKnownEditorData(candidate)) repairedCount++;
-          const result = api.importLevel(JSON.stringify(candidate));
-          if (result.ok && !drafts.some((draft) => draft.key === saved.key)) { drafts.push({ key: saved.key, level: result.level }); restoredStoredDraft = true; }
-          else rejectedCount++;
-        }
-        activeDraftKey = drafts.some((draft) => draft.key === savedWorkspace.activeDraftKey) ? savedWorkspace.activeDraftKey : drafts[0]?.key || "";
-      }
-      if (!drafts.length) {
-        const legacyText = localStorage.getItem(LEGACY_STORAGE_KEY);
-        if (legacyText) {
-          const legacy = JSON.parse(legacyText);
-          if (repairKnownEditorData(legacy)) repairedCount++;
-          const result = api.importLevel(JSON.stringify(legacy));
-          if (result.ok) { drafts.push({ key: nextDraftKey(), level: result.level }); restoredStoredDraft = true; }
-        }
-      }
-      if (!drafts.length) drafts.push({ key: nextDraftKey(), level: data });
-      activeDraftKey ||= drafts[0].key;
-      data = activeDraft().level;
-      statusNote = restoredStoredDraft
-        ? `Restored ${drafts.length} local level${drafts.length === 1 ? "" : "s"}.${repairedCount ? ` Repaired ${repairedCount}.` : ""}${rejectedCount ? ` Skipped ${rejectedCount} invalid draft${rejectedCount === 1 ? "" : "s"}.` : ""}`
-        : "Started a new local level workspace.";
-      persist();
-    } catch {
-      drafts = [{ key: nextDraftKey(), level: data }]; activeDraftKey = drafts[0].key;
-      statusNote = "Saved editor levels could not be read safely; started a new local level.";
-      persist();
-    }
+      const saved = localStorage.getItem(STORAGE_KEY); if (!saved) return;
+      const result = api.importLevel(saved);
+      if (result.ok) { data = result.level; statusNote = "Restored the local editor draft."; }
+      else statusNote = `Saved draft was invalid: ${result.errors[0]}`;
+    } catch { statusNote = "Saved draft could not be read safely."; }
   }
   function commit(mutator, note = "Draft updated.") {
     const before = serialize(); mutator(); const after = serialize();
@@ -332,24 +260,12 @@
     };
   }
   function objectRect(object) {
-    const withControl = (rect) => {
-      if (!object.control) return rect;
-      const baseX = object.x;
-      const baseY = object.type === "enemy" ? object.surfaceY - 42 : object.y;
-      const progress = object.control.initialProgress || 0;
-      const eased = progress * progress * (3 - 2 * progress);
-      return {
-        ...rect,
-        x: rect.x + (object.control.target.x - baseX) * eased,
-        y: rect.y + (object.control.target.y - baseY) * eased
-      };
-    };
     if (object.type === "hazard" && object.attachedTo) {
       const parent = findObject(object.attachedTo);
-      if (parent) return withControl({ x: parent.x + (object.offsetX || 0), y: parent.y + (object.offsetY || 0), width: object.width, height: object.height });
+      if (parent) return { x: parent.x + (object.offsetX || 0), y: parent.y + (object.offsetY || 0), width: object.width, height: object.height };
     }
-    if (object.type === "spawn") return withControl({ x: object.x, y: object.y, width: 46, height: 42 });
-    if (object.type === "movingPlatform" && !object.control) {
+    if (object.type === "spawn") return { x: object.x, y: object.y, width: 46, height: 42 };
+    if (object.type === "movingPlatform") {
       const offset = Math.sin(object.motion.phase || 0) * object.motion.range;
       return { x: object.x + (object.motion.axis === "x" ? offset : 0), y: object.y + (object.motion.axis === "y" ? offset : 0), width: object.width, height: object.height };
     }
@@ -357,13 +273,13 @@
       const progress = object.initialProgress, eased = progress * progress * (3 - 2 * progress);
       return { x: object.x + (object.target.x - object.x) * eased, y: object.y + (object.target.y - object.y) * eased, width: object.width, height: object.height };
     }
-    if (object.type === "exit") return withControl(object);
-    if (object.type === "star") return withControl({ x: object.x - 16, y: object.y - 16, width: 32, height: 32 });
-    if (object.type === "switch") return withControl({ x: object.x, y: object.y, width: 42, height: 44 });
-    if (object.type === "pressurePlate") return withControl({ x: object.x, y: object.y, width: object.width, height: 12 });
-    if (object.type === "enemy") return withControl({ x: object.x, y: object.surfaceY - 42, width: 46, height: 42 });
-    if (object.type === "movingObstacle") return withControl({ x: object.x, y: object.y, width: object.size, height: object.size });
-    return withControl({ x: object.x, y: object.y, width: object.width, height: object.height });
+    if (object.type === "exit") return object;
+    if (object.type === "star") return { x: object.x - 16, y: object.y - 16, width: 32, height: 32 };
+    if (object.type === "switch") return { x: object.x, y: object.y, width: 42, height: 44 };
+    if (object.type === "pressurePlate") return { x: object.x, y: object.y, width: object.width, height: 12 };
+    if (object.type === "enemy") return { x: object.x, y: object.surfaceY - 42, width: 46, height: 42 };
+    if (object.type === "movingObstacle") return { x: object.x, y: object.y, width: object.size, height: object.size };
+    return { x: object.x, y: object.y, width: object.width, height: object.height };
   }
   function hitTest(point) {
     const choices = [
@@ -387,11 +303,11 @@
     if (type === "star") return base;
     if (type === "movingPlatform") return rect(140, 40, { material: "stone", motion: { axis: "x", range: 140, speed: 1, phase: 0 } });
     const controller = data.objects.find((object) => ["switch", "pressurePlate"].includes(object.type));
-    if (type === "controlledPlatform") return rect(140, 40, { material: "stone", target: { x: snapValue(x + 180), y: snapValue(y) }, controllerIds: [controller.id], requiresActive: true, releaseDelay: 0, moveDuration: 1.15, initialProgress: 0 });
+    if (type === "controlledPlatform") return rect(140, 40, { material: "stone", target: { x: snapValue(x + 180), y: snapValue(y) }, controllerIds: [controller?.id || "missing-controller"], requiresActive: true, releaseDelay: 0, moveDuration: 1.15, initialProgress: 0 });
     if (type === "rewindPlatform") return rect(160, 40, { material: "stone", target: { x: snapValue(x + 240), y: snapValue(y) }, speed: 260, releaseDelay: 2, motionPath: [{ x: snapValue(x), y: snapValue(y) }, { x: snapValue(x + 240), y: snapValue(y) }], pathIndex: 1, autoStart: true, carryDuringRewind: true, resumeAfterRewind: true, loopPath: false, carryPlayer: true });
     if (type === "switch") return { ...base, momentary: false, pulseDuration: 1, initialFlipped: false };
     if (type === "pressurePlate") return { ...base, width: 100, filter: "any" };
-    if (type === "enemy") return { id: base.id, type, x: base.x, surfaceY: snapValue(y + 42), patrolMinX: snapValue(x - 100), patrolMaxX: snapValue(x + 160), direction: 1, speed: 62, stopAtBoundary: false, rewindable: true };
+    if (type === "enemy") return { ...base, surfaceY: snapValue(y + 42), patrolMinX: snapValue(x - 100), patrolMaxX: snapValue(x + 160), direction: 1, speed: 62, stopAtBoundary: false, rewindable: true };
     if (type === "movingObstacle") return { ...base, size: 58, speed: 170, motionPath: [{ x: snapValue(x), y: snapValue(y) }, { x: snapValue(x + 220), y: snapValue(y) }], pathIndex: 1, loopPath: true, resumeAfterRewind: true };
     return base;
   }
@@ -399,24 +315,18 @@
   function place(point) {
     if (tool === "spawn") return commit(() => { data.spawn.x = snapValue(point.x); data.spawn.y = snapValue(point.y); selected = "@spawn"; }, "Moved the player spawn.");
     if (tool === "exit") return commit(() => { data.exit.x = snapValue(point.x); data.exit.y = snapValue(point.y); selected = "@exit"; }, "Moved the level exit.");
-    if (tool === "controlledPlatform" && !data.objects.some((object) => ["switch", "pressurePlate"].includes(object.type))) {
-      statusNote = "Place a switch or pressure plate before adding a controlled platform.";
-      refresh();
-      return;
-    }
     const object = defaultObject(tool, point.x, point.y);
     commit(() => { data.objects.push(object); selected = object.id; tool = "select"; }, `Placed ${LABELS[PLACE_TO_TYPE[tool] || tool] || tool}.`);
     setTool("select");
   }
 
   function waypointHit(point, object) {
-    if (!object?.motionPath || object.control) return -1;
+    if (!object?.motionPath) return -1;
     return object.motionPath.findIndex((waypoint) => Math.hypot(waypoint.x - point.x, waypoint.y - point.y) < 12 / zoom);
   }
   function specialHandleHit(point, object) {
     const tolerance = 12 / zoom;
-    if (object?.control?.target && Math.hypot(object.control.target.x - point.x, object.control.target.y - point.y) < tolerance) return "control-target";
-    if (!object?.control && object?.target && Math.hypot(object.target.x - point.x, object.target.y - point.y) < tolerance) return "target";
+    if (object?.target && Math.hypot(object.target.x - point.x, object.target.y - point.y) < tolerance) return "target";
     if (object?.type === "enemy") {
       if (Math.abs(object.patrolMinX - point.x) < tolerance && Math.abs(object.surfaceY - point.y) < 35 / zoom) return "min";
       if (Math.abs(object.patrolMaxX - point.x) < tolerance && Math.abs(object.surfaceY - point.y) < 35 / zoom) return "max";
@@ -468,25 +378,12 @@
     }
     else if (drag.kind === "level-width") { data.width = Math.max(320, snapValue(point.x)); clampCamera(); }
     else if (drag.kind === "waypoint") { object.motionPath[drag.index].x = snapValue(point.x); object.motionPath[drag.index].y = snapValue(point.y); }
-    else if (drag.kind === "control-target") {
-      const editable = selected === "@exit" ? data.exit : object;
-      editable.control.target.x = snapValue(point.x); editable.control.target.y = snapValue(point.y);
-    }
     else if (drag.kind === "target") { object.target.x = snapValue(point.x); object.target.y = snapValue(point.y); }
     else if (drag.kind === "min") object.patrolMinX = Math.min(snapValue(point.x), object.patrolMaxX - GRID);
     else if (drag.kind === "max") object.patrolMaxX = Math.max(snapValue(point.x), object.patrolMinX + GRID);
     else if (drag.kind === "move") {
       const x = snapValue(point.x - drag.offsetX), y = snapValue(point.y - drag.offsetY);
       if (selected === "@spawn") Object.assign(data.spawn, { x, y });
-      else if (object.control) {
-        const editable = selected === "@exit" ? data.exit : object;
-        const current = objectRect(object), dx = x - current.x, dy = y - current.y;
-        if (editable.type === "enemy") { editable.x += dx; editable.surfaceY += dy; }
-        else if (editable.type === "star") { editable.x += dx; editable.y += dy; }
-        else { editable.x += dx; editable.y += dy; }
-        editable.control.target.x += dx;
-        editable.control.target.y += dy;
-      }
       else if (selected === "@exit") Object.assign(data.exit, { x, y });
       else if (object.type === "enemy") { const dy = y - (object.surfaceY - 42); object.x = x; object.surfaceY += dy; }
       else if (object.type === "movingPlatform") { const current=objectRect(object);object.x+=x-current.x;object.y+=y-current.y; }
@@ -553,71 +450,21 @@
         if (item.controllerId === old) item.controllerId = next;
         if (item.attachedTo === old) item.attachedTo = next;
         if (item.controllerIds) item.controllerIds = item.controllerIds.map((id) => id === old ? next : id);
-        if (item.control?.controllerIds) item.control.controllerIds = item.control.controllerIds.map((id) => id === old ? next : id);
       });
-      if (data.exit.control?.controllerIds) data.exit.control.controllerIds = data.exit.control.controllerIds.map((id) => id === old ? next : id);
     }, `Renamed ${old} and updated its links.`);
   }
 
-  function controllerLinks(object, control = object) {
+  function controllerLinks(object) {
     heading("Controllers");
-    const eligible = data.objects.filter((item) => item !== object && ["switch", "pressurePlate"].includes(item.type));
+    const eligible = data.objects.filter((item) => ["switch", "pressurePlate"].includes(item.type));
     const list = document.createElement("div"); list.className = "editor-link-list";
     eligible.forEach((item) => {
-      const label = document.createElement("label"), input = document.createElement("input"); input.type = "checkbox"; input.checked = control.controllerIds.includes(item.id);
-      input.disabled = input.checked && control.controllerIds.length === 1;
-      input.title = input.disabled ? "Controlled movement needs at least one controller." : "";
+      const label = document.createElement("label"), input = document.createElement("input"); input.type = "checkbox"; input.checked = object.controllerIds.includes(item.id);
       input.addEventListener("change", () => commit(() => {
-        control.controllerIds = input.checked ? [...new Set([...control.controllerIds, item.id])] : control.controllerIds.filter((id) => id !== item.id);
+        object.controllerIds = input.checked ? [...object.controllerIds, item.id] : object.controllerIds.filter((id) => id !== item.id);
       }, `Updated links for ${object.id}.`)); label.append(input, document.createTextNode(`${item.id} (${item.type})`)); list.append(label);
     });
     if (!eligible.length) list.textContent = "Place a switch or pressure plate first."; fields.append(list);
-  }
-
-  function controlBasePoint(object) {
-    return { x: object.x, y: object.type === "enemy" ? object.surfaceY - 42 : object.y };
-  }
-
-  function addGenericControl(object) {
-    const controller = data.objects.find((item) => item !== object && ["switch", "pressurePlate"].includes(item.type));
-    if (!controller) { statusNote = "Place a switch or pressure plate before controlling this object."; return refresh(); }
-    commit(() => {
-      if (object.type === "hazard" && object.attachedTo) {
-        const rect = objectRect(object);
-        object.x = rect.x; object.y = rect.y;
-        delete object.attachedTo; delete object.offsetX; delete object.offsetY;
-      }
-      const base = controlBasePoint(object);
-      object.control = {
-        controllerIds: [controller.id],
-        target: { x: Math.min(data.width, base.x + 180), y: base.y },
-        releaseDelay: 0,
-        moveDuration: 1.15,
-        initialProgress: 0
-      };
-    }, `Added controlled movement to ${object.id}.`);
-  }
-
-  function renderGenericControl(object) {
-    heading("Controlled Movement");
-    if (!object.control) {
-      const add = document.createElement("button"); add.type = "button"; add.textContent = "Add Controlled Movement";
-      add.addEventListener("click", () => addGenericControl(object)); fields.append(add); return;
-    }
-    if (["movingPlatform","rewindPlatform","movingObstacle","enemy"].includes(object.type)) {
-      const note=document.createElement("p");note.className="editor-control-note";note.textContent="Controlled movement overrides this object's normal automatic movement during playtest.";fields.append(note);
-    }
-    const controlNumber = (label, key, value, step = undefined) => field(label, key, value, {
-      ...(step ? { step } : {}),
-      change: (input) => commit(() => { object.control[key] = Number(input.value); }, `Changed controlled movement ${key}.`)
-    });
-    field("Controlled target X", "control.target.x", object.control.target.x, { change: (input) => commit(() => { object.control.target.x = Number(input.value); }, "Changed controlled target X.") });
-    field("Controlled target Y", "control.target.y", object.control.target.y, { change: (input) => commit(() => { object.control.target.y = Number(input.value); }, "Changed controlled target Y.") });
-    controlNumber("Initial progress", "initialProgress", object.control.initialProgress || 0, ".05");
-    controlNumber("Release delay", "releaseDelay", object.control.releaseDelay || 0, ".05");
-    controlNumber("Move duration", "moveDuration", object.control.moveDuration || 1.15, ".05");
-    controllerLinks(object, object.control);
-    const remove=document.createElement("button");remove.type="button";remove.textContent="Remove Controlled Movement";remove.addEventListener("click",()=>commit(()=>delete object.control,`Removed controlled movement from ${object.id}.`));fields.append(remove);
   }
 
   function pathEditor(object) {
@@ -636,10 +483,7 @@
     if (!object) { fields.textContent = "Select an object or choose something from the placement palette."; return; }
     if (object.type === "spawn") { field("X", "x", data.spawn.x); field("Y", "y", data.spawn.y); return; }
     if (object.type === "exit") {
-      const exitNumber = (label, key) => field(label, key, data.exit[key], { change: (input) => commit(() => { data.exit[key] = Number(input.value); }, `Changed exit ${key}.`) });
-      field("ID", "id", data.exit.id, { type: "text", change: renameId });
-      exitNumber("X", "x"); exitNumber("Y", "y"); exitNumber("Width", "width"); exitNumber("Height", "height");
-      renderGenericControl(data.exit); return;
+      field("ID", "id", data.exit.id, { type: "text", change: renameId }); field("X", "x", data.exit.x); field("Y", "y", data.exit.y); field("Width", "width", data.exit.width); field("Height", "height", data.exit.height); return;
     }
     field("Stable ID", "id", object.id, { type: "text", change: renameId });
     field("X", "x", object.x); field(object.type === "enemy" ? "Surface Y" : "Y", object.type === "enemy" ? "surfaceY" : "y", object.type === "enemy" ? object.surfaceY : object.y);
@@ -665,30 +509,16 @@
     if (object.type === "pressurePlate") field("Activation filter", "filter", object.filter, { values: [["any","Any weight"],["crate","Crate only"],["enemy","Enemy only"]] });
     if (object.type === "enemy") { field("Patrol min X", "patrolMinX", object.patrolMinX); field("Patrol max X", "patrolMaxX", object.patrolMaxX); field("Starting direction", "direction", object.direction, { values: [["1","Right"],["-1","Left"]], number: true }); field("Speed", "speed", object.speed); check("Stop at boundary", "stopAtBoundary", object.stopAtBoundary); }
     if (object.type === "movingObstacle") { field("Size", "size", object.size); field("Speed", "speed", object.speed); field("Starting waypoint", "pathIndex", object.pathIndex || 0); check("Loop path", "loopPath", object.loopPath); check("Resume after rewind", "resumeAfterRewind", object.resumeAfterRewind); pathEditor(object); }
-    if (object.type !== "controlledPlatform") renderGenericControl(object);
     const remove = document.createElement("button"); remove.type = "button"; remove.className = "editor-danger"; remove.textContent = "Delete object"; remove.addEventListener("click", deleteSelected); fields.append(remove);
   }
 
   function deleteSelected() {
     const object = selectionObject(); if (!object || selected?.startsWith("@")) return;
-    const refs = data.objects.filter((item) => item !== object && (item.controllerId === object.id || item.attachedTo === object.id || item.controllerIds?.includes(object.id) || item.control?.controllerIds?.includes(object.id)));
-    if (data.exit.control?.controllerIds?.includes(object.id)) refs.push(data.exit);
+    const refs = data.objects.filter((item) => item !== object && (item.controllerId === object.id || item.attachedTo === object.id || item.controllerIds?.includes(object.id)));
     if (refs.length && !confirm(`${object.id} is linked to ${refs.map((item) => item.id).join(", ")}. Delete it and clean those references?`)) return;
     commit(() => {
       data.objects = data.objects.filter((item) => item !== object && item.attachedTo !== object.id);
-      data.objects.forEach((item) => {
-        if (item.controllerId === object.id) delete item.controllerId;
-        if (item.controllerIds) item.controllerIds = item.controllerIds.filter((id) => id !== object.id);
-        if (item.control?.controllerIds) {
-          item.control.controllerIds = item.control.controllerIds.filter((id) => id !== object.id);
-          if (!item.control.controllerIds.length) delete item.control;
-        }
-      });
-      if (data.exit.control?.controllerIds) {
-        data.exit.control.controllerIds = data.exit.control.controllerIds.filter((id) => id !== object.id);
-        if (!data.exit.control.controllerIds.length) delete data.exit.control;
-      }
-      selected = null;
+      data.objects.forEach((item) => { if (item.controllerId === object.id) delete item.controllerId; if (item.controllerIds) item.controllerIds = item.controllerIds.filter((id) => id !== object.id); }); selected = null;
     }, `Deleted ${object.id}. Relink any controller left without an input.`);
   }
 
@@ -847,35 +677,18 @@
         { x: rect.x + rect.width / 2, y: rect.y }, "#e85757"
       );
     }
-    if (object.motionPath && !object.control) {
+    if (object.motionPath) {
       object.motionPath.slice(0, -1).forEach((point, index) => drawArrowLine(point, object.motionPath[index + 1]));
       object.motionPath.forEach((point, index) => {
         ctx.fillStyle = index === (object.pathIndex || 0) ? "#fff" : "#f4c95d";
         ctx.beginPath(); ctx.arc(point.x, point.y, 7 / zoom, 0, Math.PI * 2); ctx.fill();
       });
     }
-    if (object.target && !object.control) {
+    if (object.target) {
       drawArrowLine({ x: object.x + object.width / 2, y: object.y + object.height / 2 }, object.target);
       ctx.fillStyle = "#f4c95d"; ctx.fillRect(object.target.x - 6 / zoom, object.target.y - 6 / zoom, 12 / zoom, 12 / zoom);
     }
-    if (object.control) {
-      for (const id of object.control.controllerIds) {
-        const controller = findObject(id);
-        if (controller) {
-          const controllerRect = objectRect(controller);
-          drawArrowLine(
-            { x: controllerRect.x + controllerRect.width / 2, y: controllerRect.y },
-            { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 },
-            "#56d4f5"
-          );
-        }
-      }
-      const base = controlBasePoint(object);
-      drawArrowLine(base, object.control.target, "#f4c95d");
-      ctx.fillStyle = "#f4c95d";
-      ctx.fillRect(object.control.target.x - 7 / zoom, object.control.target.y - 7 / zoom, 14 / zoom, 14 / zoom);
-    }
-    if (object.type === "movingPlatform" && !object.control) {
+    if (object.type === "movingPlatform") {
       const horizontal = object.motion.axis === "x";
       const a = { x: object.x + (horizontal ? -object.motion.range : object.width / 2), y: object.y + (horizontal ? object.height / 2 : -object.motion.range) };
       const b = { x: object.x + (horizontal ? object.motion.range + object.width : object.width / 2), y: object.y + (horizontal ? object.height / 2 : object.motion.range + object.height) };
@@ -884,7 +697,7 @@
       const center = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
       drawArrowLine(center, { x: center.x + (horizontal ? sign * 38 : 0), y: center.y + (horizontal ? 0 : sign * 38) }, "#ffffff");
     }
-    if (object.type === "enemy" && !object.control) drawArrowLine({ x: object.patrolMinX, y: object.surfaceY }, { x: object.patrolMaxX, y: object.surfaceY }, "#e85757");
+    if (object.type === "enemy") drawArrowLine({ x: object.patrolMinX, y: object.surfaceY }, { x: object.patrolMaxX, y: object.surfaceY }, "#e85757");
   }
   function drawSelection() {
     const object=selectionObject();if(!object||selected==="@settings")return;const r=objectRect(object),unit=1/zoom;ctx.strokeStyle="#f4c95d";ctx.lineWidth=3*unit;ctx.strokeRect(r.x-3*unit,r.y-3*unit,r.width+6*unit,r.height+6*unit);
@@ -912,64 +725,20 @@
     if(viewFitted){fitLevel();return;}
     cameraX=centerX-visibleWorldWidth()/2;cameraY=centerY-visibleWorldHeight()/2;clampCamera();draw();
   }
-  function refresh() { syncDraftPicker();host.querySelector('[data-action="undo"]').disabled=!undoStack.length;host.querySelector('[data-action="redo"]').disabled=!redoStack.length; renderInspector();validate();draw(); }
-
-  function resetDraftView() {
-    selected = "@spawn"; tool = "select"; canvas.dataset.tool = "select";
-    cameraX = 0; cameraY = 0; undoStack = []; redoStack = []; viewFitted = false;
-    host.querySelectorAll("[data-tool]").forEach((button) => button.classList.toggle("active", button.dataset.tool === "select"));
-  }
-  function activateDraft(key, note) {
-    if (key === activeDraftKey || !drafts.some((draft) => draft.key === key)) return;
-    persist(); activeDraftKey = key; data = activeDraft().level; resetDraftView();
-    statusNote = note || `Now editing ${data.name}.`; persist(); fitLevel(); refresh();
-  }
-  function addDraft(level, note) {
-    persist();
-    const draft = { key: nextDraftKey(), level };
-    drafts.push(draft); activeDraftKey = draft.key; data = draft.level; resetDraftView();
-    statusNote = note; persist(); fitLevel(); refresh();
-  }
+  function refresh() { host.querySelector('[data-action="undo"]').disabled=!undoStack.length;host.querySelector('[data-action="redo"]').disabled=!redoStack.length; renderInspector();validate();draw(); }
 
   function newLevel(clearOnly = false) {
-    if (clearOnly) {
-      if (!confirm("Clear all placed objects from this level? Spawn, exit, and level settings will remain.")) return;
-      commit(() => data.objects = [], "Cleared all placed objects from this level.");
-      return;
-    }
-    const identity = uniqueLevelIdentity();
-    const level = freshLevel(); Object.assign(level, identity);
-    addDraft(level, `Created ${level.name}. Your other levels were preserved.`);
-  }
-  function duplicateLevel() {
-    const sourceName = data.name;
-    const copy = clone(data);
-    const identity = uniqueLevelIdentity(`${data.name} Copy`, `${data.id}-copy`);
-    Object.assign(copy, identity);
-    addDraft(copy, `Duplicated ${sourceName} as ${copy.name}.`);
-  }
-  function deleteDraft() {
-    if (drafts.length <= 1) return;
-    const index = drafts.findIndex((draft) => draft.key === activeDraftKey);
-    if (!confirm(`Delete the local level “${data.name}”? This cannot be undone.`)) return;
-    drafts.splice(index, 1);
-    const replacement = drafts[Math.min(index, drafts.length - 1)];
-    activeDraftKey = replacement.key; data = replacement.level; resetDraftView();
-    statusNote = "Deleted the level and switched to another local draft."; persist(); fitLevel(); refresh();
+    const promptText=clearOnly?"Clear all placed objects? Spawn, exit, and level settings will remain.":"Create a new level and replace this local draft?";
+    if(!confirm(promptText))return;
+    commit(()=>{ if(clearOnly)data.objects=[];else{data=freshLevel();selected="@spawn";cameraX=0;cameraY=0;} },clearOnly?"Cleared all placed objects.":"Created a new local level draft.");
+    if(!clearOnly)fitLevel();
   }
   function exportData() { const result=api.exportLevel(data);if(!result.ok){statusNote=result.errors[0];return refresh();}const blob=new Blob([result.json],{type:"application/json"}),link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=`${data.id}.json`;link.click();URL.revokeObjectURL(link.href);statusNote="Exported validated level JSON.";refresh(); }
-  async function importFile(file) {
-    if(!file)return;
-    const text=await file.text();let importedText=text,repaired=false;
-    try { const parsed=JSON.parse(text);repaired=repairKnownEditorData(parsed);if(repaired)importedText=JSON.stringify(parsed); } catch { /* The safe importer reports malformed JSON below. */ }
-    const result=api.importLevel(importedText);
-    if(!result.ok){statusNote=`Import rejected: ${result.errors.join(" · ")}`;return refresh();}
-    addDraft(result.level, repaired?"Imported a new level and repaired its enemy placement data.":"Imported a new validated level without replacing your other drafts.");
-  }
+  async function importFile(file) { if(!file)return;const result=api.importLevel(await file.text());if(!result.ok){statusNote=`Import rejected: ${result.errors.join(" · ")}`;return refresh();}commit(()=>{data=result.level;selected="@spawn";cameraX=0;cameraY=0;},"Imported validated level JSON.");fitLevel(); }
 
   host.addEventListener("click", (event) => {
     const action=event.target.closest("[data-action]")?.dataset.action;if(!action)return;
-    if(action==="new")newLevel(false);else if(action==="duplicate")duplicateLevel();else if(action==="delete-draft")deleteDraft();else if(action==="clear")newLevel(true);else if(action==="undo")undo();else if(action==="redo")redo();else if(action==="import")importInput.click();else if(action==="export")exportData();
+    if(action==="new")newLevel(false);else if(action==="clear")newLevel(true);else if(action==="undo")undo();else if(action==="redo")redo();else if(action==="import")importInput.click();else if(action==="export")exportData();
     else if(action==="snap"){snap=!snap;event.target.textContent=`Snap: ${snap?"On":"Off"}`;statusNote=`Grid snapping ${snap?"enabled":"disabled"}.`;refresh();}
     else if(action==="zoom-out")setZoom(zoom/1.2);
     else if(action==="zoom-in")setZoom(zoom*1.2);
@@ -989,7 +758,6 @@
       clampCamera();draw();
     }
   });
-  draftPicker.addEventListener("change", () => activateDraft(draftPicker.value));
   new ResizeObserver(resizeCanvas).observe(viewport);
 
   function open() { document.querySelector("#mainMenu").hidden=true;host.hidden=false;document.querySelector(".touch-controls").hidden=true;document.querySelector(".instructions").hidden=true;requestAnimationFrame(()=>{resizeCanvas();if(!openedOnce){fitLevel();openedOnce=true;}refresh();}); }
@@ -997,10 +765,5 @@
   function showAfterPlaytest(note="Returned from playtest.") { host.hidden=false;document.querySelector(".touch-controls").hidden=true;document.querySelector(".instructions").hidden=true;statusNote=note;requestAnimationFrame(()=>{resizeCanvas();refresh();}); }
 
   restore(); setTool("select");
-  window.PlatformsEditor=Object.freeze({
-    open, close, showAfterPlaytest, redraw:draw,
-    getDraft:()=>clone(data),
-    getDrafts:()=>drafts.map((draft)=>({key:draft.key,active:draft.key===activeDraftKey,level:clone(draft.level)})),
-    setPlaytestCallback:(callback)=>{playtestCallback=callback;}
-  });
+  window.PlatformsEditor=Object.freeze({ open, close, showAfterPlaytest, redraw:draw, getDraft:()=>clone(data), setPlaytestCallback:(callback)=>{playtestCallback=callback;} });
 })();
