@@ -21,8 +21,6 @@
   background: #14213a;
 }
 
-.game-frame:has(.level-editor:not([hidden])) .editor-toolbar { padding-left: 58px; }
-
 .editor-toolbar strong { margin-right: auto; color: #8de4ff; }
 .editor-toolbar button, .editor-sidebar button, .editor-inspector button {
   min-height: 30px;

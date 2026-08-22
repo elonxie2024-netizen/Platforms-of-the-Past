@@ -25,16 +25,6 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 
 .game-shell { width: min(1100px, 100%); }
 
-.game-shell.display-large-screen {
-  position: fixed;
-  z-index: 100;
-  top: 50%;
-  left: 50%;
-  width: var(--display-base-width);
-  transform: translate(-50%, -50%) scale(var(--display-scale, 1));
-  transform-origin: center center;
-}
-
 header {
   display: flex;
   flex-wrap: wrap;
@@ -45,21 +35,6 @@ header {
 }
 
 .header-actions { display: flex; gap: 9px; }
-
-.in-game-actions {
-  position: absolute;
-  z-index: 5;
-  top: 14px;
-  right: 14px;
-}
-
-.in-game-actions .restart,
-.in-game-actions .quit-button {
-  color: #fff;
-  border-color: #8de4ffaa;
-  background: #102f53f2;
-  box-shadow: 0 5px 16px #00152a88, inset 0 1px #ffffff2b;
-}
 
 h1, h2, p { margin: 0; }
 h1 { font-size: clamp(1.7rem, 5vw, 3rem); letter-spacing: -.045em; line-height: .95; }
@@ -89,11 +64,6 @@ kbd { margin-left: 5px; color: #bdefff; font: inherit; }
   box-shadow: 0 28px 80px #0008, inset 0 1px #fff5;
 }
 
-.game-surface {
-  position: relative;
-  width: 100%;
-}
-
 canvas {
   display: block;
   width: 100%;
@@ -105,8 +75,8 @@ canvas {
 .hud {
   position: absolute;
   z-index: 2;
-  top: 64px;
-  left: 14px;
+  top: 14px;
+  left: 62px;
   right: 14px;
   display: flex;
   gap: 8px;
@@ -131,7 +101,7 @@ canvas {
 
 .fullscreen-toggle {
   position: absolute;
-  z-index: 60;
+  z-index: 4;
   top: 14px;
   left: 14px;
   width: 36px;
@@ -140,7 +110,7 @@ canvas {
   border-radius: 11px;
   padding: 7px;
   color: #fff;
-  background: #102f53f2;
+  background: #0a1737b8;
   box-shadow: 0 5px 18px #0003;
   cursor: pointer;
   backdrop-filter: blur(8px);
@@ -311,7 +281,7 @@ canvas {
   bottom: 48px;
   width: 44px;
   height: 44px;
-  background: url("assets/slime-player.svg") center / contain no-repeat;
+  background: url("../assets/slime-player.svg") center / contain no-repeat;
   filter: drop-shadow(0 6px 5px #17482b45);
   will-change: left, bottom, transform;
 }
@@ -975,31 +945,26 @@ canvas {
 .changelog-entry p { color: #c2cfe1; font-size: .76rem; line-height: 1.4; }
 .changelog-entry time { color: #7185a2; font-size: .66rem; }
 
-.game-frame:fullscreen,
-.game-frame:-webkit-full-screen {
-  position: fixed;
-  inset: 0;
-  width: 100vw !important;
-  height: 100vh !important;
-  max-width: none;
-  max-height: none;
-  border: 0;
-  border-radius: 0;
-  overflow: hidden;
-  background: #090e1d;
+.game-shell:fullscreen,
+.game-shell:-webkit-full-screen {
+  width: 100vw;
+  height: 100vh;
+  height: 100svh;
+  overflow: auto;
+  padding: clamp(10px, 2vw, 24px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 15% 10%, #29336e 0, transparent 35%),
+    radial-gradient(circle at 90% 85%, #133b57 0, transparent 38%),
+    #090e1d;
 }
 
-.game-frame:fullscreen::backdrop { background: #090e1d; }
-
-.game-frame:fullscreen > .game-surface,
-.game-frame:-webkit-full-screen > .game-surface {
-  position: relative;
-  top: var(--fullscreen-offset-y, 0);
-  left: var(--fullscreen-offset-x, 0);
-  width: var(--fullscreen-surface-width);
-  height: var(--fullscreen-surface-height);
-  transform: scale(var(--fullscreen-ui-scale, 1));
-  transform-origin: top left;
+.game-shell:fullscreen .game-frame,
+.game-shell:-webkit-full-screen .game-frame {
+  width: min(100%, calc((100vh - 150px) * 16 / 9));
+  margin-inline: auto;
 }
 
 .message {

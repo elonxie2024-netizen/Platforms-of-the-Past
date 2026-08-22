@@ -18,8 +18,8 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/player-slime.svg", enemy: "assets/enemy-slime.svg", switch: "assets/switch.svg",
-    pressurePlate: "assets/pressure-plate.svg", jumpPad: "assets/jump-pad.svg", blade: "assets/moving-blade.svg"
+    player: "../assets/player-slime.svg", enemy: "../assets/enemy-slime.svg", switch: "../assets/switch.svg",
+    pressurePlate: "../assets/pressure-plate.svg", jumpPad: "../assets/jump-pad.svg", blade: "../assets/moving-blade.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
@@ -37,7 +37,7 @@
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.26.2</strong>
+      <strong>Level Editor · v0.26.1</strong>
       <button data-action="new">New</button><button data-action="clear">Clear</button>
       <button data-action="undo">Undo</button><button data-action="redo">Redo</button>
       <button data-action="import">Import</button><button data-action="export">Export</button>
