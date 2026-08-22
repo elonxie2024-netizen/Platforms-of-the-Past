@@ -38,7 +38,7 @@
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.26.2</strong>
+      <strong>Level Editor · v0.26.1</strong>
       <button data-action="new">New</button><button data-action="clear">Clear</button>
       <button data-action="undo">Undo</button><button data-action="redo">Redo</button>
       <button data-action="import">Import</button><button data-action="export">Export</button>
