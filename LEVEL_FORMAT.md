@@ -224,6 +224,8 @@ All other campaign levels continue using their previous declarations to minimize
 
 Version 0.26.0 adds a Level Editor entry to the main menu. It edits this schema directly—there is no editor-only format or executable scripting layer. The canvas supports grid placement, selection, dragging, resizing, ID-based controller and attachment links, motion-path handles, initial states, and the allowlisted level settings above.
 
+Version 0.26.3 makes the editor preview use the same shared game assets as playtest mode. Its bounded world viewport supports two-axis panning, zooming, fitting the complete level with visible exterior space, and dragging the right world boundary to edit the schema-backed `width`. The vertical world size remains the engine's fixed 570-pixel editor space and is intentionally not added to the serialized schema.
+
 The editor keeps one browser-local draft under a separate storage key, with bounded undo/redo history for the current session. Import and export pass through the same validation and cloning utilities as campaign migration. Playtest loads a fresh runtime clone through the generic adapter, then removes it on return; it cannot unlock campaign levels, alter account progress, or submit to leaderboards.
 
 Community publishing, browsing, ratings, comments, collaboration, arbitrary scripting, and account-backed draft storage remain out of scope.

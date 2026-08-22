@@ -4,13 +4,9 @@
   const api = window.PlatformsLevelData;
   const host = document.querySelector("#levelEditor");
   const STORAGE_KEY = "platforms-past-level-editor-draft-v1";
-  const LAYOUT_STORAGE_KEY = "platforms-past-level-editor-layout-v1";
   const GRID = 20;
   const WORLD_H = 570;
   const HISTORY_LIMIT = 80;
-  const MIN_ZOOM = .02;
-  const MAX_ZOOM = 2.5;
-  const VIEW_PADDING = 34;
   const RECT_TYPES = new Set(["platform", "floatingPlatform", "crate", "breakableBlock", "jumpPad", "hazard", "movingPlatform", "controlledPlatform", "rewindPlatform"]);
   const RESIZABLE = new Set([...RECT_TYPES, "pressurePlate"]);
   const LABELS = {
@@ -22,11 +18,8 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/slime-player.svg", enemy: "assets/slime-enemy.svg",
-    switch: "assets/switch-left.svg", pressurePlateBase: "assets/pressure-plate-base.svg",
-    pressurePlateTop: "assets/pressure-plate-top.svg", jumpPadBase: "assets/jump-pad-base.svg",
-    jumpPadTop: "assets/jump-pad-top.svg", blade: "assets/moving-obstacle.svg",
-    cracks: "assets/fragile-block-cracks.svg"
+    player: "../assets/player-slime.svg", enemy: "../assets/enemy-slime.svg", switch: "../assets/switch.svg",
+    pressurePlate: "../assets/pressure-plate.svg", jumpPad: "../assets/jump-pad.svg", blade: "../assets/moving-blade.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
@@ -35,20 +28,16 @@
   let selected = "@spawn";
   let tool = "select";
   let cameraX = 0;
-  let cameraY = 0;
-  let zoom = 1;
-  let viewFitted = false;
   let snap = true;
   let drag = null;
   let undoStack = [];
   let redoStack = [];
   let statusNote = "Ready.";
   let playtestCallback = null;
-  let openedOnce = false;
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.26.3</strong>
+      <strong>Level Editor · v0.26.2</strong>
       <button data-action="new">New</button><button data-action="clear">Clear</button>
       <button data-action="undo">Undo</button><button data-action="redo">Redo</button>
       <button data-action="import">Import</button><button data-action="export">Export</button>
@@ -59,18 +48,7 @@
     </div>
     <div class="editor-workspace">
       <aside class="editor-sidebar"><h3>Place</h3><div class="editor-palette"></div></aside>
-      <div class="editor-panel-resizer" data-resize-panel="left" title="Drag to resize the object palette"></div>
-      <div class="editor-viewport">
-        <canvas class="editor-canvas" width="960" height="570"></canvas>
-        <div class="editor-zoom-controls" aria-label="Editor zoom controls">
-          <button type="button" data-action="zoom-out" aria-label="Zoom out">−</button>
-          <output data-role="zoom">100%</output>
-          <button type="button" data-action="zoom-in" aria-label="Zoom in">+</button>
-          <button type="button" data-action="zoom-fit">Fit Level</button>
-        </div>
-        <p class="editor-camera-note">Wheel / arrows: pan · Ctrl + wheel: zoom · drag the level edge to resize</p>
-      </div>
-      <div class="editor-panel-resizer" data-resize-panel="right" title="Drag to resize the properties panel"></div>
+      <div class="editor-viewport"><canvas class="editor-canvas" width="960" height="570"></canvas><p class="editor-camera-note">Wheel / arrows: pan · Delete: remove · drag gold path handles</p></div>
       <aside class="editor-inspector"><h3>Properties</h3><div class="editor-fields"></div></aside>
     </div>
     <div class="editor-status" role="status" aria-live="polite"></div>`;
@@ -81,57 +59,11 @@
   const fields = host.querySelector(".editor-fields");
   const status = host.querySelector(".editor-status");
   const importInput = host.querySelector('[data-role="import"]');
-  const viewport = host.querySelector(".editor-viewport");
-  const zoomOutput = host.querySelector('[data-role="zoom"]');
 
   Object.keys(LABELS).forEach((name) => {
     const button = document.createElement("button");
     button.type = "button"; button.dataset.tool = name; button.textContent = LABELS[name];
     button.addEventListener("click", () => setTool(name)); palette.append(button);
-  });
-
-  function readPanelWidths() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(LAYOUT_STORAGE_KEY) || "null");
-      return {
-        left: Math.max(130, Math.min(300, Number(saved?.left) || 170)),
-        right: Math.max(180, Math.min(380, Number(saved?.right) || 235))
-      };
-    } catch { return { left: 170, right: 235 }; }
-  }
-  let panelWidths = readPanelWidths();
-  function applyPanelWidths(save = false) {
-    host.style.setProperty("--editor-sidebar-width", `${panelWidths.left}px`);
-    host.style.setProperty("--editor-inspector-width", `${panelWidths.right}px`);
-    if (save) try { localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(panelWidths)); } catch { /* Layout remains usable for this session. */ }
-  }
-  applyPanelWidths();
-  host.querySelectorAll("[data-resize-panel]").forEach((handle) => {
-    handle.addEventListener("pointerdown", (event) => {
-      const side = handle.dataset.resizePanel;
-      const startX = event.clientX;
-      const startWidth = panelWidths[side];
-      handle.setPointerCapture(event.pointerId);
-      handle.classList.add("active");
-      const move = (moveEvent) => {
-        const displayScale = host.clientWidth / Math.max(1, host.getBoundingClientRect().width);
-        const delta = (moveEvent.clientX - startX) * displayScale * (side === "right" ? -1 : 1);
-        const maximum = side === "left" ? 300 : 380;
-        panelWidths[side] = Math.max(side === "left" ? 130 : 180, Math.min(maximum, startWidth + delta));
-        applyPanelWidths();
-      };
-      const end = () => {
-        handle.classList.remove("active");
-        handle.removeEventListener("pointermove", move);
-        handle.removeEventListener("pointerup", end);
-        handle.removeEventListener("pointercancel", end);
-        applyPanelWidths(true);
-        resizeCanvas();
-      };
-      handle.addEventListener("pointermove", move);
-      handle.addEventListener("pointerup", end);
-      handle.addEventListener("pointercancel", end);
-    });
   });
 
   function freshLevel() {
@@ -180,12 +112,12 @@
   }
   function undo() {
     if (!undoStack.length) return;
-    redoStack.push(serialize()); data = JSON.parse(undoStack.pop()); selected = selectionObject() ? selected : "@spawn"; clampCamera();
+    redoStack.push(serialize()); data = JSON.parse(undoStack.pop()); selected = selectionObject() ? selected : "@spawn";
     statusNote = "Undid the last editor action."; persist(); refresh();
   }
   function redo() {
     if (!redoStack.length) return;
-    undoStack.push(serialize()); data = JSON.parse(redoStack.pop()); selected = selectionObject() ? selected : "@spawn"; clampCamera();
+    undoStack.push(serialize()); data = JSON.parse(redoStack.pop()); selected = selectionObject() ? selected : "@spawn";
     statusNote = "Redid the editor action."; persist(); refresh();
   }
 
@@ -210,53 +142,11 @@
     host.querySelectorAll("[data-tool]").forEach((button) => button.classList.toggle("active", button.dataset.tool === name));
   }
 
-  function visibleWorldWidth() { return canvas.width / zoom; }
-  function visibleWorldHeight() { return canvas.height / zoom; }
-  function clampAxis(value, worldSize, visibleSize) {
-    const padding = VIEW_PADDING / zoom;
-    const minimum = -padding;
-    const maximum = worldSize - visibleSize + padding;
-    if (maximum < minimum) return (worldSize - visibleSize) / 2;
-    return Math.max(minimum, Math.min(maximum, value));
-  }
-  function clampCamera() {
-    cameraX = clampAxis(cameraX, data.width, visibleWorldWidth());
-    cameraY = clampAxis(cameraY, WORLD_H, visibleWorldHeight());
-  }
-  function updateZoomLabel() { zoomOutput.value = `${Math.round(zoom * 100)}%`; }
-  function setZoom(nextZoom, anchorX = canvas.width / 2, anchorY = canvas.height / 2) {
-    const next = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, nextZoom));
-    const worldX = cameraX + anchorX / zoom;
-    const worldY = cameraY + anchorY / zoom;
-    zoom = next;
-    cameraX = worldX - anchorX / zoom;
-    cameraY = worldY - anchorY / zoom;
-    viewFitted = false;
-    clampCamera();
-    updateZoomLabel();
-    draw();
-  }
-  function fitLevel() {
-    if (!canvas.width || !canvas.height) return;
-    const horizontal = (canvas.width - VIEW_PADDING * 2) / data.width;
-    const vertical = (canvas.height - VIEW_PADDING * 2) / WORLD_H;
-    zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, horizontal, vertical));
-    cameraX = (data.width - visibleWorldWidth()) / 2;
-    cameraY = (WORLD_H - visibleWorldHeight()) / 2;
-    viewFitted = true;
-    updateZoomLabel();
-    draw();
-  }
-
   function worldPoint(event) {
     const rect = canvas.getBoundingClientRect();
-    const screenX = (event.clientX - rect.left) / rect.width * canvas.width;
-    const screenY = (event.clientY - rect.top) / rect.height * canvas.height;
     return {
-      x: cameraX + screenX / zoom,
-      y: cameraY + screenY / zoom,
-      screenX,
-      screenY
+      x: cameraX + (event.clientX - rect.left) / rect.width * canvas.width,
+      y: (event.clientY - rect.top) / rect.height * canvas.height
     };
   }
   function objectRect(object) {
@@ -322,39 +212,29 @@
 
   function waypointHit(point, object) {
     if (!object?.motionPath) return -1;
-    return object.motionPath.findIndex((waypoint) => Math.hypot(waypoint.x - point.x, waypoint.y - point.y) < 12 / zoom);
+    return object.motionPath.findIndex((waypoint) => Math.hypot(waypoint.x - point.x, waypoint.y - point.y) < 12);
   }
   function specialHandleHit(point, object) {
-    const tolerance = 12 / zoom;
-    if (object?.target && Math.hypot(object.target.x - point.x, object.target.y - point.y) < tolerance) return "target";
+    if (object?.target && Math.hypot(object.target.x - point.x, object.target.y - point.y) < 12) return "target";
     if (object?.type === "enemy") {
-      if (Math.abs(object.patrolMinX - point.x) < tolerance && Math.abs(object.surfaceY - point.y) < 35 / zoom) return "min";
-      if (Math.abs(object.patrolMaxX - point.x) < tolerance && Math.abs(object.surfaceY - point.y) < 35 / zoom) return "max";
+      if (Math.abs(object.patrolMinX - point.x) < 12 && Math.abs(object.surfaceY - point.y) < 35) return "min";
+      if (Math.abs(object.patrolMaxX - point.x) < 12 && Math.abs(object.surfaceY - point.y) < 35) return "max";
     }
     return null;
-  }
-  function levelWidthHandleHit(point) {
-    return Math.abs(point.x - data.width) <= 15 / zoom && point.y >= 0 && point.y <= WORLD_H;
   }
 
   canvas.addEventListener("pointerdown", (event) => {
     const point = worldPoint(event);
     if (tool !== "select") return place(point);
     const current = selectionObject(); const wp = waypointHit(point, current); const special = specialHandleHit(point, current);
-    if (levelWidthHandleHit(point)) {
-      selected = "@settings";
-      viewFitted = false;
-      drag = { kind: "level-width", before: serialize() };
-      refresh();
-    } else if (wp >= 0 || special) {
+    if (wp >= 0 || special) {
       drag = { kind: wp >= 0 ? "waypoint" : special, index: wp, before: serialize() };
     } else {
       const hit = hitTest(point);
-      if (!hit) { selected = null; viewFitted = false; drag = { kind: "pan", clientX: event.clientX, clientY: event.clientY, cameraX, cameraY }; refresh(); }
+      if (!hit) { selected = null; drag = { kind: "pan", clientX: event.clientX, camera: cameraX }; refresh(); }
       else {
         selected = hit.token; const rect = objectRect(hit.object);
-        const tolerance = 14 / zoom;
-        const resize = RESIZABLE.has(hit.object.type) && Math.abs(point.x - (rect.x + rect.width)) < tolerance && Math.abs(point.y - (rect.y + rect.height)) < tolerance;
+        const resize = RESIZABLE.has(hit.object.type) && Math.abs(point.x - (rect.x + rect.width)) < 14 && Math.abs(point.y - (rect.y + rect.height)) < 14;
         drag = { kind: resize ? "resize" : "move", before: serialize(), offsetX: point.x - rect.x, offsetY: point.y - rect.y };
         refresh();
       }
@@ -362,21 +242,12 @@
     canvas.setPointerCapture(event.pointerId); canvas.classList.add("dragging");
   });
   canvas.addEventListener("pointermove", (event) => {
-    const point = worldPoint(event);
-    if (!drag) {
-      canvas.style.cursor = tool === "select" && levelWidthHandleHit(point) ? "ew-resize" : "";
-      return;
-    }
-    const object = selectionObject();
+    if (!drag) return; const point = worldPoint(event); const object = selectionObject();
     if (drag.kind === "pan") {
       const canvasRect = canvas.getBoundingClientRect();
-      const deltaX = (event.clientX - drag.clientX) / canvasRect.width * canvas.width / zoom;
-      const deltaY = (event.clientY - drag.clientY) / canvasRect.height * canvas.height / zoom;
-      cameraX = drag.cameraX - deltaX;
-      cameraY = drag.cameraY - deltaY;
-      clampCamera();
+      const delta = (event.clientX - drag.clientX) / canvasRect.width * canvas.width;
+      cameraX = Math.max(0, Math.min(Math.max(0, data.width - canvas.width), drag.camera - delta));
     }
-    else if (drag.kind === "level-width") { data.width = Math.max(320, snapValue(point.x)); clampCamera(); }
     else if (drag.kind === "waypoint") { object.motionPath[drag.index].x = snapValue(point.x); object.motionPath[drag.index].y = snapValue(point.y); }
     else if (drag.kind === "target") { object.target.x = snapValue(point.x); object.target.y = snapValue(point.y); }
     else if (drag.kind === "min") object.patrolMinX = Math.min(snapValue(point.x), object.patrolMaxX - GRID);
@@ -396,31 +267,9 @@
     }
     draw();
   });
-  function endPointer() {
-    if (!drag) return;
-    const { before, kind } = drag;
-    drag = null;
-    canvas.classList.remove("dragging");
-    canvas.style.cursor = "";
-    if (kind === "level-width") finishDrag(before, "Changed the level width.");
-    else if (kind !== "pan") finishDrag(before, "Moved the selected editor item.");
-    else draw();
-  }
+  function endPointer() { if (!drag) return; const before = drag.before; const changed = drag.kind !== "pan"; drag = null; canvas.classList.remove("dragging"); if (changed) finishDrag(before, "Moved the selected editor item."); else draw(); }
   canvas.addEventListener("pointerup", endPointer); canvas.addEventListener("pointercancel", endPointer);
-  canvas.addEventListener("wheel", (event) => {
-    event.preventDefault();
-    if (event.ctrlKey || event.metaKey) {
-      const point = worldPoint(event);
-      setZoom(zoom * Math.exp(-event.deltaY * .0015), point.screenX, point.screenY);
-      return;
-    }
-    const hasVerticalOverflow = visibleWorldHeight() < WORLD_H;
-    viewFitted = false;
-    if (hasVerticalOverflow && !event.shiftKey && Math.abs(event.deltaY) >= Math.abs(event.deltaX)) cameraY += event.deltaY / zoom;
-    else cameraX += (event.deltaX || event.deltaY) / zoom;
-    clampCamera();
-    draw();
-  }, { passive: false });
+  canvas.addEventListener("wheel", (event) => { event.preventDefault(); cameraX = Math.max(0, Math.min(Math.max(0, data.width - 960), cameraX + (event.deltaY || event.deltaX))); draw(); }, { passive: false });
 
   function field(label, key, value, options = {}) {
     const wrapper = document.createElement("label"); wrapper.className = "editor-field"; wrapper.innerHTML = `<span>${label}</span>`;
@@ -529,7 +378,7 @@
     data.settings.echo ||= {};
     field("Level ID", "id", data.id, { type: "text", change: (input) => commit(() => data.id = input.value.trim(), "Changed the level ID.") });
     field("Name", "name", data.name, { type: "text", change: (input) => commit(() => data.name = input.value, "Changed the level name.") });
-    field("World width", "width", data.width, { change: (input) => commit(() => { data.width = Number(input.value); clampCamera(); }, "Changed world width; out-of-bounds objects are reported below.") });
+    field("World width", "width", data.width, { change: (input) => commit(() => data.width = Number(input.value), "Changed world width; out-of-bounds objects are reported below.") });
     field("Music", "settings.music", data.settings.music, { values: [["level1","Trail"],["level2","Rewind"],["level3","Lava"]], change: (input) => commit(() => data.settings.music = input.value, "Changed music.") });
     field("Theme", "settings.theme", data.settings.theme || "default", { values: [["default","Default"],["lava","Lava"],["rewind","Rewind"]], change: (input) => commit(() => data.settings.theme = input.value, "Changed theme.") });
     field("Required level stars", "settings.requiredLevelStars", data.settings.requiredLevelStars || 0, { change: (input) => commit(() => data.settings.requiredLevelStars = Number(input.value), "Changed required stars.") });
@@ -545,99 +394,36 @@
   }
 
   function drawGrid() {
-    const theme = data.settings?.theme;
-    const gradient = ctx.createLinearGradient(0, 0, 0, WORLD_H);
-    gradient.addColorStop(0, theme === "lava" ? "#382337" : theme === "rewind" ? "#25466c" : "#5ac8fa");
-    gradient.addColorStop(1, theme === "lava" ? "#d97a43" : theme === "rewind" ? "#b7e4e8" : "#edfaff");
-    ctx.save();
-    ctx.beginPath(); ctx.rect(0, 0, data.width, WORLD_H); ctx.clip();
-    ctx.fillStyle = gradient; ctx.fillRect(0, 0, data.width, WORLD_H);
-
-    ctx.fillStyle = theme === "lava" ? "#d7b3a326" : "#ffffff4d";
-    for (let x = 100; x < data.width; x += 360) {
-      ctx.beginPath(); ctx.ellipse(x, 105 + (x / 360 % 3) * 55, 66, 19, 0, 0, Math.PI * 2);
-      ctx.ellipse(x + 43, 98 + (x / 360 % 3) * 55, 38, 25, 0, 0, Math.PI * 2); ctx.fill();
-    }
-
-    const showMinor = GRID * zoom >= 8;
-    if (showMinor) {
-      ctx.strokeStyle = "rgba(18, 48, 78, .12)";
-      ctx.lineWidth = 1 / zoom;
-      ctx.beginPath();
-      for (let x = 0; x <= data.width; x += GRID) { ctx.moveTo(x, 0); ctx.lineTo(x, WORLD_H); }
-      for (let y = 0; y <= WORLD_H; y += GRID) { ctx.moveTo(0, y); ctx.lineTo(data.width, y); }
-      ctx.stroke();
-    }
-    let majorGrid = GRID * 5;
-    while (majorGrid * zoom < 35) majorGrid *= 2;
-    ctx.strokeStyle = "rgba(15, 42, 69, .27)";
-    ctx.lineWidth = 1.4 / zoom;
-    ctx.beginPath();
-    for (let x = 0; x <= data.width; x += majorGrid) { ctx.moveTo(x, 0); ctx.lineTo(x, WORLD_H); }
-    for (let y = 0; y <= WORLD_H; y += majorGrid) { ctx.moveTo(0, y); ctx.lineTo(data.width, y); }
-    ctx.stroke();
-    ctx.restore();
+    ctx.fillStyle = data.settings?.theme === "lava" ? "#382538" : data.settings?.theme === "rewind" ? "#b7d8e9" : "#bce8f5"; ctx.fillRect(0,0,canvas.width,WORLD_H);
+    ctx.strokeStyle = "rgba(32,72,100,.17)"; ctx.lineWidth = 1;
+    const start = -(cameraX % GRID); for (let x = start; x < canvas.width; x += GRID) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,WORLD_H); ctx.stroke(); }
+    for (let y = 0; y < WORLD_H; y += GRID) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
   }
   function materialColor(material) { return material === "grass" ? "#76512e" : material === "crate" ? "#a86c34" : "#65707f"; }
   function drawArrowLine(a, b, color = "#f4c95d") {
-    const unit = 1 / zoom;
-    ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=3*unit;ctx.setLineDash([8*unit,6*unit]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.setLineDash([]);
-    const angle=Math.atan2(b.y-a.y,b.x-a.x),size=9*unit;ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x-Math.cos(angle-.6)*size,b.y-Math.sin(angle-.6)*size);ctx.lineTo(b.x-Math.cos(angle+.6)*size,b.y-Math.sin(angle+.6)*size);ctx.fill();
+    const ax = a.x-cameraX, bx=b.x-cameraX; ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=3; ctx.setLineDash([8,6]); ctx.beginPath();ctx.moveTo(ax,a.y);ctx.lineTo(bx,b.y);ctx.stroke();ctx.setLineDash([]);
+    const angle=Math.atan2(b.y-a.y,b.x-a.x), size=9;ctx.beginPath();ctx.moveTo(bx,b.y);ctx.lineTo(bx-Math.cos(angle-.6)*size,b.y-Math.sin(angle-.6)*size);ctx.lineTo(bx-Math.cos(angle+.6)*size,b.y-Math.sin(angle+.6)*size);ctx.fill();
   }
   function drawObject(object) {
-    const rect = objectRect(object), x=rect.x, y=rect.y;
-    if (x+rect.width < cameraX || x > cameraX + visibleWorldWidth() || y+rect.height < cameraY || y > cameraY + visibleWorldHeight()) return;
-    const preview = window.PlatformsGamePreview;
-    const drawArt = (name, dx, dy, width, height, fallback) => {
-      if (preview?.drawGameArt(name, dx, dy, width, height, ctx)) return true;
-      const image = images[fallback || name];
-      if (image?.complete && image.naturalWidth) { ctx.drawImage(image, dx, dy, width, height); return true; }
-      return false;
-    };
+    const rect = objectRect(object), x=rect.x-cameraX, y=rect.y;
+    if (x+rect.width < 0 || x > canvas.width) return;
     ctx.save();
     if (object.type === "platform" || object.type === "floatingPlatform" || ["movingPlatform","controlledPlatform","rewindPlatform"].includes(object.type)) {
-      if (preview) preview.drawAssetRectangle(object.material,x,y,rect.width,rect.height,ctx);
+      if (window.PlatformsGamePreview) window.PlatformsGamePreview.drawAssetRectangle(object.material,x,y,rect.width,rect.height,ctx);
       else { ctx.fillStyle=materialColor(object.material);ctx.fillRect(x,y,rect.width,rect.height);ctx.fillStyle=object.material==="grass"?"#67b84c":"rgba(255,255,255,.18)";ctx.fillRect(x,y,rect.width,Math.min(12,rect.height)); }
-    } else if (object.type === "crate") {
-      if (!preview?.drawSprite(2,x,y,rect.width,rect.height,ctx)) {
-        if (preview) preview.drawAssetRectangle("crate",x,y,rect.width,rect.height,ctx);
-        else {ctx.fillStyle="#a76728";ctx.fillRect(x,y,rect.width,rect.height);}
-      }
-    }
-    else if (object.type === "breakableBlock") {
-      if (preview) preview.drawAssetRectangle(object.material,x,y,rect.width,rect.height,ctx);
-      else {ctx.fillStyle=materialColor(object.material);ctx.fillRect(x,y,rect.width,rect.height);}
-      drawArt("fragileBlockCracks",x,y,rect.width,rect.height,"cracks");
-    }
-    else if (object.type === "hazard") {
-      if(object.hazard==="lava"){
-        ctx.fillStyle="#d43a25";ctx.fillRect(x,y,rect.width,rect.height);ctx.fillStyle="#ff8128";ctx.beginPath();ctx.moveTo(x,y+5);
-        for(let px=0;px<=rect.width;px+=10)ctx.lineTo(x+px,y+5+Math.sin((object.x+px)*.05)*4);
-        ctx.lineTo(x+rect.width,y+rect.height);ctx.lineTo(x,y+rect.height);ctx.closePath();ctx.fill();
-      } else if (!preview?.drawSprite(3,x,y-29,rect.width,48,ctx)) {
-        ctx.fillStyle="#e9f5ff";for(let i=0;i<rect.width;i+=20){ctx.beginPath();ctx.moveTo(x+i,y+rect.height);ctx.lineTo(x+i+10,y-16);ctx.lineTo(x+i+20,y+rect.height);ctx.fill();}
-      }
-    }
-    else if (object.type === "star") {
-      if(!preview?.drawSprite(4,object.x-20,object.y-20,40,40,ctx)){ctx.fillStyle="#ffd83d";ctx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,r=i%2?8:18;ctx.lineTo(object.x+Math.cos(a)*r,object.y+Math.sin(a)*r);}ctx.closePath();ctx.fill();}
-    }
-    else if (object.type === "spawn") drawArt("player",x,y,rect.width,rect.height,"player");
-    else if (object.type === "exit") {
-      if(!preview?.drawSprite(5,x-25,y-18,82,rect.height+25,ctx)){ctx.fillStyle="#f5c54e";ctx.fillRect(x+4,y,6,rect.height);ctx.fillStyle="#f0445a";ctx.beginPath();ctx.moveTo(x+10,y+5);ctx.lineTo(x+55,y+18);ctx.lineTo(x+10,y+34);ctx.fill();}
-    }
-    else if (object.type === "enemy") drawArt("enemy",x,y,rect.width,rect.height,"enemy");
-    else if (object.type === "switch") drawArt("switchLeft",x,y,rect.width,rect.height,"switch");
-    else if (object.type === "pressurePlate") {
-      drawArt("pressurePlateBase",x,y+5,rect.width,7,"pressurePlateBase");
-      drawArt("pressurePlateTop",x+4,y,rect.width-8,6,"pressurePlateTop");
-    }
-    else if (object.type === "jumpPad") {
-      drawArt("jumpPadBase",x,y+7,rect.width,Math.max(1,rect.height-7),"jumpPadBase");
-      drawArt("jumpPadTop",x+3,y+2,rect.width-6,10,"jumpPadTop");
-    }
-    else if (object.type === "movingObstacle") drawArt("movingObstacle",x,y,rect.width,rect.height,"blade");
+    } else if (object.type === "crate") { if(window.PlatformsGamePreview)window.PlatformsGamePreview.drawAssetRectangle("crate",x,y,rect.width,rect.height,ctx);else{ctx.fillStyle="#a96d34";ctx.fillRect(x,y,rect.width,rect.height);}ctx.strokeStyle="#6f401e";ctx.lineWidth=4;ctx.strokeRect(x+3,y+3,rect.width-6,rect.height-6); }
+    else if (object.type === "breakableBlock") { ctx.fillStyle=materialColor(object.material);ctx.fillRect(x,y,rect.width,rect.height);ctx.strokeStyle="#34291f";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x+rect.width*.35,y);ctx.lineTo(x+rect.width*.5,y+rect.height*.45);ctx.lineTo(x+rect.width*.3,y+rect.height);ctx.moveTo(x+rect.width*.5,y+rect.height*.45);ctx.lineTo(x+rect.width*.75,y+rect.height*.7);ctx.stroke(); }
+    else if (object.type === "hazard") { if(object.hazard==="lava"){ctx.fillStyle="#f04b2f";ctx.fillRect(x,y,rect.width,rect.height);ctx.fillStyle="#ffbd3d";ctx.fillRect(x,y,rect.width,7);}else{ctx.fillStyle="#b9c0c7";for(let i=0;i<rect.width;i+=16){ctx.beginPath();ctx.moveTo(x+i,y+rect.height);ctx.lineTo(x+i+8,y);ctx.lineTo(x+i+16,y+rect.height);ctx.fill();}} }
+    else if (object.type === "star") { ctx.fillStyle="#ffd83d";ctx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,r=i%2?7:16;ctx.lineTo(object.x-cameraX+Math.cos(a)*r,object.y+Math.sin(a)*r);}ctx.fill(); }
+    else if (object.type === "spawn" && images.player.complete) ctx.drawImage(images.player,x,y,rect.width,rect.height);
+    else if (object.type === "exit") { ctx.fillStyle="#5b4635";ctx.fillRect(x,y,5,rect.height);ctx.fillStyle="#53d58e";ctx.beginPath();ctx.moveTo(x+5,y);ctx.lineTo(x+rect.width,y+12);ctx.lineTo(x+5,y+28);ctx.fill(); }
+    else if (object.type === "enemy" && images.enemy.complete) ctx.drawImage(images.enemy,x,y,rect.width,rect.height);
+    else if (object.type === "switch" && images.switch.complete) ctx.drawImage(images.switch,x,y,rect.width,rect.height);
+    else if (object.type === "pressurePlate" && images.pressurePlate.complete) ctx.drawImage(images.pressurePlate,x,y,rect.width,rect.height);
+    else if (object.type === "jumpPad" && images.jumpPad.complete) ctx.drawImage(images.jumpPad,x,y,rect.width,rect.height);
+    else if (object.type === "movingObstacle" && images.blade.complete) ctx.drawImage(images.blade,x,y,rect.width,rect.height);
     else { ctx.fillStyle="#5f8daf";ctx.fillRect(x,y,rect.width,rect.height); }
-    const unit=1/zoom;ctx.fillStyle="rgba(8,18,31,.88)";ctx.font=`700 ${11*unit}px system-ui`;ctx.fillText(object.type==="spawn"?"SPAWN":object.type==="exit"?"EXIT":object.id,x+3*unit,Math.max(12*unit,y-5*unit));ctx.restore();
+    ctx.fillStyle="rgba(8,18,31,.82)";ctx.font="10px system-ui";ctx.fillText(object.type==="spawn"?"SPAWN":object.type==="exit"?"EXIT":object.id,x+3,Math.max(11,y-4)); ctx.restore();
   }
   function drawLinks() {
     /* Legacy compact overlay renderer, retained inert below. 
@@ -677,12 +463,12 @@
       object.motionPath.slice(0, -1).forEach((point, index) => drawArrowLine(point, object.motionPath[index + 1]));
       object.motionPath.forEach((point, index) => {
         ctx.fillStyle = index === (object.pathIndex || 0) ? "#fff" : "#f4c95d";
-        ctx.beginPath(); ctx.arc(point.x, point.y, 7 / zoom, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(point.x - cameraX, point.y, 7, 0, Math.PI * 2); ctx.fill();
       });
     }
     if (object.target) {
       drawArrowLine({ x: object.x + object.width / 2, y: object.y + object.height / 2 }, object.target);
-      ctx.fillStyle = "#f4c95d"; ctx.fillRect(object.target.x - 6 / zoom, object.target.y - 6 / zoom, 12 / zoom, 12 / zoom);
+      ctx.fillStyle = "#f4c95d"; ctx.fillRect(object.target.x - cameraX - 6, object.target.y - 6, 12, 12);
     }
     if (object.type === "movingPlatform") {
       const horizontal = object.motion.axis === "x";
@@ -696,49 +482,25 @@
     if (object.type === "enemy") drawArrowLine({ x: object.patrolMinX, y: object.surfaceY }, { x: object.patrolMaxX, y: object.surfaceY }, "#e85757");
   }
   function drawSelection() {
-    const object=selectionObject();if(!object||selected==="@settings")return;const r=objectRect(object),unit=1/zoom;ctx.strokeStyle="#f4c95d";ctx.lineWidth=3*unit;ctx.strokeRect(r.x-3*unit,r.y-3*unit,r.width+6*unit,r.height+6*unit);
-    if(RESIZABLE.has(object.type)){ctx.fillStyle="#f4c95d";ctx.fillRect(r.x+r.width-6*unit,r.y+r.height-6*unit,12*unit,12*unit);}
+    const object=selectionObject();if(!object)return;const r=objectRect(object);ctx.strokeStyle="#f4c95d";ctx.lineWidth=3;ctx.strokeRect(r.x-cameraX-3,r.y-3,r.width+6,r.height+6);
+    if(RESIZABLE.has(object.type)){ctx.fillStyle="#f4c95d";ctx.fillRect(r.x-cameraX+r.width-6,r.y+r.height-6,12,12);}
   }
-  function drawBounds() {
-    const unit=1/zoom;
-    ctx.save();ctx.strokeStyle="#ffe05d";ctx.lineWidth=4*unit;ctx.setLineDash([12*unit,7*unit]);ctx.strokeRect(0,0,data.width,WORLD_H);ctx.setLineDash([]);
-    ctx.fillStyle="#ffe05d";ctx.beginPath();ctx.roundRect(data.width-7*unit,WORLD_H/2-25*unit,14*unit,50*unit,6*unit);ctx.fill();
-    ctx.fillStyle="#07162de8";ctx.font=`800 ${12*unit}px system-ui`;ctx.textAlign="right";ctx.fillText(`LEVEL END · ${data.width}px`,data.width-14*unit,22*unit);ctx.restore();
-  }
-  function draw() {
-    if(host.hidden)return;
-    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#07101f";ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.setTransform(zoom,0,0,zoom,-cameraX*zoom,-cameraY*zoom);
-    drawGrid();drawLinks();data.objects.forEach(drawObject);drawObject({type:"exit",...data.exit});drawObject({type:"spawn",...data.spawn});drawSelection();drawBounds();
-    ctx.setTransform(1,0,0,1,0,0);
-  }
-  function resizeCanvas() {
-    const width=Math.max(320,Math.round(viewport.clientWidth));
-    const height=Math.max(240,Math.round(viewport.clientHeight));
-    if(canvas.width===width&&canvas.height===height){draw();return;}
-    const centerX=cameraX+visibleWorldWidth()/2,centerY=cameraY+visibleWorldHeight()/2;
-    canvas.width=width;canvas.height=height;
-    if(viewFitted){fitLevel();return;}
-    cameraX=centerX-visibleWorldWidth()/2;cameraY=centerY-visibleWorldHeight()/2;clampCamera();draw();
-  }
+  function draw() { if(host.hidden)return; drawGrid(); drawLinks(); data.objects.forEach(drawObject); drawObject({type:"exit",...data.exit});drawObject({type:"spawn",...data.spawn});drawSelection(); }
+  function resizeCanvas() { canvas.width=960;canvas.height=WORLD_H;draw(); }
   function refresh() { host.querySelector('[data-action="undo"]').disabled=!undoStack.length;host.querySelector('[data-action="redo"]').disabled=!redoStack.length; renderInspector();validate();draw(); }
 
   function newLevel(clearOnly = false) {
     const promptText=clearOnly?"Clear all placed objects? Spawn, exit, and level settings will remain.":"Create a new level and replace this local draft?";
     if(!confirm(promptText))return;
-    commit(()=>{ if(clearOnly)data.objects=[];else{data=freshLevel();selected="@spawn";cameraX=0;cameraY=0;} },clearOnly?"Cleared all placed objects.":"Created a new local level draft.");
-    if(!clearOnly)fitLevel();
+    commit(()=>{ if(clearOnly)data.objects=[];else{data=freshLevel();selected="@spawn";cameraX=0;} },clearOnly?"Cleared all placed objects.":"Created a new local level draft.");
   }
   function exportData() { const result=api.exportLevel(data);if(!result.ok){statusNote=result.errors[0];return refresh();}const blob=new Blob([result.json],{type:"application/json"}),link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=`${data.id}.json`;link.click();URL.revokeObjectURL(link.href);statusNote="Exported validated level JSON.";refresh(); }
-  async function importFile(file) { if(!file)return;const result=api.importLevel(await file.text());if(!result.ok){statusNote=`Import rejected: ${result.errors.join(" · ")}`;return refresh();}commit(()=>{data=result.level;selected="@spawn";cameraX=0;cameraY=0;},"Imported validated level JSON.");fitLevel(); }
+  async function importFile(file) { if(!file)return;const result=api.importLevel(await file.text());if(!result.ok){statusNote=`Import rejected: ${result.errors.join(" · ")}`;return refresh();}commit(()=>{data=result.level;selected="@spawn";cameraX=0;},"Imported validated level JSON."); }
 
   host.addEventListener("click", (event) => {
     const action=event.target.closest("[data-action]")?.dataset.action;if(!action)return;
     if(action==="new")newLevel(false);else if(action==="clear")newLevel(true);else if(action==="undo")undo();else if(action==="redo")redo();else if(action==="import")importInput.click();else if(action==="export")exportData();
     else if(action==="snap"){snap=!snap;event.target.textContent=`Snap: ${snap?"On":"Off"}`;statusNote=`Grid snapping ${snap?"enabled":"disabled"}.`;refresh();}
-    else if(action==="zoom-out")setZoom(zoom/1.2);
-    else if(action==="zoom-in")setZoom(zoom*1.2);
-    else if(action==="zoom-fit")fitLevel();
     else if(action==="playtest"){const result=validate();if(result.valid&&playtestCallback)playtestCallback(clone(data));}
     else if(action==="close")close();
   });
@@ -748,18 +510,14 @@
     if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="z"){event.preventDefault();event.shiftKey?redo():undo();return;}
     if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="y"){event.preventDefault();redo();return;}
     if(event.key==="Delete"||event.key==="Backspace"){event.preventDefault();deleteSelected();return;}
-    if(event.key.startsWith("Arrow")){
-      event.preventDefault();viewFitted=false;const amount=120/zoom;
-      if(event.key==="ArrowLeft")cameraX-=amount;else if(event.key==="ArrowRight")cameraX+=amount;else if(event.key==="ArrowUp")cameraY-=amount;else if(event.key==="ArrowDown")cameraY+=amount;
-      clampCamera();draw();
-    }
+    if(event.key==="ArrowLeft"||event.key==="ArrowRight"){event.preventDefault();cameraX=Math.max(0,Math.min(Math.max(0,data.width-canvas.width),cameraX+(event.key==="ArrowRight"?120:-120)));draw();}
   });
-  new ResizeObserver(resizeCanvas).observe(viewport);
+  new ResizeObserver(resizeCanvas).observe(canvas);
 
-  function open() { document.querySelector("#mainMenu").hidden=true;host.hidden=false;document.querySelector(".touch-controls").hidden=true;document.querySelector(".instructions").hidden=true;requestAnimationFrame(()=>{resizeCanvas();if(!openedOnce){fitLevel();openedOnce=true;}refresh();}); }
+  function open() { document.querySelector("#mainMenu").hidden=true;host.hidden=false;document.querySelector(".touch-controls").hidden=true;document.querySelector(".instructions").hidden=true;requestAnimationFrame(()=>{resizeCanvas();refresh();}); }
   function close() { host.hidden=true;document.querySelector("#mainMenu").hidden=false;document.querySelector(".touch-controls").hidden=false;document.querySelector(".instructions").hidden=false;document.querySelector("#levelEditorButton")?.focus(); }
   function showAfterPlaytest(note="Returned from playtest.") { host.hidden=false;document.querySelector(".touch-controls").hidden=true;document.querySelector(".instructions").hidden=true;statusNote=note;requestAnimationFrame(()=>{resizeCanvas();refresh();}); }
 
   restore(); setTool("select");
-  window.PlatformsEditor=Object.freeze({ open, close, showAfterPlaytest, redraw:draw, getDraft:()=>clone(data), setPlaytestCallback:(callback)=>{playtestCallback=callback;} });
+  window.PlatformsEditor=Object.freeze({ open, close, showAfterPlaytest, getDraft:()=>clone(data), setPlaytestCallback:(callback)=>{playtestCallback=callback;} });
 })();
