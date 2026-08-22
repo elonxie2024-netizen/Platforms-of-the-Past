@@ -37,7 +37,7 @@
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.26.0</strong>
+      <strong>Level Editor · v0.26.1</strong>
       <button data-action="new">New</button><button data-action="clear">Clear</button>
       <button data-action="undo">Undo</button><button data-action="redo">Redo</button>
       <button data-action="import">Import</button><button data-action="export">Export</button>
@@ -144,7 +144,10 @@
 
   function worldPoint(event) {
     const rect = canvas.getBoundingClientRect();
-    return { x: cameraX + event.clientX / rect.width * canvas.width, y: event.clientY / rect.height * canvas.height };
+    return {
+      x: cameraX + (event.clientX - rect.left) / rect.width * canvas.width,
+      y: (event.clientY - rect.top) / rect.height * canvas.height
+    };
   }
   function objectRect(object) {
     if (object.type === "hazard" && object.attachedTo) {

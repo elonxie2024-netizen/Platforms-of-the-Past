@@ -25,6 +25,16 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 
 .game-shell { width: min(1100px, 100%); }
 
+.game-shell.display-large-screen {
+  position: fixed;
+  z-index: 100;
+  top: 50%;
+  left: 50%;
+  width: var(--display-base-width);
+  transform: translate(-50%, -50%) scale(var(--display-scale, 1));
+  transform-origin: center center;
+}
+
 header {
   display: flex;
   flex-wrap: wrap;
