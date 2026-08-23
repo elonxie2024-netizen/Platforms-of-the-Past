@@ -2,7 +2,6 @@
 
 (() => {
   const SCHEMA_VERSION = 1;
-  const SAVE_CODE_PREFIX = "POTP1-";
   const MAX_JSON_LENGTH = 8_000_000;
   const MAX_OBJECTS = 600;
   const MATERIALS = new Set(["grass", "stone", "crate"]);
@@ -521,49 +520,6 @@
     return { ok: true, errors: [], json: JSON.stringify(cloned.level, null, spacing === 0 ? 0 : 2) };
   }
 
-  function encodeBase64Url(text) {
-    const bytes = new TextEncoder().encode(text);
-    let binary = "";
-    for (let offset = 0; offset < bytes.length; offset += 0x8000) {
-      binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
-    }
-    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/u, "");
-  }
-
-  function decodeBase64Url(value) {
-    if (!/^[A-Za-z0-9_-]+$/u.test(value)) throw new Error("invalid save-code characters");
-    const padded = value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - value.length % 4) % 4);
-    const binary = atob(padded);
-    const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
-    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-  }
-
-  function exportSaveCode(level) {
-    const exported = exportLevel(level, 0);
-    if (!exported.ok) return { ok: false, errors: exported.errors, code: "" };
-    try {
-      return { ok: true, errors: [], code: SAVE_CODE_PREFIX + encodeBase64Url(exported.json) };
-    } catch {
-      return { ok: false, errors: ["The level could not be encoded as a save code."], code: "" };
-    }
-  }
-
-  function importSaveCode(code) {
-    if (typeof code !== "string") return { ok: false, errors: ["Save code must be text."], level: null };
-    const trimmed = code.trim();
-    if (!trimmed.startsWith(SAVE_CODE_PREFIX)) {
-      return { ok: false, errors: [`Save code must start with ${SAVE_CODE_PREFIX}.`], level: null };
-    }
-    if (trimmed.length > SAVE_CODE_PREFIX.length + Math.ceil(MAX_JSON_LENGTH * 4 / 3) + 8) {
-      return { ok: false, errors: ["Save code is too large."], level: null };
-    }
-    try {
-      return importLevel(decodeBase64Url(trimmed.slice(SAVE_CODE_PREFIX.length)));
-    } catch {
-      return { ok: false, errors: ["Save code could not be decoded."], level: null };
-    }
-  }
-
   function loadLevel(levelOrJson, adapters) {
     const prepared = typeof levelOrJson === "string" ? importLevel(levelOrJson) : cloneLevel(levelOrJson);
     if (!prepared.ok) return { ok: false, errors: prepared.errors, level: null, source: null };
@@ -620,15 +576,12 @@
 
   window.PlatformsLevelData = Object.freeze({
     SCHEMA_VERSION,
-    SAVE_CODE_PREFIX,
     OBJECT_TYPES: Object.freeze([...OBJECT_TYPES]),
     CAMPAIGN_LEVELS,
     validateLevel,
     cloneLevel,
     importLevel,
     exportLevel,
-    importSaveCode,
-    exportSaveCode,
     loadLevel
   });
 })();

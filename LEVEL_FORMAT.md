@@ -232,6 +232,8 @@ PlatformsLevelDev.validate(levelData)
 PlatformsLevelDev.clone(levelData)
 PlatformsLevelDev.importJSON(jsonText)
 PlatformsLevelDev.exportJSON(levelData)
+PlatformsLevelDev.importSaveCode(code)
+PlatformsLevelDev.exportSaveCode(levelData)
 PlatformsLevelDev.load(levelDataOrJson)
 ```
 
@@ -255,5 +257,7 @@ Version 0.26.0 adds a Level Editor entry to the main menu. It edits this schema 
 Version 0.26.3 makes the editor preview use the same shared game assets as playtest mode. Its bounded world viewport supports two-axis panning, zooming, fitting the complete level with visible exterior space, and dragging the right world boundary to edit the schema-backed `width`. The vertical world size remains the engine's fixed 570-pixel editor space and is intentionally not added to the serialized schema.
 
 The editor keeps a browser-local workspace containing multiple independent level drafts. The toolbar can create, switch, duplicate, delete, import, and export levels; older single-draft storage migrates into the workspace automatically. Shift/Ctrl-click selects several objects, Group gives them one rigid `groupId`, Alt-click selects one group member for individual property editing, and Ctrl+C/Ctrl+V copies either individual objects or complete groups while remapping internal IDs and links. Undo/redo history remains bounded to the currently edited level and resets when switching levels so changes cannot cross between drafts. Import and export pass through the same validation and cloning utilities as campaign migration. Level Settings can embed an imported audio track with per-level volume and looping; the audio remains part of exported level JSON and is decoded as media rather than executable content. Playtest loads a fresh runtime clone through the generic adapter, then removes it on return; it cannot unlock campaign levels, alter account progress, or submit to leaderboards.
+
+Version 0.27.1 adds portable save codes. `exportSaveCode(levelData)` validates and serializes the same level JSON, UTF-8 encodes it, and wraps URL-safe Base64 data in the `POTP1-` format prefix. `importSaveCode(code)` accepts only that versioned prefix, decodes it as UTF-8 JSON, and passes it through the existing importer and complete schema validation before returning a level. The editor adds a validated imported code as a new draft, so malformed, unsupported, or invalid codes cannot replace the active draft.
 
 Community publishing, browsing, ratings, comments, collaboration, arbitrary scripting, and account-backed draft storage remain out of scope.

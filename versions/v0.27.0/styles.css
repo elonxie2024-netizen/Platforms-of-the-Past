@@ -311,7 +311,7 @@ canvas {
   bottom: 48px;
   width: 44px;
   height: 44px;
-  background: url("assets/slime-player.svg") center / contain no-repeat;
+  background: url("../assets/slime-player.svg") center / contain no-repeat;
   filter: drop-shadow(0 6px 5px #17482b45);
   will-change: left, bottom, transform;
 }
@@ -670,7 +670,7 @@ canvas {
   font-weight: 850;
   cursor: pointer;
 }
-.developer-panel button[aria-pressed="true"] { color: #17233b; background: #ffe05d; }
+.developer-panel #flightToggleButton[aria-pressed="true"] { color: #17233b; background: #ffe05d; }
 .developer-panel .developer-panel-close {
   position: absolute;
   top: 4px;

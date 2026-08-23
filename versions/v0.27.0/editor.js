@@ -23,11 +23,11 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/slime-player.svg", enemy: "assets/slime-enemy.svg",
-    switch: "assets/switch-left.svg", pressurePlateBase: "assets/pressure-plate-base.svg",
-    pressurePlateTop: "assets/pressure-plate-top.svg", jumpPadBase: "assets/jump-pad-base.svg",
-    jumpPadTop: "assets/jump-pad-top.svg", blade: "assets/moving-obstacle.svg",
-    cracks: "assets/fragile-block-cracks.svg"
+    player: "../assets/slime-player.svg", enemy: "../assets/slime-enemy.svg",
+    switch: "../assets/switch-left.svg", pressurePlateBase: "../assets/pressure-plate-base.svg",
+    pressurePlateTop: "../assets/pressure-plate-top.svg", jumpPadBase: "../assets/jump-pad-base.svg",
+    jumpPadTop: "../assets/jump-pad-top.svg", blade: "../assets/moving-obstacle.svg",
+    cracks: "../assets/fragile-block-cracks.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
@@ -54,14 +54,13 @@
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.27.1</strong>
+      <strong>Level Editor · v0.27.0</strong>
       <label class="editor-level-picker"><span>Level</span><select data-role="draft-picker" aria-label="Level being edited"></select></label>
       <button data-action="new">New</button><button data-action="duplicate">Duplicate</button><button data-action="delete-draft">Delete</button><button data-action="clear">Clear</button>
       <button data-action="group">Group</button><button data-action="ungroup">Ungroup</button>
       <button data-action="copy">Copy</button><button data-action="paste">Paste</button>
       <button data-action="undo">Undo</button><button data-action="redo">Redo</button>
       <button data-action="import">Import</button><button data-action="export">Export</button>
-      <button data-action="import-code">Import Save Code</button><button data-action="copy-code">Copy Save Code</button>
       <button data-action="snap">Snap: On</button>
       <button class="editor-playtest" data-action="playtest">Playtest</button>
       <button class="editor-close" data-action="close">Main Menu</button>
@@ -1107,25 +1106,6 @@
     statusNote = "Deleted the level and switched to another local draft."; persist(); fitLevel(); refresh();
   }
   function exportData() { const result=api.exportLevel(data);if(!result.ok){statusNote=result.errors[0];return refresh();}const blob=new Blob([result.json],{type:"application/json"}),link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=`${data.id}.json`;link.click();URL.revokeObjectURL(link.href);statusNote="Exported validated level JSON.";refresh(); }
-  async function copySaveCode() {
-    const result = api.exportSaveCode(data);
-    if (!result.ok) { statusNote = `Save code unavailable: ${result.errors.join(" · ")}`; return refresh(); }
-    try {
-      await navigator.clipboard.writeText(result.code);
-      statusNote = "Copied the current level save code.";
-    } catch {
-      prompt("Copy this save code:", result.code);
-      statusNote = "Save code ready to copy.";
-    }
-    refresh();
-  }
-  function importSaveCode() {
-    const code = prompt("Paste a POTP1- save code:");
-    if (code === null) return;
-    const result = api.importSaveCode(code);
-    if (!result.ok) { statusNote = `Save code rejected: ${result.errors.join(" · ")}`; return refresh(); }
-    addDraft(result.level, "Imported a validated save code as a new level. Your current draft was left unchanged.");
-  }
   async function importFile(file) {
     if(!file)return;
     const text=await file.text();let importedText=text,repaired=false;
@@ -1155,7 +1135,6 @@
     if(action==="new")newLevel(false);else if(action==="duplicate")duplicateLevel();else if(action==="delete-draft")deleteDraft();else if(action==="clear")newLevel(true);
     else if(action==="group")groupSelection();else if(action==="ungroup")ungroupSelection();else if(action==="copy")copySelection();else if(action==="paste")pasteSelection();
     else if(action==="undo")undo();else if(action==="redo")redo();else if(action==="import")importInput.click();else if(action==="export")exportData();
-    else if(action==="import-code")importSaveCode();else if(action==="copy-code")copySaveCode();
     else if(action==="snap"){snap=!snap;event.target.textContent=`Snap: ${snap?"On":"Off"}`;statusNote=`Grid snapping ${snap?"enabled":"disabled"}.`;refresh();}
     else if(action==="zoom-out")setZoom(zoom/1.2);
     else if(action==="zoom-in")setZoom(zoom*1.2);
