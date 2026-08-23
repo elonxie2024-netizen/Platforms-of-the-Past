@@ -43,7 +43,8 @@ Unknown fields are rejected. This is intentional: misspellings fail clearly, and
 
 | Field | Meaning |
 | --- | --- |
-| `music` | `level1`, `level2`, or `level3` |
+| `music` | `level1`, `level2`, `level3`, or `custom` |
+| `customMusic` | Safe embedded audio used with `music: "custom"`; contains `name`, an audio `dataUrl`, `loop`, and `volume` |
 | `theme` | `default`, `lava`, or `rewind` |
 | `postRun` | Marks later campaign-style content played after the introductory run |
 | `requiredStars` | Total star requirement used by existing campaign rules |
@@ -62,6 +63,8 @@ Story transitions, cutscene selection, account data, leaderboard rules, roadmap 
 ## Supported object types
 
 All rectangle objects use `x`, `y`, `width`, and `height`. Textured objects use `material: "grass"`, `"stone"`, or `"crate"`.
+
+Every object may also have a `groupId`. Objects sharing the same non-empty group ID form one rigid editor/runtime group: motion applied to any member translates every member by the same amount, while collision and interaction behavior remain specific to each member. A grouped spike still hurts, a grouped jump pad still launches, and a grouped platform remains solid. Group IDs contain data only and cannot run scripts.
 
 ### `platform`
 
@@ -251,6 +254,6 @@ Version 0.26.0 adds a Level Editor entry to the main menu. It edits this schema 
 
 Version 0.26.3 makes the editor preview use the same shared game assets as playtest mode. Its bounded world viewport supports two-axis panning, zooming, fitting the complete level with visible exterior space, and dragging the right world boundary to edit the schema-backed `width`. The vertical world size remains the engine's fixed 570-pixel editor space and is intentionally not added to the serialized schema.
 
-The editor keeps a browser-local workspace containing multiple independent level drafts. The toolbar can create, switch, duplicate, delete, import, and export levels; older single-draft storage migrates into the workspace automatically. Undo/redo history remains bounded to the currently edited level and resets when switching levels so changes cannot cross between drafts. Import and export pass through the same validation and cloning utilities as campaign migration. Playtest loads a fresh runtime clone through the generic adapter, then removes it on return; it cannot unlock campaign levels, alter account progress, or submit to leaderboards.
+The editor keeps a browser-local workspace containing multiple independent level drafts. The toolbar can create, switch, duplicate, delete, import, and export levels; older single-draft storage migrates into the workspace automatically. Shift/Ctrl-click selects several objects, Group gives them one rigid `groupId`, Alt-click selects one group member for individual property editing, and Ctrl+C/Ctrl+V copies either individual objects or complete groups while remapping internal IDs and links. Undo/redo history remains bounded to the currently edited level and resets when switching levels so changes cannot cross between drafts. Import and export pass through the same validation and cloning utilities as campaign migration. Level Settings can embed an imported audio track with per-level volume and looping; the audio remains part of exported level JSON and is decoded as media rather than executable content. Playtest loads a fresh runtime clone through the generic adapter, then removes it on return; it cannot unlock campaign levels, alter account progress, or submit to leaderboards.
 
 Community publishing, browsing, ratings, comments, collaboration, arbitrary scripting, and account-backed draft storage remain out of scope.

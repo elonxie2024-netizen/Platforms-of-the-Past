@@ -23,11 +23,11 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/slime-player.svg", enemy: "assets/slime-enemy.svg",
-    switch: "assets/switch-left.svg", pressurePlateBase: "assets/pressure-plate-base.svg",
-    pressurePlateTop: "assets/pressure-plate-top.svg", jumpPadBase: "assets/jump-pad-base.svg",
-    jumpPadTop: "assets/jump-pad-top.svg", blade: "assets/moving-obstacle.svg",
-    cracks: "assets/fragile-block-cracks.svg"
+    player: "../assets/slime-player.svg", enemy: "../assets/slime-enemy.svg",
+    switch: "../assets/switch-left.svg", pressurePlateBase: "../assets/pressure-plate-base.svg",
+    pressurePlateTop: "../assets/pressure-plate-top.svg", jumpPadBase: "../assets/jump-pad-base.svg",
+    jumpPadTop: "../assets/jump-pad-top.svg", blade: "../assets/moving-obstacle.svg",
+    cracks: "../assets/fragile-block-cracks.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
@@ -37,8 +37,6 @@
   let activeDraftKey = "";
   let draftSerial = Date.now();
   let selected = "@spawn";
-  let selectedIds = new Set();
-  let objectClipboard = null;
   let tool = "select";
   let cameraX = 0;
   let cameraY = 0;
@@ -54,18 +52,15 @@
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.27.0</strong>
+      <strong>Level Editor · v0.26.6</strong>
       <label class="editor-level-picker"><span>Level</span><select data-role="draft-picker" aria-label="Level being edited"></select></label>
       <button data-action="new">New</button><button data-action="duplicate">Duplicate</button><button data-action="delete-draft">Delete</button><button data-action="clear">Clear</button>
-      <button data-action="group">Group</button><button data-action="ungroup">Ungroup</button>
-      <button data-action="copy">Copy</button><button data-action="paste">Paste</button>
       <button data-action="undo">Undo</button><button data-action="redo">Redo</button>
       <button data-action="import">Import</button><button data-action="export">Export</button>
       <button data-action="snap">Snap: On</button>
       <button class="editor-playtest" data-action="playtest">Playtest</button>
       <button class="editor-close" data-action="close">Main Menu</button>
       <input data-role="import" type="file" accept="application/json,.json" hidden>
-      <input data-role="music-import" type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" hidden>
     </div>
     <div class="editor-workspace">
       <aside class="editor-sidebar"><h3>Place</h3><div class="editor-palette"></div></aside>
@@ -91,7 +86,6 @@
   const fields = host.querySelector(".editor-fields");
   const status = host.querySelector(".editor-status");
   const importInput = host.querySelector('[data-role="import"]');
-  const musicImportInput = host.querySelector('[data-role="music-import"]');
   const draftPicker = host.querySelector('[data-role="draft-picker"]');
   const viewport = host.querySelector(".editor-viewport");
   const zoomOutput = host.querySelector('[data-role="zoom"]');
@@ -197,22 +191,6 @@
       localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(data));
     } catch { statusNote = "Draft changed, but browser storage is full or unavailable."; }
   }
-  function selectedObjects() { return data.objects.filter((object) => selectedIds.has(object.id)); }
-  function setSingleSelection(token) {
-    selected = token;
-    selectedIds = token && !token.startsWith("@") ? new Set([token]) : new Set();
-  }
-  function selectObjectOrGroup(object) {
-    selected = object.id;
-    selectedIds = object.groupId
-      ? new Set(data.objects.filter((candidate) => candidate.groupId === object.groupId).map((candidate) => candidate.id))
-      : new Set([object.id]);
-  }
-  function nextGroupId() {
-    const used = new Set(data.objects.map((object) => object.groupId).filter(Boolean));
-    let index = 1; while (used.has(`group-${index}`)) index++;
-    return `group-${index}`;
-  }
   function repairKnownEditorData(level) {
     if (!level || typeof level !== "object" || !Array.isArray(level.objects)) return false;
     let repaired = false;
@@ -274,12 +252,12 @@
   }
   function undo() {
     if (!undoStack.length) return;
-    redoStack.push(serialize()); data = JSON.parse(undoStack.pop()); selectedIds = new Set([...selectedIds].filter((id)=>data.objects.some((object)=>object.id===id))); if (!selectionObject()) setSingleSelection("@spawn"); clampCamera();
+    redoStack.push(serialize()); data = JSON.parse(undoStack.pop()); selected = selectionObject() ? selected : "@spawn"; clampCamera();
     statusNote = "Undid the last editor action."; persist(); refresh();
   }
   function redo() {
     if (!redoStack.length) return;
-    undoStack.push(serialize()); data = JSON.parse(redoStack.pop()); selectedIds = new Set([...selectedIds].filter((id)=>data.objects.some((object)=>object.id===id))); if (!selectionObject()) setSingleSelection("@spawn"); clampCamera();
+    undoStack.push(serialize()); data = JSON.parse(redoStack.pop()); selected = selectionObject() ? selected : "@spawn"; clampCamera();
     statusNote = "Redid the editor action."; persist(); refresh();
   }
 
@@ -387,19 +365,6 @@
     if (object.type === "movingObstacle") return withControl({ x: object.x, y: object.y, width: object.size, height: object.size });
     return withControl({ x: object.x, y: object.y, width: object.width, height: object.height });
   }
-  function translateSchemaObject(object, dx, dy, movingIds = selectedIds) {
-    if (object.type === "hazard" && object.attachedTo) {
-      if (!movingIds.has(object.attachedTo)) { object.offsetX = (object.offsetX || 0) + dx; object.offsetY = (object.offsetY || 0) + dy; }
-      return;
-    }
-    object.x += dx;
-    if (object.type === "enemy") {
-      object.surfaceY += dy; object.patrolMinX += dx; object.patrolMaxX += dx;
-    } else object.y += dy;
-    if (object.target) { object.target.x += dx; object.target.y += dy; }
-    if (object.control?.target) { object.control.target.x += dx; object.control.target.y += dy; }
-    if (object.motionPath) object.motionPath.forEach((point) => { point.x += dx; point.y += dy; });
-  }
   function hitTest(point) {
     const choices = [
       ...data.objects.map((object) => ({ object, token: object.id })).reverse(),
@@ -432,15 +397,15 @@
   }
 
   function place(point) {
-    if (tool === "spawn") return commit(() => { data.spawn.x = snapValue(point.x); data.spawn.y = snapValue(point.y); setSingleSelection("@spawn"); }, "Moved the player spawn.");
-    if (tool === "exit") return commit(() => { data.exit.x = snapValue(point.x); data.exit.y = snapValue(point.y); setSingleSelection("@exit"); }, "Moved the level exit.");
+    if (tool === "spawn") return commit(() => { data.spawn.x = snapValue(point.x); data.spawn.y = snapValue(point.y); selected = "@spawn"; }, "Moved the player spawn.");
+    if (tool === "exit") return commit(() => { data.exit.x = snapValue(point.x); data.exit.y = snapValue(point.y); selected = "@exit"; }, "Moved the level exit.");
     if (tool === "controlledPlatform" && !data.objects.some((object) => ["switch", "pressurePlate"].includes(object.type))) {
       statusNote = "Place a switch or pressure plate before adding a controlled platform.";
       refresh();
       return;
     }
     const object = defaultObject(tool, point.x, point.y);
-    commit(() => { data.objects.push(object); setSingleSelection(object.id); tool = "select"; }, `Placed ${LABELS[PLACE_TO_TYPE[tool] || tool] || tool}.`);
+    commit(() => { data.objects.push(object); selected = object.id; tool = "select"; }, `Placed ${LABELS[PLACE_TO_TYPE[tool] || tool] || tool}.`);
     setTool("select");
   }
 
@@ -467,7 +432,7 @@
     if (tool !== "select") return place(point);
     const current = selectionObject(); const wp = waypointHit(point, current); const special = specialHandleHit(point, current);
     if (levelWidthHandleHit(point)) {
-      setSingleSelection("@settings");
+      selected = "@settings";
       viewFitted = false;
       drag = { kind: "level-width", before: serialize() };
       refresh();
@@ -475,22 +440,11 @@
       drag = { kind: wp >= 0 ? "waypoint" : special, index: wp, before: serialize() };
     } else {
       const hit = hitTest(point);
-      if (!hit) { setSingleSelection(null); viewFitted = false; drag = { kind: "pan", clientX: event.clientX, clientY: event.clientY, cameraX, cameraY }; refresh(); }
+      if (!hit) { selected = null; viewFitted = false; drag = { kind: "pan", clientX: event.clientX, clientY: event.clientY, cameraX, cameraY }; refresh(); }
       else {
-        if ((event.shiftKey || event.ctrlKey || event.metaKey) && !hit.token.startsWith("@")) {
-          const members = hit.object.groupId ? data.objects.filter((object) => object.groupId === hit.object.groupId) : [hit.object];
-          const remove = members.every((object) => selectedIds.has(object.id));
-          members.forEach((object) => remove ? selectedIds.delete(object.id) : selectedIds.add(object.id));
-          selected = selectedIds.has(hit.object.id) ? hit.object.id : [...selectedIds][0] || null;
-          drag = null; refresh(); return;
-        }
-        if (hit.token.startsWith("@")) setSingleSelection(hit.token);
-        else if (event.altKey) setSingleSelection(hit.token);
-        else if (selectedIds.size > 1 && selectedIds.has(hit.object.id)) selected = hit.object.id;
-        else selectObjectOrGroup(hit.object);
-        const rect = objectRect(hit.object);
+        selected = hit.token; const rect = objectRect(hit.object);
         const tolerance = 14 / zoom;
-        const resize = selectedIds.size <= 1 && RESIZABLE.has(hit.object.type) && Math.abs(point.x - (rect.x + rect.width)) < tolerance && Math.abs(point.y - (rect.y + rect.height)) < tolerance;
+        const resize = RESIZABLE.has(hit.object.type) && Math.abs(point.x - (rect.x + rect.width)) < tolerance && Math.abs(point.y - (rect.y + rect.height)) < tolerance;
         drag = { kind: resize ? "resize" : "move", before: serialize(), offsetX: point.x - rect.x, offsetY: point.y - rect.y };
         refresh();
       }
@@ -524,12 +478,6 @@
     else if (drag.kind === "move") {
       const x = snapValue(point.x - drag.offsetX), y = snapValue(point.y - drag.offsetY);
       if (selected === "@spawn") Object.assign(data.spawn, { x, y });
-      else if (selectedIds.size > 1 || object.groupId) {
-        const current = objectRect(object), dx = x - current.x, dy = y - current.y;
-        const moving = object.groupId ? data.objects.filter((member) => member.groupId === object.groupId) : selectedObjects();
-        const movingIds = new Set(moving.map((member) => member.id));
-        moving.forEach((member) => translateSchemaObject(member, dx, dy, movingIds));
-      }
       else if (object.control) {
         const editable = selected === "@exit" ? data.exit : object;
         const current = objectRect(object), dx = x - current.x, dy = y - current.y;
@@ -600,7 +548,7 @@
     if (next !== old && allIds().has(next)) { statusNote = `The ID “${next}” is already used. Choose a different one.`; return refresh(); }
     commit(() => {
       if (selected === "@exit") data.exit.id = next;
-      else { object.id = next; selectedIds.delete(old); selectedIds.add(next); selected = next; }
+      else { object.id = next; selected = next; }
       data.objects.forEach((item) => {
         if (item.controllerId === old) item.controllerId = next;
         if (item.attachedTo === old) item.attachedTo = next;
@@ -685,12 +633,6 @@
   function renderInspector() {
     fields.replaceChildren(); const object = selectionObject();
     if (selected === "@settings") { renderSettings(); return; }
-    if (selectedIds.size > 1) {
-      const members = selectedObjects();
-      const groupIds = new Set(members.map((member) => member.groupId).filter(Boolean));
-      fields.innerHTML = `<p class="editor-selection-summary">${members.length} objects selected${groupIds.size === 1 && members.every((member) => member.groupId) ? ` · ${[...groupIds][0]}` : ""}. Drag any selected object to move the selection together.</p>`;
-      return;
-    }
     if (!object) { fields.textContent = "Select an object or choose something from the placement palette."; return; }
     if (object.type === "spawn") { field("X", "x", data.spawn.x); field("Y", "y", data.spawn.y); return; }
     if (object.type === "exit") {
@@ -698,11 +640,6 @@
       field("ID", "id", data.exit.id, { type: "text", change: renameId });
       exitNumber("X", "x"); exitNumber("Y", "y"); exitNumber("Width", "width"); exitNumber("Height", "height");
       renderGenericControl(data.exit); return;
-    }
-    if (object.groupId) {
-      const groupNote = document.createElement("p"); groupNote.className = "editor-selection-summary";
-      groupNote.textContent = `${object.groupId}: moving this object moves the whole group. Alt-click a member to edit it by itself.`;
-      fields.append(groupNote);
     }
     field("Stable ID", "id", object.id, { type: "text", change: renameId });
     field("X", "x", object.x); field(object.type === "enemy" ? "Surface Y" : "Y", object.type === "enemy" ? "surfaceY" : "y", object.type === "enemy" ? object.surfaceY : object.y);
@@ -732,94 +669,27 @@
     const remove = document.createElement("button"); remove.type = "button"; remove.className = "editor-danger"; remove.textContent = "Delete object"; remove.addEventListener("click", deleteSelected); fields.append(remove);
   }
 
-  function groupSelection() {
-    const members = selectedObjects();
-    if (members.length < 2) { statusNote = "Select at least two objects with Shift or Ctrl, then choose Group."; return refresh(); }
-    const groupId = nextGroupId();
-    commit(() => {
-      members.forEach((object) => {
-        if (object.type === "hazard" && object.attachedTo) {
-          const rect = objectRect(object); object.x = rect.x; object.y = rect.y;
-          delete object.attachedTo; delete object.offsetX; delete object.offsetY;
-        }
-        object.groupId = groupId;
-      });
-    }, `Grouped ${members.length} objects as ${groupId}.`);
-  }
-
-  function ungroupSelection() {
-    const groupIds = new Set(selectedObjects().map((object) => object.groupId).filter(Boolean));
-    if (!groupIds.size) { statusNote = "The selected objects are not grouped."; return refresh(); }
-    const members = data.objects.filter((object) => groupIds.has(object.groupId));
-    selectedIds = new Set(members.map((object) => object.id)); selected = members[0]?.id || null;
-    commit(() => members.forEach((object) => delete object.groupId), `Ungrouped ${members.length} objects.`);
-  }
-
-  function copySelection() {
-    const members = selectedObjects();
-    if (!members.length) { statusNote = "Select an object or group before copying."; return refresh(); }
-    objectClipboard = { kind: "platforms-editor-objects", objects: clone(members) };
-    try { localStorage.setItem("platforms-past-editor-object-clipboard-v1", JSON.stringify(objectClipboard)); } catch { /* In-memory copy still works. */ }
-    navigator.clipboard?.writeText(JSON.stringify(objectClipboard)).catch(() => {});
-    statusNote = `Copied ${members.length} object${members.length === 1 ? "" : "s"}.`; refresh();
-  }
-
-  function uniqueCopiedId(original, reserved) {
-    let index = 1, candidate = `${original}-copy`;
-    while (reserved.has(candidate)) candidate = `${original}-copy-${++index}`;
-    reserved.add(candidate); return candidate;
-  }
-
-  async function pasteSelection() {
-    let payload = objectClipboard;
-    if (!payload) {
-      try { payload = JSON.parse(localStorage.getItem("platforms-past-editor-object-clipboard-v1") || "null"); } catch { /* No saved editor copy. */ }
-    }
-    if (!payload && navigator.clipboard?.readText) {
-      try { payload = JSON.parse(await navigator.clipboard.readText()); } catch { /* Clipboard did not contain editor objects. */ }
-    }
-    if (payload?.kind !== "platforms-editor-objects" || !Array.isArray(payload.objects) || !payload.objects.length) {
-      statusNote = "Nothing copied from the level editor."; return refresh();
-    }
-    const copies = clone(payload.objects), reserved = allIds(), idMap = new Map(), groupMap = new Map();
-    const reservedGroups = new Set(data.objects.map((object) => object.groupId).filter(Boolean));
-    const copiedGroupId = () => { let index = 1; while (reservedGroups.has(`group-${index}`)) index++; const id = `group-${index}`; reservedGroups.add(id); return id; };
-    copies.forEach((object) => idMap.set(object.id, uniqueCopiedId(object.id, reserved)));
-    copies.forEach((object) => {
-      const oldId = object.id; object.id = idMap.get(oldId);
-      if (object.groupId) { if (!groupMap.has(object.groupId)) groupMap.set(object.groupId, copiedGroupId()); object.groupId = groupMap.get(object.groupId); }
-      if (idMap.has(object.controllerId)) object.controllerId = idMap.get(object.controllerId);
-      if (idMap.has(object.attachedTo)) object.attachedTo = idMap.get(object.attachedTo);
-      if (object.controllerIds) object.controllerIds = object.controllerIds.map((id) => idMap.get(id) || id);
-      if (object.control?.controllerIds) object.control.controllerIds = object.control.controllerIds.map((id) => idMap.get(id) || id);
-    });
-    const pastedIds = new Set(copies.map((object) => object.id));
-    copies.forEach((object) => translateSchemaObject(object, 40, 40, pastedIds));
-    commit(() => { data.objects.push(...copies); selectedIds = pastedIds; selected = copies[0].id; }, `Pasted ${copies.length} object${copies.length === 1 ? "" : "s"}.`);
-  }
-
   function deleteSelected() {
-    const objects = selectedObjects(); if (!objects.length || selected?.startsWith("@")) return;
-    const ids = new Set(objects.map((object) => object.id));
-    const refs = data.objects.filter((item) => !ids.has(item.id) && (ids.has(item.controllerId) || ids.has(item.attachedTo) || item.controllerIds?.some((id) => ids.has(id)) || item.control?.controllerIds?.some((id) => ids.has(id))));
-    if (data.exit.control?.controllerIds?.some((id) => ids.has(id))) refs.push(data.exit);
-    if (refs.length && !confirm(`The selection is linked to ${refs.map((item) => item.id).join(", ")}. Delete it and clean those references?`)) return;
+    const object = selectionObject(); if (!object || selected?.startsWith("@")) return;
+    const refs = data.objects.filter((item) => item !== object && (item.controllerId === object.id || item.attachedTo === object.id || item.controllerIds?.includes(object.id) || item.control?.controllerIds?.includes(object.id)));
+    if (data.exit.control?.controllerIds?.includes(object.id)) refs.push(data.exit);
+    if (refs.length && !confirm(`${object.id} is linked to ${refs.map((item) => item.id).join(", ")}. Delete it and clean those references?`)) return;
     commit(() => {
-      data.objects = data.objects.filter((item) => !ids.has(item.id) && !ids.has(item.attachedTo));
+      data.objects = data.objects.filter((item) => item !== object && item.attachedTo !== object.id);
       data.objects.forEach((item) => {
-        if (ids.has(item.controllerId)) delete item.controllerId;
-        if (item.controllerIds) item.controllerIds = item.controllerIds.filter((id) => !ids.has(id));
+        if (item.controllerId === object.id) delete item.controllerId;
+        if (item.controllerIds) item.controllerIds = item.controllerIds.filter((id) => id !== object.id);
         if (item.control?.controllerIds) {
-          item.control.controllerIds = item.control.controllerIds.filter((id) => !ids.has(id));
+          item.control.controllerIds = item.control.controllerIds.filter((id) => id !== object.id);
           if (!item.control.controllerIds.length) delete item.control;
         }
       });
       if (data.exit.control?.controllerIds) {
-        data.exit.control.controllerIds = data.exit.control.controllerIds.filter((id) => !ids.has(id));
+        data.exit.control.controllerIds = data.exit.control.controllerIds.filter((id) => id !== object.id);
         if (!data.exit.control.controllerIds.length) delete data.exit.control;
       }
-      setSingleSelection(null);
-    }, `Deleted ${objects.length} object${objects.length === 1 ? "" : "s"}.`);
+      selected = null;
+    }, `Deleted ${object.id}. Relink any controller left without an input.`);
   }
 
   function renderSettings() {
@@ -834,15 +704,7 @@
     } });
     field("Name", "name", data.name, { type: "text", change: (input) => commit(() => data.name = input.value, "Changed the level name.") });
     field("World width", "width", data.width, { change: (input) => commit(() => { data.width = Number(input.value); clampCamera(); }, "Changed world width; out-of-bounds objects are reported below.") });
-    field("Music", "settings.music", data.settings.music, { values: [["level1","Trail"],["level2","Rewind"],["level3","Lava"], ...(data.settings.customMusic ? [["custom", `Imported: ${data.settings.customMusic.name}`]] : [])], change: (input) => commit(() => data.settings.music = input.value, "Changed music.") });
-    const importMusic = document.createElement("button"); importMusic.type = "button"; importMusic.textContent = data.settings.customMusic ? "Replace Imported Song" : "Import Song";
-    importMusic.addEventListener("click", () => musicImportInput.click()); fields.append(importMusic);
-    if (data.settings.customMusic) {
-      field("Imported-song volume", "settings.customMusic.volume", data.settings.customMusic.volume ?? .8, { step: ".05", change: (input) => commit(() => data.settings.customMusic.volume = Math.max(0, Math.min(1, Number(input.value))), "Changed imported-song volume.") });
-      check("Loop imported song", "settings.customMusic.loop", data.settings.customMusic.loop !== false, { change: (input) => commit(() => data.settings.customMusic.loop = input.checked, "Changed imported-song looping.") });
-      const removeMusic = document.createElement("button"); removeMusic.type = "button"; removeMusic.textContent = "Remove Imported Song";
-      removeMusic.addEventListener("click", () => commit(() => { delete data.settings.customMusic; if (data.settings.music === "custom") data.settings.music = "level1"; }, "Removed the imported song.")); fields.append(removeMusic);
-    }
+    field("Music", "settings.music", data.settings.music, { values: [["level1","Trail"],["level2","Rewind"],["level3","Lava"]], change: (input) => commit(() => data.settings.music = input.value, "Changed music.") });
     field("Theme", "settings.theme", data.settings.theme || "default", { values: [["default","Default"],["lava","Lava"],["rewind","Rewind"]], change: (input) => commit(() => data.settings.theme = input.value, "Changed theme.") });
     field("Required level stars", "settings.requiredLevelStars", data.settings.requiredLevelStars || 0, { change: (input) => commit(() => data.settings.requiredLevelStars = Number(input.value), "Changed required stars.") });
     check("Enable Rewind", "settings.rewind.enabled", data.settings.rewind?.enabled, { change: (input) => commit(() => { data.settings.rewind ||= {}; data.settings.rewind.enabled = input.checked; }, "Changed Rewind availability.") });
@@ -1025,11 +887,8 @@
     if (object.type === "enemy" && !object.control) drawArrowLine({ x: object.patrolMinX, y: object.surfaceY }, { x: object.patrolMaxX, y: object.surfaceY }, "#e85757");
   }
   function drawSelection() {
-    const objects = selectedIds.size ? selectedObjects() : [selectionObject()].filter(Boolean);
-    if (!objects.length || selected === "@settings") return;
-    const unit=1/zoom;ctx.strokeStyle="#f4c95d";ctx.lineWidth=3*unit;
-    objects.forEach((object) => { const r=objectRect(object);ctx.strokeRect(r.x-3*unit,r.y-3*unit,r.width+6*unit,r.height+6*unit);
-      if(objects.length===1&&RESIZABLE.has(object.type)){ctx.fillStyle="#f4c95d";ctx.fillRect(r.x+r.width-6*unit,r.y+r.height-6*unit,12*unit,12*unit);} });
+    const object=selectionObject();if(!object||selected==="@settings")return;const r=objectRect(object),unit=1/zoom;ctx.strokeStyle="#f4c95d";ctx.lineWidth=3*unit;ctx.strokeRect(r.x-3*unit,r.y-3*unit,r.width+6*unit,r.height+6*unit);
+    if(RESIZABLE.has(object.type)){ctx.fillStyle="#f4c95d";ctx.fillRect(r.x+r.width-6*unit,r.y+r.height-6*unit,12*unit,12*unit);}
   }
   function drawBounds() {
     const unit=1/zoom;
@@ -1053,17 +912,10 @@
     if(viewFitted){fitLevel();return;}
     cameraX=centerX-visibleWorldWidth()/2;cameraY=centerY-visibleWorldHeight()/2;clampCamera();draw();
   }
-  function refresh() {
-    syncDraftPicker();
-    host.querySelector('[data-action="undo"]').disabled=!undoStack.length;host.querySelector('[data-action="redo"]').disabled=!redoStack.length;
-    host.querySelector('[data-action="group"]').disabled=selectedIds.size<2;
-    host.querySelector('[data-action="ungroup"]').disabled=!selectedObjects().some((object)=>object.groupId);
-    host.querySelector('[data-action="copy"]').disabled=!selectedIds.size;
-    renderInspector();validate();draw();
-  }
+  function refresh() { syncDraftPicker();host.querySelector('[data-action="undo"]').disabled=!undoStack.length;host.querySelector('[data-action="redo"]').disabled=!redoStack.length; renderInspector();validate();draw(); }
 
   function resetDraftView() {
-    setSingleSelection("@spawn"); tool = "select"; canvas.dataset.tool = "select";
+    selected = "@spawn"; tool = "select"; canvas.dataset.tool = "select";
     cameraX = 0; cameraY = 0; undoStack = []; redoStack = []; viewFitted = false;
     host.querySelectorAll("[data-tool]").forEach((button) => button.classList.toggle("active", button.dataset.tool === "select"));
   }
@@ -1115,26 +967,9 @@
     addDraft(result.level, repaired?"Imported a new level and repaired its enemy placement data.":"Imported a new validated level without replacing your other drafts.");
   }
 
-  async function importMusicFile(file) {
-    if (!file) return;
-    if (file.size > 4_500_000) { statusNote = "Imported songs must be 4.5 MB or smaller so the local workspace remains reliable."; return refresh(); }
-    if (file.type && !file.type.startsWith("audio/")) { statusNote = "Choose an audio file."; return refresh(); }
-    try {
-      const dataUrl = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
-      if (typeof dataUrl !== "string" || !dataUrl.startsWith("data:audio/")) throw new Error("unsupported audio");
-      commit(() => {
-        data.settings ||= {};
-        data.settings.customMusic = { name: file.name, dataUrl, loop: true, volume: .8 };
-        data.settings.music = "custom";
-      }, `Imported ${file.name} for this level.`);
-    } catch { statusNote = "The selected song could not be imported."; refresh(); }
-  }
-
   host.addEventListener("click", (event) => {
     const action=event.target.closest("[data-action]")?.dataset.action;if(!action)return;
-    if(action==="new")newLevel(false);else if(action==="duplicate")duplicateLevel();else if(action==="delete-draft")deleteDraft();else if(action==="clear")newLevel(true);
-    else if(action==="group")groupSelection();else if(action==="ungroup")ungroupSelection();else if(action==="copy")copySelection();else if(action==="paste")pasteSelection();
-    else if(action==="undo")undo();else if(action==="redo")redo();else if(action==="import")importInput.click();else if(action==="export")exportData();
+    if(action==="new")newLevel(false);else if(action==="duplicate")duplicateLevel();else if(action==="delete-draft")deleteDraft();else if(action==="clear")newLevel(true);else if(action==="undo")undo();else if(action==="redo")redo();else if(action==="import")importInput.click();else if(action==="export")exportData();
     else if(action==="snap"){snap=!snap;event.target.textContent=`Snap: ${snap?"On":"Off"}`;statusNote=`Grid snapping ${snap?"enabled":"disabled"}.`;refresh();}
     else if(action==="zoom-out")setZoom(zoom/1.2);
     else if(action==="zoom-in")setZoom(zoom*1.2);
@@ -1143,13 +978,10 @@
     else if(action==="close")close();
   });
   importInput.addEventListener("change",()=>{importFile(importInput.files[0]);importInput.value="";});
-  musicImportInput.addEventListener("change",()=>{importMusicFile(musicImportInput.files[0]);musicImportInput.value="";});
   window.addEventListener("keydown",(event)=>{
     if(host.hidden)return;if(["INPUT","SELECT"].includes(document.activeElement.tagName))return;
     if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="z"){event.preventDefault();event.shiftKey?redo():undo();return;}
     if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="y"){event.preventDefault();redo();return;}
-    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="c"){event.preventDefault();copySelection();return;}
-    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="v"){event.preventDefault();pasteSelection();return;}
     if(event.key==="Delete"||event.key==="Backspace"){event.preventDefault();deleteSelected();return;}
     if(event.key.startsWith("Arrow")){
       event.preventDefault();viewFitted=false;const amount=120/zoom;

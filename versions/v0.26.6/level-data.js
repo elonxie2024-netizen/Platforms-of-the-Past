@@ -2,7 +2,7 @@
 
 (() => {
   const SCHEMA_VERSION = 1;
-  const MAX_JSON_LENGTH = 8_000_000;
+  const MAX_JSON_LENGTH = 1_000_000;
   const MAX_OBJECTS = 600;
   const MATERIALS = new Set(["grass", "stone", "crate"]);
   const OBJECT_TYPES = new Set([
@@ -14,18 +14,17 @@
   const SPAWN_KEYS = new Set(["x", "y"]);
   const EXIT_KEYS = new Set(["id", "x", "y", "width", "height", "control"]);
   const SETTINGS_KEYS = new Set([
-    "music", "customMusic", "theme", "postRun", "requiredStars", "requiredLevelStars",
+    "music", "theme", "postRun", "requiredStars", "requiredLevelStars",
     "rewind", "echo", "gauntlet"
   ]);
   const REWIND_KEYS = new Set(["enabled", "tutorial", "showHintOnPlate", "field"]);
   const REWIND_FIELD_KEYS = new Set(["enabled", "radius", "offset"]);
   const ECHO_KEYS = new Set(["enabled", "tutorial", "canPushCrates"]);
   const GAUNTLET_KEYS = new Set(["id", "chapter"]);
-  const CUSTOM_MUSIC_KEYS = new Set(["name", "dataUrl", "loop", "volume"]);
   const POINT_KEYS = new Set(["x", "y"]);
   const MOTION_KEYS = new Set(["axis", "range", "speed", "phase"]);
   const CONTROL_KEYS = new Set(["controllerIds", "target", "releaseDelay", "moveDuration", "initialProgress"]);
-  const COMMON_OBJECT_KEYS = ["id", "type", "groupId"];
+  const COMMON_OBJECT_KEYS = ["id", "type"];
   const OBJECT_KEYS = {
     platform: ["x", "y", "width", "height", "material"],
     floatingPlatform: ["x", "y", "width", "height", "material"],
@@ -256,16 +255,7 @@
   function validateSettings(settings, errors) {
     if (settings === undefined) return;
     if (!rejectUnknownKeys(settings, SETTINGS_KEYS, "level.settings", errors)) return;
-    if (settings.music !== undefined && !["level1", "level2", "level3", "custom"].includes(settings.music)) errors.push("level.settings.music is unsupported.");
-    if (settings.customMusic !== undefined && rejectUnknownKeys(settings.customMusic, CUSTOM_MUSIC_KEYS, "level.settings.customMusic", errors)) {
-      requireString(settings.customMusic.name, "level.settings.customMusic.name", errors, 160);
-      if (typeof settings.customMusic.dataUrl !== "string" || !/^data:audio\/[a-z0-9.+-]+;base64,/i.test(settings.customMusic.dataUrl) || settings.customMusic.dataUrl.length > 6_500_000) {
-        errors.push("level.settings.customMusic.dataUrl must be a base64 audio data URL no larger than 6.5 MB.");
-      }
-      optionalBoolean(settings.customMusic.loop, "level.settings.customMusic.loop", errors);
-      if (settings.customMusic.volume !== undefined) requireNumber(settings.customMusic.volume, "level.settings.customMusic.volume", errors, 0, 1);
-    }
-    if (settings.music === "custom" && settings.customMusic === undefined) errors.push("level.settings.customMusic is required when music is custom.");
+    if (settings.music !== undefined && !["level1", "level2", "level3"].includes(settings.music)) errors.push("level.settings.music is unsupported.");
     if (settings.theme !== undefined && !["default", "lava", "rewind"].includes(settings.theme)) errors.push("level.settings.theme is unsupported.");
     optionalBoolean(settings.postRun, "level.settings.postRun", errors);
     if (settings.requiredStars !== undefined) requireInteger(settings.requiredStars, "level.settings.requiredStars", errors);
@@ -314,7 +304,6 @@
       return;
     }
     requireId(object.id, `${path}.id`, errors);
-    if (object.groupId !== undefined) requireId(object.groupId, `${path}.groupId`, errors);
     if (ids.has(object.id)) errors.push(`${path}.id duplicates ${object.id}.`);
     else ids.set(object.id, object.type);
     if (!OBJECT_TYPES.has(object.type)) {
@@ -339,7 +328,6 @@
     if (object.type === "hazard") {
       if (!["spikes", "lava"].includes(object.hazard)) errors.push(`${path}.hazard must be spikes or lava.`);
       if (object.attachedTo !== undefined) {
-        if (object.groupId !== undefined) errors.push(`${path} cannot be both attached and grouped; use a standalone grouped hazard.`);
         requireId(object.attachedTo, `${path}.attachedTo`, errors);
         requireNumber(object.offsetX ?? 0, `${path}.offsetX`, errors);
         requireNumber(object.offsetY ?? 0, `${path}.offsetY`, errors);
@@ -533,7 +521,6 @@
       platforms: [], hazards: [], stars: [], jumpPads: [], switches: [], pressurePlates: [], enemies: []
     };
     const settings = source.settings || {};
-    if (settings.customMusic) runtime.customMusic = { ...settings.customMusic };
     if (settings.theme && settings.theme !== "default") runtime.theme = settings.theme;
     if (settings.postRun) runtime.postRun = true;
     if (settings.requiredStars !== undefined) runtime.requiredStars = settings.requiredStars;

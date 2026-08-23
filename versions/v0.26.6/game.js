@@ -139,8 +139,7 @@ const resetEmail = document.querySelector("#resetEmail");
 const profileDisplayName = document.querySelector("#profileDisplayName");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.27.0", commit: "Pending commit", date: "2026-08-22", message: "Add editor groups, copy and paste, and imported music", description: "Added multi-object selection and rigid groups whose members move together while retaining their individual platform, hazard, collectible, mechanic, and enemy behavior. Added object/group copy and paste with safe ID, group, controller, and attachment remapping. Expanded Level Settings with portable imported audio, per-level song volume, looping, validation, export, and playtest playback." },
-  { version: "v0.26.6", commit: "86f2095", date: "2026-08-22", message: "Expand level-editor projects and controls", description: "Added a persistent multi-level editor workspace with a level picker plus New, Duplicate, Delete, Import, and Export actions, so creators can keep several independent local levels in progress without overwriting one another. Existing single drafts migrate automatically. Also fixed enemy placement data, audited every palette mechanic, and made controlled movement available for spikes, lava, stars, crates, blocks, pads, enemies, switches, pressure plates, automatic objects, ordinary platforms, and the exit through selectable controllers and draggable targets." },
+  { version: "v0.26.6", commit: "Pending commit", date: "2026-08-22", message: "Expand level-editor projects and controls", description: "Added a persistent multi-level editor workspace with a level picker plus New, Duplicate, Delete, Import, and Export actions, so creators can keep several independent local levels in progress without overwriting one another. Existing single drafts migrate automatically. Also fixed enemy placement data, audited every palette mechanic, and made controlled movement available for spikes, lava, stars, crates, blocks, pads, enemies, switches, pressure plates, automatic objects, ordinary platforms, and the exit through selectable controllers and draggable targets." },
   { version: "v0.26.5", commit: "7c3c271", date: "2026-08-22", message: "Allow unrestricted custom-level IDs", description: "Removed the lowercase-and-hyphen ID format restriction from the editor and serialized level validator. Level, object, exit, controller, and attachment IDs may now contain uppercase letters, spaces, numbers, punctuation, Unicode, or any other text; only empty and duplicate IDs remain invalid so linked mechanics stay unambiguous." },
   { version: "v0.26.4", commit: "eb8d470", date: "2026-08-22", message: "Prevent invalid editor IDs from blocking playtests", description: "Made level and object IDs automatically convert ordinary names into safe lowercase hyphenated IDs, so capital letters and spaces no longer disable Playtest. Existing local drafts affected by the invalid Level ID bug are repaired during restoration, while duplicate object IDs still produce a clear warning and preserve link integrity." },
   { version: "v0.26.3", commit: "f7fc1f6", date: "2026-08-22", message: "Rebuild the level editor viewport", description: "Replaced placeholder editor drawings with the same terrain, character, mechanic, collectible, hazard, and exit assets used during gameplay. Added a polished bounded world canvas with adaptive major and minor grid lines, dark space beyond the level, reliable zoom controls, a Fit Level view that shows the entire world and its borders, draggable level-width control, two-axis panning, and draggable palette and properties panel dividers whose layout is saved locally." },
@@ -1013,7 +1012,6 @@ const legacyLevels = [
 
 function levelObjectId(object, runtimeObject) {
   runtimeObject.levelObjectId = object.id;
-  if (object.groupId) runtimeObject.editorGroupId = object.groupId;
   if (object.control) {
     const baseX = Array.isArray(runtimeObject) ? runtimeObject[0] : runtimeObject.x;
     const baseY = Array.isArray(runtimeObject) ? runtimeObject[1] : runtimeObject.y;
@@ -1230,13 +1228,13 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.27.0";
+const GAME_VERSION = "v0.26.6";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
 const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const LEADERBOARD_RULESETS = [
-  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.27.0" },
+  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.26.6" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1279,7 +1277,6 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
@@ -1340,9 +1337,6 @@ let levelDeveloperSequencePosition = 0;
 let musicTempoSequencePosition = 0;
 let flightEnabled = false;
 const activeMusicVoices = new Set();
-let importedMusicSource = null;
-let importedMusicUrl = "";
-let importedMusicToken = 0;
 
 function clearLegacySessionState() {
   try { LEGACY_SESSION_STORAGE_KEYS.forEach(key => localStorage.removeItem(key)); }
@@ -1465,7 +1459,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1484,7 +1478,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -1537,59 +1531,6 @@ function editorControlledObjects() {
     ...(level.pressurePlates || []),
     ...(level.enemies || [])
   ].filter((object) => object?.editorControl);
-}
-
-function runtimeLevelObjects() {
-  const level = currentLevel();
-  return [level.finish, ...(level.platforms || []), ...(level.hazards || []), ...(level.stars || []),
-    ...(level.jumpPads || []), ...(level.switches || []), ...(level.pressurePlates || []), ...(level.enemies || [])];
-}
-
-function runtimeObjectPosition(object) {
-  return Array.isArray(object) ? { x: object[0], y: object[1] } : { x: object.x, y: object.y };
-}
-
-function shiftRuntimeMotionAnchors(object, dx, dy) {
-  if (object.editorControl) {
-    object.editorControl.baseX += dx; object.editorControl.baseY += dy;
-    object.editorControl.targetX += dx; object.editorControl.targetY += dy;
-  }
-  for (const key of ["baseX", "targetX", "minX", "maxX"]) if (Number.isFinite(object[key])) object[key] += dx;
-  for (const key of ["baseY", "targetY"]) if (Number.isFinite(object[key])) object[key] += dy;
-  if (object.motionPath) object.motionPath.forEach((point) => { point.x += dx; point.y += dy; });
-}
-
-function moveRuntimeGroup(source, nextX, nextY, carryPlayer = true, recordMotion = true) {
-  const groupId = source.editorGroupId;
-  if (!groupId) {
-    setEditorControlledPosition(source, nextX, nextY);
-    return true;
-  }
-  const start = runtimeObjectPosition(source), dx = nextX - start.x, dy = nextY - start.y;
-  if (Math.abs(dx) < .0001 && Math.abs(dy) < .0001) return true;
-  const members = runtimeLevelObjects().filter((object) => object?.editorGroupId === groupId);
-  const platforms = currentLevel().platforms || [];
-  const snapshots = members.map((object) => ({ object, position: runtimeObjectPosition(object) }));
-  const actorSnapshot = { playerX: player.x, playerY: player.y, echoX: echo?.x, echoY: echo?.y };
-  let moved = true;
-  for (const member of members) {
-    if (member.platformId) continue;
-    const position = runtimeObjectPosition(member);
-    if (platforms.includes(member) && platformHasCollision(member)) {
-      if (!movePlatformWithPlayer(member, position.x + dx, position.y + dy, carryPlayer, recordMotion, false)) { moved = false; break; }
-    } else {
-      setEditorControlledPosition(member, position.x + dx, position.y + dy);
-      if (recordMotion && isTimelineObject(member)) recordPlatformMotion(member);
-    }
-  }
-  if (!moved) {
-    snapshots.forEach(({ object, position }) => setEditorControlledPosition(object, position.x, position.y));
-    player.x = actorSnapshot.playerX; player.y = actorSnapshot.playerY;
-    if (echo) { echo.x = actorSnapshot.echoX; echo.y = actorSnapshot.echoY; }
-    return false;
-  }
-  members.forEach((member) => { if (member !== source) shiftRuntimeMotionAnchors(member, dx, dy); });
-  return true;
 }
 
 function editorControlActive(control) {
@@ -1647,7 +1588,7 @@ function updateEditorControlledObjects(dt) {
     const nextY = control.baseY + (control.targetY - control.baseY) * eased;
     const solidPlatform = platforms.includes(object) && platformHasCollision(object);
     if (solidPlatform && !movePlatformWithPlayer(object, nextX, nextY)) control.moveProgress = previousProgress;
-    else if (!solidPlatform && !moveRuntimeGroup(object, nextX, nextY)) control.moveProgress = previousProgress;
+    else if (!solidPlatform) setEditorControlledPosition(object, nextX, nextY);
   }
 }
 
@@ -1980,8 +1921,7 @@ function pushOverlappingCrateFromSolid(platform, crate, oldX, oldY, dx, dy, move
   return moveCrateFromSolid(crate, correction.dx, correction.dy, platform, movedCrates);
 }
 
-function movePlatformWithPlayer(platform, nextX, nextY, carryPlayer = true, recordMotion = true, moveGroup = true) {
-  if (moveGroup && platform.editorGroupId) return moveRuntimeGroup(platform, nextX, nextY, carryPlayer, recordMotion);
+function movePlatformWithPlayer(platform, nextX, nextY, carryPlayer = true, recordMotion = true) {
   const oldX = platform.x;
   const oldY = platform.y;
   const totalDx = nextX - oldX;
@@ -2096,9 +2036,7 @@ function updateTimelinePlayback(platform, dt) {
   const nextX = distance <= .01 ? target.x : platform.x + dx / distance * step;
   const nextY = distance <= .01 ? target.y : platform.y + dy / distance * step;
   if (platform.pushable && target.lost === false) platform.lost = false;
-  if (platform.editorGroupId) {
-    moveRuntimeGroup(platform, nextX, nextY, Boolean(platform.carryDuringRewind), false);
-  } else if (platform.rewindableEnemy) {
+  if (platform.rewindableEnemy) {
     platform.x = nextX;
     platform.y = nextY;
   } else if (platform.rewindableState) {
@@ -2249,10 +2187,10 @@ function updateEnemies(dt, previousPlayerBottom) {
       if (reachedBoundary || blocked) {
         if (enemy.stopAtBoundary) enemy.stopped = true;
         else enemy.direction *= -1;
-        moveRuntimeGroup(enemy, Math.max(enemy.minX, Math.min(enemy.maxX, enemy.x)), enemy.y);
+        enemy.x = Math.max(enemy.minX, Math.min(enemy.maxX, enemy.x));
         recordPlatformMotion(enemy, true);
       } else {
-        moveRuntimeGroup(enemy, nextX, enemy.y);
+        enemy.x = nextX;
         recordPlatformMotion(enemy);
       }
     }
@@ -3323,7 +3261,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -4452,39 +4390,6 @@ function stopMusicVoices() {
   activeMusicVoices.clear();
 }
 
-function stopImportedMusic() {
-  importedMusicToken++;
-  if (importedMusicSource) {
-    try { importedMusicSource.stop(); } catch { /* Source already ended. */ }
-    importedMusicSource.disconnect();
-    importedMusicSource = null;
-  }
-  importedMusicUrl = "";
-}
-
-async function startImportedMusic(config) {
-  if (!audioContext || !musicGain || !config?.dataUrl) return;
-  if (importedMusicSource && importedMusicUrl === config.dataUrl) return;
-  stopImportedMusic();
-  const token = importedMusicToken;
-  try {
-    const bytes = await fetch(config.dataUrl).then((response) => response.arrayBuffer());
-    const buffer = await audioContext.decodeAudioData(bytes);
-    if (token !== importedMusicToken || currentTrack !== "custom") return;
-    const source = audioContext.createBufferSource();
-    source.buffer = buffer;
-    source.loop = config.loop !== false;
-    source.connect(musicGain);
-    musicGain.gain.value = .42 * Math.max(0, Math.min(1, config.volume ?? .8));
-    importedMusicSource = source;
-    importedMusicUrl = config.dataUrl;
-    source.addEventListener("ended", () => { if (importedMusicSource === source) importedMusicSource = null; }, { once: true });
-    source.start();
-  } catch (error) {
-    console.error("Imported level music could not be decoded.", error);
-  }
-}
-
 function scheduleMusic() {
   if (!audioContext || audioContext.state !== "running" || !currentTrack) return;
   const track = MUSIC_TRACKS[currentTrack];
@@ -4505,22 +4410,11 @@ function scheduleMusic() {
 }
 
 function startMusic(trackName) {
-  if (trackName === "custom" && currentLevel()?.customMusic) {
-    const config = currentLevel().customMusic;
-    if (currentTrack === "custom" && importedMusicUrl === config.dataUrl && importedMusicSource) return;
-    currentTrack = "custom";
-    musicStep = 0;
-    stopMusicVoices();
-    if (audioContext) startImportedMusic(config);
-    return;
-  }
   if (!MUSIC_TRACKS[trackName] || currentTrack === trackName && musicStep > 0) return;
-  stopImportedMusic();
   currentTrack = trackName;
   musicStep = 0;
   stopMusicVoices();
   if (audioContext) {
-    musicGain.gain.value = .42;
     nextMusicNoteTime = audioContext.currentTime + .04;
     scheduleMusic();
   }
@@ -4544,8 +4438,7 @@ async function ensureAudio() {
     musicTimer = setInterval(scheduleMusic, 50);
   }
   if (audioContext.state === "suspended") await audioContext.resume();
-  if (currentTrack === "custom" && currentLevel()?.customMusic) startImportedMusic(currentLevel().customMusic);
-  else scheduleMusic();
+  scheduleMusic();
   return true;
 }
 
@@ -5187,10 +5080,7 @@ function crateTouchesHazard(crate) {
 }
 
 function updateCrates(dt) {
-  const updatedGroups = new Set();
   for (const crate of currentLevel().platforms.filter((platform) => platform.pushable)) {
-    if (crate.editorGroupId && updatedGroups.has(crate.editorGroupId)) continue;
-    if (crate.editorGroupId) updatedGroups.add(crate.editorGroupId);
     if (crate.editorControl || crate.timelinePreview || crate.timelinePlayback?.length > 0 || crate.lost) continue;
 
     const oldY = crate.y;

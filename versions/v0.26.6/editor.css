@@ -116,7 +116,6 @@
 .editor-link-list { display: grid; gap: 4px; max-height: 120px; overflow: auto; padding: 5px; border: 1px solid #3e5e80; border-radius: 7px; }
 .editor-link-list label { display: flex; gap: 6px; align-items: center; }
 .editor-control-note { margin: 0; color: #bcd6ed; font-size: 11px; line-height: 1.4; }
-.editor-selection-summary { margin: 2px 0 7px; padding: 7px; border: 1px solid #496b8c; border-radius: 7px; color: #d7edff; background: #10243c; font-size: 11px; line-height: 1.4; }
 .editor-waypoint { display: grid; grid-template-columns: 1fr 1fr auto; gap: 4px; margin-bottom: 4px; }
 .editor-waypoint input { width: 100%; min-width: 0; }
 .editor-danger { width: 100%; margin-top: 10px; color: #ffe3e3 !important; border-color: #a95f69 !important; background: #5f3039 !important; }
