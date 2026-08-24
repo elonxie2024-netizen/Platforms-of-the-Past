@@ -14,7 +14,7 @@ create table if not exists public.leaderboard_rulesets (
 
 insert into public.leaderboard_rulesets (id, label, accepted_versions)
 values
-  ('crate-jump-collision-v1', 'Version 0.24.1 to 0.29.1', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1', 'v0.28.2', 'v0.29.0', 'v0.29.1']),
+  ('crate-jump-collision-v1', 'Version 0.24.1 to 0.30.0', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1', 'v0.28.2', 'v0.29.0', 'v0.29.1', 'v0.30.0']),
   ('crate-platform-collision-v1', 'Version 0.23.2 to 0.24.0', array['v0.23.2', 'v0.24.0']),
   ('history-forge-gate-v1', 'Version 0.23.1 to 0.23.1', array['v0.23.1']),
   ('crate-gravity-v1', 'Version 0.23.0 to 0.23.0', array['v0.23.0']),
@@ -334,6 +334,8 @@ create index if not exists custom_level_permissions_user_idx
   on public.custom_level_permissions (user_id, updated_at desc);
 create index if not exists published_custom_levels_updated_idx
   on public.published_custom_levels (updated_at desc);
+create index if not exists published_custom_levels_published_idx
+  on public.published_custom_levels (published_at desc);
 
 create or replace function public.touch_custom_level_updated_at()
 returns trigger
@@ -603,6 +605,50 @@ as $$
   where published.level_id = p_level_id;
 $$;
 
+drop function if exists public.list_published_custom_levels(text, text, integer, integer);
+create function public.list_published_custom_levels(
+  p_query text default '',
+  p_sort text default 'newest',
+  p_offset integer default 0,
+  p_limit integer default 13
+)
+returns table (
+  level_id uuid,
+  level_name text,
+  owner_name text,
+  owner_username text,
+  version integer,
+  published_at timestamptz,
+  updated_at timestamptz
+)
+language sql
+security definer
+set search_path = ''
+stable
+as $$
+  select published.level_id,
+    coalesce(nullif(btrim(published.level_data ->> 'name'), ''), 'Untitled Level'),
+    profile.display_name,
+    profile.username::text,
+    published.version,
+    published.published_at,
+    published.updated_at
+  from public.published_custom_levels published
+  join public.player_profiles profile on profile.user_id = published.owner_id
+  where left(btrim(coalesce(p_query, '')), 80) = ''
+    or position(
+      lower(left(btrim(coalesce(p_query, '')), 80)) in lower(concat_ws(' ',
+        published.level_data ->> 'name', profile.display_name, profile.username::text
+      ))
+    ) > 0
+  order by
+    case when p_sort = 'updated' then published.updated_at end desc nulls last,
+    case when p_sort <> 'updated' then published.published_at end desc nulls last,
+    published.level_id
+  offset least(greatest(coalesce(p_offset, 0), 0), 100000)
+  limit least(greatest(coalesce(p_limit, 13), 1), 51);
+$$;
+
 create or replace function public.unpublish_custom_level(p_level_id uuid)
 returns void
 language plpgsql
@@ -636,12 +682,14 @@ revoke all on function public.leave_custom_level(uuid) from public;
 revoke all on function public.publish_custom_level(uuid) from public;
 revoke all on function public.unpublish_custom_level(uuid) from public;
 revoke all on function public.get_published_custom_level(uuid) from public;
+revoke all on function public.list_published_custom_levels(text, text, integer, integer) from public;
 grant execute on function public.grant_custom_level_access(uuid, text, text) to authenticated;
 grant execute on function public.remove_custom_level_access(uuid, uuid) to authenticated;
 grant execute on function public.leave_custom_level(uuid) to authenticated;
 grant execute on function public.publish_custom_level(uuid) to authenticated;
 grant execute on function public.unpublish_custom_level(uuid) to authenticated;
 grant execute on function public.get_published_custom_level(uuid) to anon, authenticated;
+grant execute on function public.list_published_custom_levels(text, text, integer, integer) to anon, authenticated;
 
 -- No public insert/update/delete grants exist for published snapshots.
 -- Permission rows can only be deleted by their collaborator; owner-managed sharing stays behind RPCs.

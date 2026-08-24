@@ -304,17 +304,6 @@
     return Array.isArray(data) ? data[0] || null : data;
   }
 
-  async function listPublishedCustomLevels(query = "", sort = "newest", offset = 0, limit = 13) {
-    const { data, error } = await requireClient().rpc("list_published_custom_levels", {
-      p_query: String(query || "").trim().slice(0, 80),
-      p_sort: sort === "updated" ? "updated" : "newest",
-      p_offset: Math.max(0, Number(offset) || 0),
-      p_limit: Math.min(25, Math.max(1, Number(limit) || 13))
-    });
-    if (error) throw error;
-    return Array.isArray(data) ? data : [];
-  }
-
   async function loadPublishedCustomLevelVersion(levelId, version) {
     const { data, error } = await requireClient().from("published_custom_level_versions")
       .select("level_id,version,level_data,published_at")
@@ -350,7 +339,6 @@
     leaveCustomLevel,
     publishCustomLevel,
     unpublishCustomLevel,
-    listPublishedCustomLevels,
     loadPublishedCustomLevel,
     loadPublishedCustomLevelVersion,
     accessToken,

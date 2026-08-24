@@ -69,15 +69,6 @@ const menuAnimationButtons = [...document.querySelectorAll("[data-menu-animation
 const menuTextureButtons = [...document.querySelectorAll("[data-menu-texture]")];
 const menuBackdropButtons = [...document.querySelectorAll("[data-menu-backdrop]")];
 const mainLeaderboardButton = document.querySelector("#mainLeaderboardButton");
-const communityLevelsButton = document.querySelector("#communityLevelsButton");
-const communityLevelsMenu = document.querySelector("#communityLevelsMenu");
-const communitySearchForm = document.querySelector("#communitySearchForm");
-const communitySearchInput = document.querySelector("#communitySearchInput");
-const communitySortSelect = document.querySelector("#communitySortSelect");
-const communityLevelsNote = document.querySelector("#communityLevelsNote");
-const communityLevelsList = document.querySelector("#communityLevelsList");
-const loadMoreCommunityLevelsButton = document.querySelector("#loadMoreCommunityLevelsButton");
-const closeCommunityLevelsButton = document.querySelector("#closeCommunityLevelsButton");
 const pauseMenu = document.querySelector("#pauseMenu");
 const resumeButton = document.querySelector("#resumeButton");
 const pauseRestartLevelButton = document.querySelector("#pauseRestartLevelButton");
@@ -151,8 +142,7 @@ const profileDisplayName = document.querySelector("#profileDisplayName");
 const profileUsername = document.querySelector("#profileUsername");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.30.0", commit: "Pending commit", date: "2026-08-24", message: "Add the Community Levels browser", description: "Added a main-menu catalog of every currently published custom level with level and creator search, Newest and Recently Updated sorting, incremental loading, creator display names and usernames, publication metadata, and direct Play controls. Catalog requests return lightweight metadata only; the selected published snapshot is downloaded when Play is pressed, while unpublished levels and private drafts remain excluded." },
-  { version: "v0.29.1", commit: "2eacd72", date: "2026-08-24", message: "Lock account workspaces on sign-out", description: "Made guest construction workspaces temporary and isolated. Signing out now immediately locks the previous account workspace, removes every account draft from memory, clears obsolete browser guest drafts, and presents exactly one blank default guest level. Account workspace listings also reject any record that is not owned by the signed-in player or explicitly shared with that player as an Editor or Viewer; public visitors continue directly into gameplay without editor access." },
+  { version: "v0.29.1", commit: "Pending commit", date: "2026-08-24", message: "Lock account workspaces on sign-out", description: "Made guest construction workspaces temporary and isolated. Signing out now immediately locks the previous account workspace, removes every account draft from memory, clears obsolete browser guest drafts, and presents exactly one blank default guest level. Account workspace listings also reject any record that is not owned by the signed-in player or explicitly shared with that player as an Editor or Viewer; public visitors continue directly into gameplay without editor access." },
   { version: "v0.29.0", commit: "18b7cf0", date: "2026-08-24", message: "Harden collaborative level workspaces", description: "Protected account edits with correctly targeted autosaves, per-account crash backups, page-exit flushing, lazy level loading, and optimistic concurrency prompts. Added unique public usernames for private sharing without email lookup, live creator attribution, collaborator removal, a 50-level owner quota, and a play-first Viewer screen. Consolidated publishing controls under Share, hid auth UUIDs from public access, and added append-only published-version history while keeping stable public links pointed at the current published update." },
   { version: "v0.28.2", commit: "0f18617", date: "2026-08-24", message: "Open public level links directly in gameplay", description: "Hid Public Link until a draft has an actual published snapshot, leaving private draft access under Share. Published links now fetch the latest explicitly published version and start it directly in gameplay instead of opening the level editor; quitting or completing the public level returns to the main menu." },
   { version: "v0.28.1", commit: "8b954c3", date: "2026-08-24", message: "Clear guest editor levels after signing out", description: "Fixed account isolation on shared browsers by discarding the browser's previous guest editor workspace whenever an account signs out. The editor now switches immediately to one fresh blank guest level, while levels created during a normal guest session still remain available across guest refreshes." },
@@ -1252,13 +1242,13 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.30.0";
+const GAME_VERSION = "v0.29.1";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
 const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const LEADERBOARD_RULESETS = [
-  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.30.0" },
+  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.29.1" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1301,7 +1291,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
+  "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
@@ -1327,11 +1317,6 @@ let roadmapChapterIndex = 0;
 let leaderboardEntries = [];
 let leaderboardRequest = 0;
 let leaderboardMetric = "time";
-const COMMUNITY_PAGE_SIZE = 12;
-let communityLevelEntries = [];
-let communityLevelsRequest = 0;
-let communityLevelsLoading = false;
-let communityLevelsHasMore = false;
 const ALL_INTRO_LEVELS = Array.from({ length: INTRO_LEVEL_COUNT }, (_, index) => index);
 const RUN_OBJECTIVE_LABELS = {
   "complete-all": "Complete all levels",
@@ -1494,7 +1479,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1513,7 +1498,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -3256,7 +3241,6 @@ function beginRun(index) {
   leaderboardMenu.hidden = true;
   changelogMenu.hidden = true;
   versionsMenu.hidden = true;
-  communityLevelsMenu.hidden = true;
   accountMenu.hidden = true;
   pauseButton.disabled = false;
   restartButton.disabled = false;
@@ -3403,122 +3387,12 @@ function closeLeaderboard() {
   }
 }
 
-function formatCommunityDate(value) {
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return "Unknown date";
-  return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "numeric" }).format(date);
-}
-
-function renderCommunityLevels() {
-  communityLevelsList.replaceChildren();
-  if (!communityLevelEntries.length && !communityLevelsLoading) {
-    const empty = document.createElement("p");
-    empty.className = "community-levels-empty";
-    empty.textContent = "No published community levels match this search.";
-    communityLevelsList.append(empty);
-  }
-
-  communityLevelEntries.forEach((entry) => {
-    const card = document.createElement("article");
-    card.className = "community-level-card";
-    const details = document.createElement("div");
-    const heading = document.createElement("h3");
-    heading.textContent = entry.level_name || "Untitled Level";
-    const creator = document.createElement("p");
-    creator.className = "community-creator";
-    creator.textContent = `${entry.owner_name || "Unknown creator"} · @${entry.owner_username || "unknown"}`;
-    const publication = document.createElement("p");
-    const version = document.createElement("span");
-    version.className = "community-version";
-    version.textContent = `Published v${entry.version}`;
-    publication.append(
-      version,
-      document.createTextNode(` · ${formatCommunityDate(entry.published_at)} · Updated ${formatCommunityDate(entry.updated_at)}`)
-    );
-    details.append(heading, creator, publication);
-    const play = document.createElement("button");
-    play.type = "button";
-    play.textContent = "Play";
-    play.addEventListener("click", () => playCommunityLevel(entry.level_id, play));
-    card.append(details, play);
-    communityLevelsList.append(card);
-  });
-
-  loadMoreCommunityLevelsButton.hidden = !communityLevelsHasMore;
-  loadMoreCommunityLevelsButton.disabled = communityLevelsLoading;
-  loadMoreCommunityLevelsButton.textContent = communityLevelsLoading ? "Loading..." : "Load More";
-}
-
-async function loadCommunityLevels(reset = false) {
-  const request = ++communityLevelsRequest;
-  const offset = reset ? 0 : communityLevelEntries.length;
-  if (reset) communityLevelEntries = [];
-  communityLevelsLoading = true;
-  communityLevelsHasMore = false;
-  communityLevelsNote.textContent = "Loading published levels...";
-  renderCommunityLevels();
-  try {
-    const rows = await window.PlatformsAccount.listPublishedCustomLevels(
-      communitySearchInput.value,
-      communitySortSelect.value,
-      offset,
-      COMMUNITY_PAGE_SIZE + 1
-    );
-    if (request !== communityLevelsRequest) return;
-    communityLevelsHasMore = rows.length > COMMUNITY_PAGE_SIZE;
-    const page = rows.slice(0, COMMUNITY_PAGE_SIZE);
-    communityLevelEntries = reset ? page : [...communityLevelEntries, ...page];
-    communityLevelsNote.textContent = communityLevelEntries.length
-      ? `Showing ${communityLevelEntries.length} published level${communityLevelEntries.length === 1 ? "" : "s"}.`
-      : "No published levels found.";
-  } catch (error) {
-    if (request !== communityLevelsRequest) return;
-    communityLevelsHasMore = false;
-    communityLevelsNote.textContent = "Community Levels is unavailable. Check the connection or run the v0.30.0 Supabase migration.";
-  } finally {
-    if (request === communityLevelsRequest) {
-      communityLevelsLoading = false;
-      renderCommunityLevels();
-    }
-  }
-}
-
-function openCommunityLevels() {
-  settingsPanel.hidden = true;
-  settingsButton.setAttribute("aria-expanded", "false");
-  mainMenu.hidden = true;
-  communityLevelsMenu.hidden = false;
-  loadCommunityLevels(true);
-  communitySearchInput.focus();
-}
-
-function closeCommunityLevels() {
-  communityLevelsRequest++;
-  communityLevelsLoading = false;
-  communityLevelsMenu.hidden = true;
-  mainMenu.hidden = false;
-  communityLevelsButton.focus();
-}
-
-async function playCommunityLevel(levelId, button) {
-  if (!levelId || button.disabled) return;
-  button.disabled = true;
-  communityLevelsNote.textContent = "Loading the published level...";
-  const opened = await window.PlatformsEditor?.openPublishedLevel(levelId);
-  if (opened) {
-    communityLevelsMenu.hidden = true;
-    return;
-  }
-  button.disabled = false;
-  communityLevelsNote.textContent = "This level is unavailable or has been unpublished.";
-}
-
 function renderVersions() {
   versionsList.replaceChildren();
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -4581,14 +4455,6 @@ pauseRestartLevelButton.addEventListener("click", () => { restartLevel(); setPau
 pauseRestartRunButton.addEventListener("click", startOver);
 pauseQuitButton.addEventListener("click", quitRun);
 mainLeaderboardButton.addEventListener("click", () => openLeaderboard("main"));
-communityLevelsButton.addEventListener("click", openCommunityLevels);
-communitySearchForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  loadCommunityLevels(true);
-});
-communitySortSelect.addEventListener("change", () => loadCommunityLevels(true));
-loadMoreCommunityLevelsButton.addEventListener("click", () => loadCommunityLevels(false));
-closeCommunityLevelsButton.addEventListener("click", closeCommunityLevels);
 pauseLeaderboardButton.addEventListener("click", () => openLeaderboard("pause"));
 closeLeaderboardButton.addEventListener("click", closeLeaderboard);
 mainChangelogButton.addEventListener("click", () => openChangelog("main"));
@@ -5324,7 +5190,6 @@ function startOver() {
   leaderboardMenu.hidden = true;
   changelogMenu.hidden = true;
   versionsMenu.hidden = true;
-  communityLevelsMenu.hidden = true;
   levelSplits = [];
   runQueuePosition = 0;
   nextLevelIndex = null;
@@ -5369,7 +5234,6 @@ function quitRun() {
   leaderboardMenu.hidden = true;
   changelogMenu.hidden = true;
   versionsMenu.hidden = true;
-  communityLevelsMenu.hidden = true;
   accountMenu.hidden = true;
   settingsButton.setAttribute("aria-expanded", "false");
   levelSplits = [];
