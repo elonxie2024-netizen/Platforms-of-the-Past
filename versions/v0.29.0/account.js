@@ -210,19 +210,17 @@
     if (publicationError) throw publicationError;
     const profileIds = [...new Set([...(levels || []).map(level => level.owner_id), ...(permissions || []).map(permission => permission.user_id)])];
     const profiles = await loadPublicProfiles(profileIds);
-    return (levels || []).map(level => {
-      const permission = permissions?.find(item => item.level_id === level.id && item.user_id === userId);
-      const role = level.owner_id === userId ? "owner" : permission?.role || null;
-      if (!role) return null;
-      return {
-        ...level, role,
-        ownerProfile: profiles.find(profile => profile.user_id === level.owner_id) || null,
-        permissions: (permissions || []).filter(item => item.level_id === level.id).map(item => ({
-          ...item, profile: profiles.find(profile => profile.user_id === item.user_id) || null
-        })),
-        publication: (publications || []).find(publication => publication.level_id === level.id) || null
-      };
-    }).filter(Boolean);
+    return (levels || []).map(level => ({
+      ...level,
+      role: level.owner_id === userId
+        ? "owner"
+        : permissions?.find(permission => permission.level_id === level.id && permission.user_id === userId)?.role || "viewer",
+      ownerProfile: profiles.find(profile => profile.user_id === level.owner_id) || null,
+      permissions: (permissions || []).filter(permission => permission.level_id === level.id).map(permission => ({
+        ...permission, profile: profiles.find(profile => profile.user_id === permission.user_id) || null
+      })),
+      publication: (publications || []).find(publication => publication.level_id === level.id) || null
+    }));
   }
 
   async function loadPublicProfiles(userIds) {

@@ -142,8 +142,7 @@ const profileDisplayName = document.querySelector("#profileDisplayName");
 const profileUsername = document.querySelector("#profileUsername");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.29.1", commit: "Pending commit", date: "2026-08-24", message: "Lock account workspaces on sign-out", description: "Made guest construction workspaces temporary and isolated. Signing out now immediately locks the previous account workspace, removes every account draft from memory, clears obsolete browser guest drafts, and presents exactly one blank default guest level. Account workspace listings also reject any record that is not owned by the signed-in player or explicitly shared with that player as an Editor or Viewer; public visitors continue directly into gameplay without editor access." },
-  { version: "v0.29.0", commit: "18b7cf0", date: "2026-08-24", message: "Harden collaborative level workspaces", description: "Protected account edits with correctly targeted autosaves, per-account crash backups, page-exit flushing, lazy level loading, and optimistic concurrency prompts. Added unique public usernames for private sharing without email lookup, live creator attribution, collaborator removal, a 50-level owner quota, and a play-first Viewer screen. Consolidated publishing controls under Share, hid auth UUIDs from public access, and added append-only published-version history while keeping stable public links pointed at the current published update." },
+  { version: "v0.29.0", commit: "Pending commit", date: "2026-08-24", message: "Harden collaborative level workspaces", description: "Preserved guest drafts across account sign-outs and protected account edits with correctly targeted autosaves, per-account crash backups, page-exit flushing, lazy level loading, and optimistic concurrency prompts. Added unique public usernames for private sharing without email lookup, live creator attribution, collaborator removal, a 50-level owner quota, and a play-first Viewer screen. Consolidated publishing controls under Share, hid auth UUIDs from public access, and added append-only published-version history while keeping stable public links pointed at the current published update." },
   { version: "v0.28.2", commit: "0f18617", date: "2026-08-24", message: "Open public level links directly in gameplay", description: "Hid Public Link until a draft has an actual published snapshot, leaving private draft access under Share. Published links now fetch the latest explicitly published version and start it directly in gameplay instead of opening the level editor; quitting or completing the public level returns to the main menu." },
   { version: "v0.28.1", commit: "8b954c3", date: "2026-08-24", message: "Clear guest editor levels after signing out", description: "Fixed account isolation on shared browsers by discarding the browser's previous guest editor workspace whenever an account signs out. The editor now switches immediately to one fresh blank guest level, while levels created during a normal guest session still remain available across guest refreshes." },
   { version: "v0.28.0", commit: "f6c84e5", date: "2026-08-23", message: "Add account level workspaces, sharing, and publishing", description: "Separated the guest editor workspace from Supabase-backed account workspaces and switched levels immediately with authentication state. Added backend-enforced Owner, Editor, and Viewer draft roles, owner-managed sharing by account email, immutable public snapshots with explicit update publishing and unpublishing, and read-only public playtest links for signed-out visitors. Private drafts, collaborator permissions, and public snapshots use separate RLS-protected tables." },
@@ -1242,13 +1241,13 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.29.1";
+const GAME_VERSION = "v0.29.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
 const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const LEADERBOARD_RULESETS = [
-  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.29.1" },
+  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.29.0" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1291,7 +1290,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
+  "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
@@ -1479,7 +1478,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1498,7 +1497,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -2727,15 +2726,12 @@ async function syncProgressWithAccount(session, event = "SIGNED_IN") {
   renderAccountState(finalMessage);
 }
 
-function restoreGuestProgress(freshEditorWorkspace = false) {
+function restoreGuestProgress() {
   accountSyncGeneration++;
   accountSession = null;
   accountProfile = null;
   accountRecoveryActive = false;
-  window.PlatformsEditor?.setAccountContext({
-    userId: null, displayName: "Guest", service: window.PlatformsAccount,
-    freshGuest: freshEditorWorkspace
-  });
+  window.PlatformsEditor?.setAccountContext({ userId: null, displayName: "Guest", service: window.PlatformsAccount });
   if (accountProgressSyncTimer) clearTimeout(accountProgressSyncTimer);
   applyProgress(readStoredProgress(GUEST_PROGRESS_STORAGE_KEY));
   applyRewindMenuState();
@@ -2774,7 +2770,7 @@ async function initializeAccounts() {
   window.PlatformsAccount.subscribe((event, session) => {
     setTimeout(() => {
       if (session?.user) syncProgressWithAccount(session, event);
-      else if (event === "SIGNED_OUT" || event === "INITIAL_SESSION") restoreGuestProgress(event === "SIGNED_OUT");
+      else if (event === "SIGNED_OUT" || event === "INITIAL_SESSION") restoreGuestProgress();
     }, 0);
   });
   try {
@@ -3392,7 +3388,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -4877,7 +4873,7 @@ signOutButton.addEventListener("click", async () => {
   }
   try {
     await window.PlatformsAccount.signOut();
-    restoreGuestProgress(true);
+    restoreGuestProgress();
   } catch (error) {
     accountNotice.textContent = accountFriendlyError(error);
   } finally {

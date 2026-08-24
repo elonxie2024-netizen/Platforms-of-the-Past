@@ -23,11 +23,11 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/slime-player.svg", enemy: "assets/slime-enemy.svg",
-    switch: "assets/switch-left.svg", pressurePlateBase: "assets/pressure-plate-base.svg",
-    pressurePlateTop: "assets/pressure-plate-top.svg", jumpPadBase: "assets/jump-pad-base.svg",
-    jumpPadTop: "assets/jump-pad-top.svg", blade: "assets/moving-obstacle.svg",
-    cracks: "assets/fragile-block-cracks.svg"
+    player: "../assets/slime-player.svg", enemy: "../assets/slime-enemy.svg",
+    switch: "../assets/switch-left.svg", pressurePlateBase: "../assets/pressure-plate-base.svg",
+    pressurePlateTop: "../assets/pressure-plate-top.svg", jumpPadBase: "../assets/jump-pad-base.svg",
+    jumpPadTop: "../assets/jump-pad-top.svg", blade: "../assets/moving-obstacle.svg",
+    cracks: "../assets/fragile-block-cracks.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
@@ -61,7 +61,7 @@
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.29.1</strong>
+      <strong>Level Editor · v0.29.0</strong>
       <span class="editor-workspace-identity" data-role="workspace-identity">Guest workspace</span>
       <label class="editor-level-picker"><span>Level</span><select data-role="draft-picker" aria-label="Level being edited"></select></label>
       <button data-action="new">New</button><button data-action="duplicate">Duplicate</button><button data-action="delete-draft">Delete</button><button data-action="clear">Clear</button>
@@ -318,6 +318,10 @@
       }
       return;
     }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, activeDraftKey, drafts }));
+      localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(data));
+    } catch { statusNote = "Draft changed, but browser storage is full or unavailable."; }
   }
   function selectedObjects() { return data.objects.filter((object) => selectedIds.has(object.id)); }
   function setSingleSelection(token) {
@@ -346,16 +350,43 @@
     });
     return repaired;
   }
-  function startFreshGuestWorkspace() {
-    const level = freshLevel();
-    drafts = [{ key: nextDraftKey(), role: "guest", loaded: true, title: level.name, level }];
-    activeDraftKey = drafts[0].key; data = level; viewerLandingOpen = false;
+  function restoreGuestWorkspace() {
+    drafts = []; activeDraftKey = ""; data = freshLevel(); viewerLandingOpen = false;
     try {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(LEGACY_STORAGE_KEY);
-    } catch { /* The in-memory guest workspace is still isolated and temporary. */ }
-    statusNote = "Started a fresh temporary guest workspace.";
-    resetDraftView();
+      const savedWorkspace = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+      let repairedCount = 0, rejectedCount = 0, restoredStoredDraft = false;
+      if (savedWorkspace?.version === 2 && Array.isArray(savedWorkspace.drafts)) {
+        for (const saved of savedWorkspace.drafts) {
+          if (!saved || typeof saved.key !== "string") { rejectedCount++; continue; }
+          const candidate = clone(saved.level);
+          if (repairKnownEditorData(candidate)) repairedCount++;
+          const result = api.importLevel(JSON.stringify(candidate));
+          if (result.ok && !drafts.some((draft) => draft.key === saved.key)) { drafts.push({ key: saved.key, level: result.level }); restoredStoredDraft = true; }
+          else rejectedCount++;
+        }
+        activeDraftKey = drafts.some((draft) => draft.key === savedWorkspace.activeDraftKey) ? savedWorkspace.activeDraftKey : drafts[0]?.key || "";
+      }
+      if (!drafts.length) {
+        const legacyText = localStorage.getItem(LEGACY_STORAGE_KEY);
+        if (legacyText) {
+          const legacy = JSON.parse(legacyText);
+          if (repairKnownEditorData(legacy)) repairedCount++;
+          const result = api.importLevel(JSON.stringify(legacy));
+          if (result.ok) { drafts.push({ key: nextDraftKey(), level: result.level }); restoredStoredDraft = true; }
+        }
+      }
+      if (!drafts.length) drafts.push({ key: nextDraftKey(), level: data });
+      activeDraftKey ||= drafts[0].key;
+      data = activeDraft().level;
+      statusNote = restoredStoredDraft
+        ? `Restored ${drafts.length} local level${drafts.length === 1 ? "" : "s"}.${repairedCount ? ` Repaired ${repairedCount}.` : ""}${rejectedCount ? ` Skipped ${rejectedCount} invalid draft${rejectedCount === 1 ? "" : "s"}.` : ""}`
+        : "Started a new local level workspace.";
+      persist(false);
+    } catch {
+      drafts = [{ key: nextDraftKey(), level: data }]; activeDraftKey = drafts[0].key;
+      statusNote = "Saved editor levels could not be read safely; started a new local level.";
+      persist(false);
+    }
   }
   function restoreAccountBackups(userId, allowOfflineCloudDrafts = false) {
     try {
@@ -398,8 +429,7 @@
   }
   async function setAccountContext(context = {}) {
     const nextUserId = context.userId || null;
-    const freshGuest = !nextUserId && context.freshGuest === true;
-    if (nextUserId === accountContext.userId && !workspaceLoading && !context.force && !freshGuest) {
+    if (nextUserId === accountContext.userId && !workspaceLoading && !context.force) {
       accountContext.displayName = context.displayName || accountContext.displayName;
       accountContext.service = context.service || accountContext.service;
       refresh(); return;
@@ -411,7 +441,8 @@
     sharingPanel.hidden = true;
     resetDraftView();
     if (!nextUserId) {
-      startFreshGuestWorkspace();
+      restoreGuestWorkspace();
+      statusNote = "Guest workspace loaded.";
       refresh();
       return;
     }
@@ -1551,7 +1582,7 @@
 
   addEventListener("pagehide", () => { persistAccountBackup(); void flushCloudSaves(); });
 
-  startFreshGuestWorkspace(); setTool("select");
+  restoreGuestWorkspace(); setTool("select");
   window.PlatformsEditor=Object.freeze({
     open, close, showAfterPlaytest, redraw:draw,
     getDraft:()=>clone(data),
