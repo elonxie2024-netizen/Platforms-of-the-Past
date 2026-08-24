@@ -23,11 +23,11 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/slime-player.svg", enemy: "assets/slime-enemy.svg",
-    switch: "assets/switch-left.svg", pressurePlateBase: "assets/pressure-plate-base.svg",
-    pressurePlateTop: "assets/pressure-plate-top.svg", jumpPadBase: "assets/jump-pad-base.svg",
-    jumpPadTop: "assets/jump-pad-top.svg", blade: "assets/moving-obstacle.svg",
-    cracks: "assets/fragile-block-cracks.svg"
+    player: "../assets/slime-player.svg", enemy: "../assets/slime-enemy.svg",
+    switch: "../assets/switch-left.svg", pressurePlateBase: "../assets/pressure-plate-base.svg",
+    pressurePlateTop: "../assets/pressure-plate-top.svg", jumpPadBase: "../assets/jump-pad-base.svg",
+    jumpPadTop: "../assets/jump-pad-top.svg", blade: "../assets/moving-obstacle.svg",
+    cracks: "../assets/fragile-block-cracks.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
@@ -51,18 +51,10 @@
   let statusNote = "Ready.";
   let playtestCallback = null;
   let openedOnce = false;
-  let accountContext = { userId: null, displayName: "", service: null };
-  let workspaceGeneration = 0;
-  let workspaceLoading = false;
-  let publicView = false;
-  let cloudSaveTimer = null;
-  let cloudSavePromise = null;
-  let publicLinkOpened = false;
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.28.0</strong>
-      <span class="editor-workspace-identity" data-role="workspace-identity">Guest workspace</span>
+      <strong>Level Editor · v0.27.1</strong>
       <label class="editor-level-picker"><span>Level</span><select data-role="draft-picker" aria-label="Level being edited"></select></label>
       <button data-action="new">New</button><button data-action="duplicate">Duplicate</button><button data-action="delete-draft">Delete</button><button data-action="clear">Clear</button>
       <button data-action="group">Group</button><button data-action="ungroup">Ungroup</button>
@@ -70,23 +62,12 @@
       <button data-action="undo">Undo</button><button data-action="redo">Redo</button>
       <button data-action="import">Import</button><button data-action="export">Export</button>
       <button data-action="import-code">Import Save Code</button><button data-action="copy-code">Copy Save Code</button>
-      <button data-action="share">Share</button><button data-action="publish">Publish</button><button data-action="unpublish">Unpublish</button><button data-action="copy-public-link">Copy Public Link</button>
-      <button data-action="return-workspace" hidden>My Workspace</button>
       <button data-action="snap">Snap: On</button>
       <button class="editor-playtest" data-action="playtest">Playtest</button>
       <button class="editor-close" data-action="close">Main Menu</button>
       <input data-role="import" type="file" accept="application/json,.json" hidden>
       <input data-role="music-import" type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac" hidden>
     </div>
-    <section class="editor-sharing-panel" data-role="sharing-panel" hidden>
-      <div class="editor-sharing-heading"><div><strong>Draft access</strong><p>Editors can change the draft. Viewers can open and playtest it.</p></div><button type="button" data-action="close-sharing" aria-label="Close sharing">&times;</button></div>
-      <form data-role="sharing-form">
-        <label>Account email<input name="email" type="email" required maxlength="254" autocomplete="off"></label>
-        <label>Permission<select name="role"><option value="editor">Editor</option><option value="viewer">Viewer</option></select></label>
-        <button type="submit">Grant access</button>
-      </form>
-      <div class="editor-permission-list" data-role="permission-list"></div>
-    </section>
     <div class="editor-workspace">
       <aside class="editor-sidebar"><h3>Place</h3><div class="editor-palette"></div></aside>
       <div class="editor-panel-resizer" data-resize-panel="left" title="Drag to resize the object palette"></div>
@@ -115,10 +96,6 @@
   const draftPicker = host.querySelector('[data-role="draft-picker"]');
   const viewport = host.querySelector(".editor-viewport");
   const zoomOutput = host.querySelector('[data-role="zoom"]');
-  const workspaceIdentity = host.querySelector('[data-role="workspace-identity"]');
-  const sharingPanel = host.querySelector('[data-role="sharing-panel"]');
-  const sharingForm = host.querySelector('[data-role="sharing-form"]');
-  const permissionList = host.querySelector('[data-role="permission-list"]');
 
   Object.keys(LABELS).forEach((name) => {
     const button = document.createElement("button");
@@ -181,16 +158,12 @@
   }
 
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
-  function clipboardStorageKey() { return `platforms-past-editor-object-clipboard-v2:${accountContext.userId || "guest"}`; }
   function nextDraftKey() {
     let key;
     do key = `draft-${draftSerial++}`; while (drafts.some((draft) => draft.key === key));
     return key;
   }
   function activeDraft() { return drafts.find((draft) => draft.key === activeDraftKey) || null; }
-  function activeRole() { return publicView ? "public" : activeDraft()?.role || (accountContext.userId ? "owner" : "guest"); }
-  function canEdit() { return ["guest", "owner", "editor"].includes(activeRole()) && !workspaceLoading; }
-  function isOwner() { return activeRole() === "owner" && Boolean(activeDraft()?.cloudId); }
   function uniqueLevelIdentity(baseName = "My Level", baseId = "my-level") {
     const ids = new Set(drafts.map((draft) => draft.level.id));
     let index = 1, id = baseId;
@@ -200,8 +173,7 @@
   function syncDraftPicker() {
     draftPicker.replaceChildren(...drafts.map((draft, index) => {
       const option = new Option(draft.level.name || draft.level.id || `Untitled Level ${index + 1}`, draft.key);
-      option.textContent += draft.role && draft.role !== "owner" ? ` (${draft.role})` : "";
-      option.title = `${draft.level.id}${draft.role ? ` · ${draft.role}` : ""}`;
+      option.title = draft.level.id;
       return option;
     }));
     draftPicker.value = activeDraftKey;
@@ -218,56 +190,9 @@
   function findObject(id) { return data.objects.find((object) => object.id === id); }
   function serialize() { return JSON.stringify(data); }
 
-  function scheduleCloudSave() {
-    if (!accountContext.userId || publicView) return;
-    clearTimeout(cloudSaveTimer);
-    cloudSaveTimer = setTimeout(() => { cloudSaveTimer = null; saveDraftToCloud(activeDraft()); }, 500);
-  }
-  async function saveDraftToCloud(draft, force = false) {
-    if (!draft || !accountContext.userId || !accountContext.service || !["owner", "editor"].includes(draft.role)) return false;
-    if (!force && !draft.dirty) return true;
-    const validation = api.cloneLevel(draft.level);
-    if (!validation.ok) { statusNote = `Cloud save paused: ${validation.errors[0]}`; refresh(); return false; }
-    const generation = workspaceGeneration;
-    const userId = accountContext.userId;
-    const service = accountContext.service;
-    const operation = async () => {
-      if (generation !== workspaceGeneration || accountContext.userId !== userId) return false;
-      try {
-        const saved = draft.cloudId
-          ? await service.updateCustomLevel(draft.cloudId, validation.level)
-          : await service.createCustomLevel(userId, validation.level);
-        if (generation !== workspaceGeneration || accountContext.userId !== userId) return false;
-        draft.cloudId = saved.id; draft.ownerId = saved.owner_id; draft.role ||= "owner"; draft.dirty = false;
-        statusNote = `${draft.level.name} saved to ${draft.role === "owner" ? "your" : "the shared"} workspace.`;
-        refresh(); return true;
-      } catch (error) {
-        if (generation === workspaceGeneration) {
-          draft.dirty = true;
-          statusNote = `Cloud save failed: ${service.friendlyError?.(error) || error.message || "try again"}`;
-          refresh();
-        }
-        return false;
-      }
-    };
-    cloudSavePromise = (cloudSavePromise || Promise.resolve()).then(operation, operation);
-    return cloudSavePromise;
-  }
-  async function flushCloudSaves() {
-    clearTimeout(cloudSaveTimer); cloudSaveTimer = null;
-    for (const draft of drafts.filter(item => item.dirty && ["owner", "editor"].includes(item.role))) {
-      await saveDraftToCloud(draft, true);
-    }
-    if (cloudSavePromise) await cloudSavePromise;
-  }
-  function persist(changed = false) {
+  function persist() {
     const current = activeDraft();
     if (current) current.level = data;
-    if (publicView) return;
-    if (accountContext.userId) {
-      if (changed && current && canEdit()) { current.dirty = true; scheduleCloudSave(); }
-      return;
-    }
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, activeDraftKey, drafts }));
       localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(data));
@@ -300,8 +225,7 @@
     });
     return repaired;
   }
-  function restoreGuestWorkspace() {
-    drafts = []; activeDraftKey = ""; data = freshLevel(); publicView = false;
+  function restore() {
     try {
       const savedWorkspace = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
       let repairedCount = 0, rejectedCount = 0, restoredStoredDraft = false;
@@ -331,117 +255,44 @@
       statusNote = restoredStoredDraft
         ? `Restored ${drafts.length} local level${drafts.length === 1 ? "" : "s"}.${repairedCount ? ` Repaired ${repairedCount}.` : ""}${rejectedCount ? ` Skipped ${rejectedCount} invalid draft${rejectedCount === 1 ? "" : "s"}.` : ""}`
         : "Started a new local level workspace.";
-      persist(false);
+      persist();
     } catch {
       drafts = [{ key: nextDraftKey(), level: data }]; activeDraftKey = drafts[0].key;
       statusNote = "Saved editor levels could not be read safely; started a new local level.";
-      persist(false);
-    }
-  }
-  async function setAccountContext(context = {}) {
-    const nextUserId = context.userId || null;
-    if (nextUserId === accountContext.userId && !workspaceLoading && !context.force) {
-      accountContext.displayName = context.displayName || accountContext.displayName;
-      accountContext.service = context.service || accountContext.service;
-      refresh(); return;
-    }
-    clearTimeout(cloudSaveTimer); cloudSaveTimer = null;
-    const generation = ++workspaceGeneration;
-    accountContext = { userId: nextUserId, displayName: context.displayName || "", service: context.service || null };
-    objectClipboard = null;
-    sharingPanel.hidden = true;
-    resetDraftView();
-    if (!nextUserId) {
-      restoreGuestWorkspace();
-      statusNote = "Guest workspace loaded.";
-      refresh();
-      return;
-    }
-
-    drafts = []; activeDraftKey = ""; data = freshLevel(); publicView = false; workspaceLoading = true;
-    statusNote = "Loading your account workspace..."; refresh();
-    try {
-      const records = await accountContext.service.loadCustomLevelWorkspace(nextUserId);
-      if (generation !== workspaceGeneration || accountContext.userId !== nextUserId) return;
-      for (const record of records) {
-        const prepared = api.cloneLevel(record.level_data);
-        if (!prepared.ok) continue;
-        drafts.push({
-          key: `cloud-${record.id}`, cloudId: record.id, ownerId: record.owner_id,
-          role: record.role, permissions: record.permissions || [], publication: record.publication || null,
-          dirty: false, level: prepared.level
-        });
-      }
-      if (!drafts.length) {
-        const level = freshLevel();
-        drafts.push({ key: nextDraftKey(), role: "owner", ownerId: nextUserId, permissions: [], publication: null, dirty: true, level });
-      }
-      activeDraftKey = drafts[0].key; data = drafts[0].level; workspaceLoading = false;
-      statusNote = records.length ? `Loaded ${drafts.length} account level${drafts.length === 1 ? "" : "s"}.` : "Started your private account workspace.";
-      resetDraftView(); fitLevel(); refresh();
-      if (drafts[0].dirty) scheduleCloudSave();
-    } catch (error) {
-      if (generation !== workspaceGeneration) return;
-      workspaceLoading = false;
-      const level = freshLevel();
-      drafts = [{ key: nextDraftKey(), role: "owner", ownerId: nextUserId, permissions: [], publication: null, dirty: false, level }];
-      activeDraftKey = drafts[0].key; data = level;
-      statusNote = `Account workspace unavailable: ${accountContext.service?.friendlyError?.(error) || error.message || "try again"}`;
-      resetDraftView(); refresh();
-    }
-  }
-
-  async function openPublishedLevel(levelId) {
-    if (publicLinkOpened || !accountContext.service || !levelId) return false;
-    publicLinkOpened = true;
-    try {
-      const published = await accountContext.service.loadPublishedCustomLevel(levelId);
-      const prepared = published && api.cloneLevel(published.level_data);
-      if (!published || !prepared?.ok) throw new Error("Published level was not found or is invalid.");
-      ++workspaceGeneration; publicView = true; workspaceLoading = false; sharingPanel.hidden = true;
-      drafts = [{ key: `published-${levelId}`, cloudId: levelId, ownerId: published.owner_id, role: "public", publication: published, permissions: [], level: prepared.level }];
-      activeDraftKey = drafts[0].key; data = drafts[0].level; resetDraftView();
-      statusNote = `Viewing published version ${published.version} by ${published.owner_name}. This snapshot is read-only.`;
-      open(); fitLevel(); refresh(); return true;
-    } catch (error) {
-      statusNote = accountContext.service?.friendlyError?.(error) || error.message || "Published level could not be opened.";
-      publicLinkOpened = false; refresh(); return false;
+      persist();
     }
   }
   function commit(mutator, note = "Draft updated.") {
-    if (!canEdit()) { statusNote = "This level is read-only."; return refresh(); }
     const before = serialize(); mutator(); const after = serialize();
     if (before === after) return;
     undoStack.push(before); if (undoStack.length > HISTORY_LIMIT) undoStack.shift(); redoStack = [];
-    statusNote = note; persist(true); refresh();
+    statusNote = note; persist(); refresh();
   }
   function finishDrag(before, note) {
-    if (!canEdit()) return refresh();
     if (!before || before === serialize()) return refresh();
     undoStack.push(before); if (undoStack.length > HISTORY_LIMIT) undoStack.shift(); redoStack = [];
-    statusNote = note; persist(true); refresh();
+    statusNote = note; persist(); refresh();
   }
   function undo() {
-    if (!canEdit() || !undoStack.length) return;
+    if (!undoStack.length) return;
     redoStack.push(serialize()); data = JSON.parse(undoStack.pop()); selectedIds = new Set([...selectedIds].filter((id)=>data.objects.some((object)=>object.id===id))); if (!selectionObject()) setSingleSelection("@spawn"); clampCamera();
-    statusNote = "Undid the last editor action."; persist(true); refresh();
+    statusNote = "Undid the last editor action."; persist(); refresh();
   }
   function redo() {
-    if (!canEdit() || !redoStack.length) return;
+    if (!redoStack.length) return;
     undoStack.push(serialize()); data = JSON.parse(redoStack.pop()); selectedIds = new Set([...selectedIds].filter((id)=>data.objects.some((object)=>object.id===id))); if (!selectionObject()) setSingleSelection("@spawn"); clampCamera();
-    statusNote = "Redid the editor action."; persist(true); refresh();
+    statusNote = "Redid the editor action."; persist(); refresh();
   }
 
   function validate() {
     const result = api.validateLevel(data);
     status.className = `editor-status ${result.valid ? "ok" : "error"}`;
     status.textContent = result.valid ? statusNote : `${result.errors.length} issue${result.errors.length === 1 ? "" : "s"}: ${result.errors.slice(0, 3).join(" · ")}`;
-    host.querySelector('[data-action="playtest"]').disabled = !result.valid || workspaceLoading;
+    host.querySelector('[data-action="playtest"]').disabled = !result.valid;
     return result;
   }
 
   function setTool(name) {
-    if (!canEdit() && !["select", "settings"].includes(name)) { statusNote = "This level is read-only."; return refresh(); }
     if (name === "settings") {
       tool = "select";
       selected = "@settings";
@@ -614,13 +465,6 @@
 
   canvas.addEventListener("pointerdown", (event) => {
     const point = worldPoint(event);
-    if (!canEdit()) {
-      const hit = hitTest(point);
-      if (hit) { hit.token.startsWith("@") ? setSingleSelection(hit.token) : selectObjectOrGroup(hit.object); drag = null; refresh(); return; }
-      viewFitted = false;
-      drag = { kind: "pan", clientX: event.clientX, clientY: event.clientY, cameraX, cameraY };
-      canvas.setPointerCapture(event.pointerId); canvas.classList.add("dragging"); refresh(); return;
-    }
     if (tool !== "select") return place(point);
     const current = selectionObject(); const wp = waypointHit(point, current); const special = specialHandleHit(point, current);
     if (levelWidthHandleHit(point)) {
@@ -916,7 +760,7 @@
     const members = selectedObjects();
     if (!members.length) { statusNote = "Select an object or group before copying."; return refresh(); }
     objectClipboard = { kind: "platforms-editor-objects", objects: clone(members) };
-    try { localStorage.setItem(clipboardStorageKey(), JSON.stringify(objectClipboard)); } catch { /* In-memory copy still works. */ }
+    try { localStorage.setItem("platforms-past-editor-object-clipboard-v1", JSON.stringify(objectClipboard)); } catch { /* In-memory copy still works. */ }
     navigator.clipboard?.writeText(JSON.stringify(objectClipboard)).catch(() => {});
     statusNote = `Copied ${members.length} object${members.length === 1 ? "" : "s"}.`; refresh();
   }
@@ -930,7 +774,7 @@
   async function pasteSelection() {
     let payload = objectClipboard;
     if (!payload) {
-      try { payload = JSON.parse(localStorage.getItem(clipboardStorageKey()) || "null"); } catch { /* No saved editor copy. */ }
+      try { payload = JSON.parse(localStorage.getItem("platforms-past-editor-object-clipboard-v1") || "null"); } catch { /* No saved editor copy. */ }
     }
     if (!payload && navigator.clipboard?.readText) {
       try { payload = JSON.parse(await navigator.clipboard.readText()); } catch { /* Clipboard did not contain editor objects. */ }
@@ -1212,28 +1056,11 @@
   }
   function refresh() {
     syncDraftPicker();
-    const editable = canEdit(); const role = activeRole(); const draft = activeDraft();
-    workspaceIdentity.textContent = publicView ? `Published snapshot · v${draft?.publication?.version || 1}`
-      : accountContext.userId ? `${accountContext.displayName || "Account"} workspace · ${role}` : "Guest workspace · local";
-    host.classList.toggle("editor-readonly", !editable);
-    host.querySelector('[data-action="undo"]').disabled=!editable||!undoStack.length;host.querySelector('[data-action="redo"]').disabled=!editable||!redoStack.length;
-    host.querySelector('[data-action="group"]').disabled=!editable||selectedIds.size<2;
-    host.querySelector('[data-action="ungroup"]').disabled=!editable||!selectedObjects().some((object)=>object.groupId);
+    host.querySelector('[data-action="undo"]').disabled=!undoStack.length;host.querySelector('[data-action="redo"]').disabled=!redoStack.length;
+    host.querySelector('[data-action="group"]').disabled=selectedIds.size<2;
+    host.querySelector('[data-action="ungroup"]').disabled=!selectedObjects().some((object)=>object.groupId);
     host.querySelector('[data-action="copy"]').disabled=!selectedIds.size;
-    for (const action of ["clear", "paste"]) host.querySelector(`[data-action="${action}"]`).disabled = !editable;
-    for (const action of ["new", "duplicate", "import", "import-code"]) host.querySelector(`[data-action="${action}"]`).disabled = workspaceLoading;
-    host.querySelector('[data-action="delete-draft"]').disabled = drafts.length <= 1 || (accountContext.userId && role !== "owner") || publicView;
-    host.querySelector('[data-action="share"]').disabled = !isOwner();
-    host.querySelector('[data-action="publish"]').disabled = role !== "owner" || workspaceLoading;
-    host.querySelector('[data-action="publish"]').textContent = draft?.publication ? "Publish Update" : "Publish";
-    host.querySelector('[data-action="unpublish"]').disabled = !isOwner() || !draft?.publication;
-    host.querySelector('[data-action="copy-public-link"]').disabled = !draft?.publication;
-    host.querySelector('[data-action="return-workspace"]').hidden = !publicView;
-    if (!isOwner()) sharingPanel.hidden = true;
-    renderInspector();
-    host.querySelectorAll(".editor-palette button").forEach(control => control.disabled = !editable);
-    if (!editable) host.querySelectorAll(".editor-fields input, .editor-fields select, .editor-fields button").forEach(control => control.disabled = true);
-    validate();draw();
+    renderInspector();validate();draw();
   }
 
   function resetDraftView() {
@@ -1243,15 +1070,14 @@
   }
   function activateDraft(key, note) {
     if (key === activeDraftKey || !drafts.some((draft) => draft.key === key)) return;
-    persist(false); activeDraftKey = key; data = activeDraft().level; resetDraftView();
-    statusNote = note || `Now editing ${data.name} as ${activeRole()}.`; persist(false); sharingPanel.hidden = true; fitLevel(); refresh();
+    persist(); activeDraftKey = key; data = activeDraft().level; resetDraftView();
+    statusNote = note || `Now editing ${data.name}.`; persist(); fitLevel(); refresh();
   }
   function addDraft(level, note) {
-    persist(false);
-    publicView = false;
-    const draft = { key: nextDraftKey(), level, ...(accountContext.userId ? { role: "owner", ownerId: accountContext.userId, permissions: [], publication: null, dirty: true } : {}) };
+    persist();
+    const draft = { key: nextDraftKey(), level };
     drafts.push(draft); activeDraftKey = draft.key; data = draft.level; resetDraftView();
-    statusNote = note; persist(Boolean(accountContext.userId)); fitLevel(); refresh();
+    statusNote = note; persist(); fitLevel(); refresh();
   }
 
   function newLevel(clearOnly = false) {
@@ -1271,20 +1097,14 @@
     Object.assign(copy, identity);
     addDraft(copy, `Duplicated ${sourceName} as ${copy.name}.`);
   }
-  async function deleteDraft() {
+  function deleteDraft() {
     if (drafts.length <= 1) return;
     const index = drafts.findIndex((draft) => draft.key === activeDraftKey);
-    const draft = drafts[index];
-    if (accountContext.userId && draft.role !== "owner") { statusNote = "Only the owner can delete this cloud level."; return refresh(); }
     if (!confirm(`Delete the local level “${data.name}”? This cannot be undone.`)) return;
-    if (draft.cloudId) {
-      try { await accountContext.service.deleteCustomLevel(draft.cloudId); }
-      catch (error) { statusNote = `Delete failed: ${accountContext.service.friendlyError?.(error) || error.message}`; return refresh(); }
-    }
     drafts.splice(index, 1);
     const replacement = drafts[Math.min(index, drafts.length - 1)];
     activeDraftKey = replacement.key; data = replacement.level; resetDraftView();
-    statusNote = "Deleted the level and switched to another draft."; persist(false); fitLevel(); refresh();
+    statusNote = "Deleted the level and switched to another local draft."; persist(); fitLevel(); refresh();
   }
   function exportData() { const result=api.exportLevel(data);if(!result.ok){statusNote=result.errors[0];return refresh();}const blob=new Blob([result.json],{type:"application/json"}),link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=`${data.id}.json`;link.click();URL.revokeObjectURL(link.href);statusNote="Exported validated level JSON.";refresh(); }
   async function copySaveCode() {
@@ -1330,93 +1150,12 @@
     } catch { statusNote = "The selected song could not be imported."; refresh(); }
   }
 
-  function renderPermissions() {
-    permissionList.replaceChildren();
-    const permissions = activeDraft()?.permissions || [];
-    if (!permissions.length) { permissionList.textContent = "Only you currently have access."; return; }
-    permissions.forEach(permission => {
-      const row = document.createElement("div"); row.className = "editor-permission-row";
-      const identity = document.createElement("span"); identity.textContent = `${permission.display_name} · ${permission.role}`;
-      const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "Remove"; remove.dataset.removePermission = permission.user_id;
-      row.append(identity, remove); permissionList.append(row);
-    });
-  }
-
-  async function grantAccess(event) {
-    event.preventDefault();
-    const draft = activeDraft();
-    if (!isOwner()) return;
-    const formData = new FormData(sharingForm);
-    const email = String(formData.get("email") || "").trim();
-    const role = formData.get("role") === "viewer" ? "viewer" : "editor";
-    if (!email) return;
-    sharingForm.querySelectorAll("input, select, button").forEach(control => control.disabled = true);
-    try {
-      const permission = await accountContext.service.grantCustomLevelAccess(draft.cloudId, email, role);
-      const row = Array.isArray(permission) ? permission[0] : permission;
-      draft.permissions = [...(draft.permissions || []).filter(item => item.user_id !== row.user_id), row];
-      sharingForm.reset(); statusNote = `Granted ${role} access to ${row.display_name}.`; renderPermissions();
-    } catch (error) { statusNote = `Sharing failed: ${error.message || "check the account email"}`; }
-    sharingForm.querySelectorAll("input, select, button").forEach(control => control.disabled = false);
-    refresh();
-  }
-
-  async function removeAccess(userId) {
-    const draft = activeDraft();
-    if (!isOwner()) return;
-    try {
-      await accountContext.service.removeCustomLevelAccess(draft.cloudId, userId);
-      draft.permissions = (draft.permissions || []).filter(permission => permission.user_id !== userId);
-      statusNote = "Removed draft access."; renderPermissions(); refresh();
-    } catch (error) { statusNote = `Could not remove access: ${error.message || "try again"}`; refresh(); }
-  }
-
-  async function publishCurrent() {
-    const draft = activeDraft();
-    if (activeRole() !== "owner") return;
-    const valid = api.validateLevel(draft.level);
-    if (!valid.valid) { statusNote = `Publish blocked: ${valid.errors[0]}`; return refresh(); }
-    const saved = await saveDraftToCloud(draft, true);
-    if (!saved || !draft.cloudId) return;
-    try {
-      const publication = await accountContext.service.publishCustomLevel(draft.cloudId);
-      draft.publication = Array.isArray(publication) ? publication[0] : publication;
-      statusNote = `Published version ${draft.publication.version}. Later draft edits will not change it until you publish again.`;
-      refresh();
-    } catch (error) { statusNote = `Publish failed: ${error.message || "try again"}`; refresh(); }
-  }
-
-  async function unpublishCurrent() {
-    const draft = activeDraft();
-    if (!isOwner() || !draft.publication || !confirm("Unpublish this level? Existing public links will stop working.")) return;
-    try {
-      await accountContext.service.unpublishCustomLevel(draft.cloudId);
-      draft.publication = null; statusNote = "Level unpublished. The private draft and sharing permissions were not changed."; refresh();
-    } catch (error) { statusNote = `Unpublish failed: ${error.message || "try again"}`; refresh(); }
-  }
-
-  function publicLevelUrl(levelId) {
-    const url = new URL(location.href); url.search = ""; url.hash = ""; url.searchParams.set("level", levelId); return url.href;
-  }
-  async function copyPublicLink() {
-    const draft = activeDraft();
-    if (!draft?.publication || !draft.cloudId) return;
-    const link = publicLevelUrl(draft.cloudId);
-    try { await navigator.clipboard.writeText(link); statusNote = "Copied the public level link."; }
-    catch { prompt("Copy this public level link:", link); statusNote = "Public link ready to copy."; }
-    refresh();
-  }
-
   host.addEventListener("click", (event) => {
     const action=event.target.closest("[data-action]")?.dataset.action;if(!action)return;
     if(action==="new")newLevel(false);else if(action==="duplicate")duplicateLevel();else if(action==="delete-draft")deleteDraft();else if(action==="clear")newLevel(true);
     else if(action==="group")groupSelection();else if(action==="ungroup")ungroupSelection();else if(action==="copy")copySelection();else if(action==="paste")pasteSelection();
     else if(action==="undo")undo();else if(action==="redo")redo();else if(action==="import")importInput.click();else if(action==="export")exportData();
     else if(action==="import-code")importSaveCode();else if(action==="copy-code")copySaveCode();
-    else if(action==="share"){sharingPanel.hidden=!sharingPanel.hidden;if(!sharingPanel.hidden){renderPermissions();sharingForm.querySelector("input")?.focus();}}
-    else if(action==="close-sharing")sharingPanel.hidden=true;
-    else if(action==="publish")publishCurrent();else if(action==="unpublish")unpublishCurrent();else if(action==="copy-public-link")copyPublicLink();
-    else if(action==="return-workspace")setAccountContext({...accountContext,force:true});
     else if(action==="snap"){snap=!snap;event.target.textContent=`Snap: ${snap?"On":"Off"}`;statusNote=`Grid snapping ${snap?"enabled":"disabled"}.`;refresh();}
     else if(action==="zoom-out")setZoom(zoom/1.2);
     else if(action==="zoom-in")setZoom(zoom*1.2);
@@ -1428,19 +1167,17 @@
   musicImportInput.addEventListener("change",()=>{importMusicFile(musicImportInput.files[0]);musicImportInput.value="";});
   window.addEventListener("keydown",(event)=>{
     if(host.hidden)return;if(["INPUT","SELECT"].includes(document.activeElement.tagName))return;
-    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="z"){event.preventDefault();if(canEdit()){if(event.shiftKey)redo();else undo();}return;}
-    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="y"){event.preventDefault();if(canEdit())redo();return;}
+    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="z"){event.preventDefault();event.shiftKey?redo():undo();return;}
+    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="y"){event.preventDefault();redo();return;}
     if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="c"){event.preventDefault();copySelection();return;}
-    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="v"){event.preventDefault();if(canEdit())pasteSelection();return;}
-    if(event.key==="Delete"||event.key==="Backspace"){event.preventDefault();if(canEdit())deleteSelected();return;}
+    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="v"){event.preventDefault();pasteSelection();return;}
+    if(event.key==="Delete"||event.key==="Backspace"){event.preventDefault();deleteSelected();return;}
     if(event.key.startsWith("Arrow")){
       event.preventDefault();viewFitted=false;const amount=120/zoom;
       if(event.key==="ArrowLeft")cameraX-=amount;else if(event.key==="ArrowRight")cameraX+=amount;else if(event.key==="ArrowUp")cameraY-=amount;else if(event.key==="ArrowDown")cameraY+=amount;
       clampCamera();draw();
     }
   });
-  sharingForm.addEventListener("submit", grantAccess);
-  permissionList.addEventListener("click", event => { const userId=event.target.closest("[data-remove-permission]")?.dataset.removePermission;if(userId)removeAccess(userId); });
   draftPicker.addEventListener("change", () => activateDraft(draftPicker.value));
   new ResizeObserver(resizeCanvas).observe(viewport);
 
@@ -1448,14 +1185,11 @@
   function close() { host.hidden=true;document.querySelector("#mainMenu").hidden=false;document.querySelector(".touch-controls").hidden=false;document.querySelector(".instructions").hidden=false;document.querySelector("#levelEditorButton")?.focus(); }
   function showAfterPlaytest(note="Returned from playtest.") { host.hidden=false;document.querySelector(".touch-controls").hidden=true;document.querySelector(".instructions").hidden=true;statusNote=note;requestAnimationFrame(()=>{resizeCanvas();refresh();}); }
 
-  restoreGuestWorkspace(); setTool("select");
+  restore(); setTool("select");
   window.PlatformsEditor=Object.freeze({
     open, close, showAfterPlaytest, redraw:draw,
     getDraft:()=>clone(data),
-    getDrafts:()=>drafts.map((draft)=>({key:draft.key,active:draft.key===activeDraftKey,role:draft.role||"guest",cloudId:draft.cloudId||null,level:clone(draft.level)})),
-    setAccountContext,
-    flush:flushCloudSaves,
-    openPublishedLevel,
+    getDrafts:()=>drafts.map((draft)=>({key:draft.key,active:draft.key===activeDraftKey,level:clone(draft.level)})),
     setPlaytestCallback:(callback)=>{playtestCallback=callback;}
   });
 })();

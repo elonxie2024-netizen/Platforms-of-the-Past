@@ -260,4 +260,6 @@ The editor keeps a browser-local workspace containing multiple independent level
 
 Version 0.27.1 adds portable save codes. `exportSaveCode(levelData)` validates and serializes the same level JSON, UTF-8 encodes it, and wraps URL-safe Base64 data in the `POTP1-` format prefix. `importSaveCode(code)` accepts only that versioned prefix, decodes it as UTF-8 JSON, and passes it through the existing importer and complete schema validation before returning a level. The editor adds a validated imported code as a new draft, so malformed, unsupported, or invalid codes cannot replace the active draft.
 
-Community publishing, browsing, ratings, comments, collaboration, arbitrary scripting, and account-backed draft storage remain out of scope.
+Version 0.28.0 keeps the existing browser-local workspace exclusively for guests. Authenticated workspaces load private and shared draft rows from Supabase and never read another account's browser workspace. Owners can grant Editor or Viewer access by account email; Editors can update the private draft, while Viewers and public visitors receive a read-only editor with playtesting. Publishing copies a validated private draft into a separate public snapshot row. Later edits affect only the private draft until the owner explicitly publishes an updated version. Public links use `?level=<published-level-uuid>` and do not provide browsing, ratings, comments, or search.
+
+Community browsing, search, ratings, comments, arbitrary scripting, and real-time co-editing remain out of scope.

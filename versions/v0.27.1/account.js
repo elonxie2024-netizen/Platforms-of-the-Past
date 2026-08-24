@@ -50,7 +50,6 @@
     if (message.includes("password") && (message.includes("least") || message.includes("weak"))) return "Use a password with at least 6 characters.";
     if (message.includes("rate limit") || message.includes("too many")) return "Too many attempts. Wait a moment and try again.";
     if (message.includes("fetch") || message.includes("network") || message.includes("timed out") || message.includes("could not be reached")) return "Accounts are temporarily unavailable. You can keep playing as a guest.";
-    if (message.includes("custom_levels") || message.includes("custom_level_permissions") || message.includes("published_custom_levels")) return "Custom-level cloud setup is incomplete. Run the v0.28.0 Supabase migration.";
     if (message.includes("player_profiles") || message.includes("player_progress") || message.includes("schema cache")) return "Account database setup is incomplete. Guest play is still available.";
     return "That account request could not be completed. Please try again.";
   }
@@ -172,90 +171,6 @@
     return Array.isArray(data) ? data[0] : data;
   }
 
-  async function loadCustomLevelWorkspace(userId) {
-    const database = requireClient();
-    const { data: levels, error: levelError } = await database
-      .from("custom_levels")
-      .select("id,owner_id,level_data,created_at,updated_at")
-      .order("updated_at", { ascending: false });
-    if (levelError) throw levelError;
-    const levelIds = (levels || []).map(level => level.id);
-    if (!levelIds.length) return [];
-    const [{ data: permissions, error: permissionError }, { data: publications, error: publicationError }] = await Promise.all([
-      database.from("custom_level_permissions").select("level_id,owner_id,user_id,role,display_name,created_at,updated_at").in("level_id", levelIds),
-      database.from("published_custom_levels").select("level_id,version,published_at,updated_at").in("level_id", levelIds)
-    ]);
-    if (permissionError) throw permissionError;
-    if (publicationError) throw publicationError;
-    return (levels || []).map(level => ({
-      ...level,
-      role: level.owner_id === userId
-        ? "owner"
-        : permissions?.find(permission => permission.level_id === level.id && permission.user_id === userId)?.role || "viewer",
-      permissions: (permissions || []).filter(permission => permission.level_id === level.id),
-      publication: (publications || []).find(publication => publication.level_id === level.id) || null
-    }));
-  }
-
-  async function createCustomLevel(userId, levelData) {
-    const { data, error } = await requireClient().from("custom_levels")
-      .insert({ owner_id: userId, level_data: levelData })
-      .select("id,owner_id,level_data,created_at,updated_at")
-      .single();
-    if (error) throw error;
-    return data;
-  }
-
-  async function updateCustomLevel(levelId, levelData) {
-    const { data, error } = await requireClient().from("custom_levels")
-      .update({ level_data: levelData, updated_at: new Date().toISOString() })
-      .eq("id", levelId)
-      .select("id,owner_id,level_data,created_at,updated_at")
-      .single();
-    if (error) throw error;
-    return data;
-  }
-
-  async function deleteCustomLevel(levelId) {
-    const { error } = await requireClient().from("custom_levels").delete().eq("id", levelId);
-    if (error) throw error;
-  }
-
-  async function grantCustomLevelAccess(levelId, email, role) {
-    const { data, error } = await requireClient().rpc("grant_custom_level_access", {
-      p_level_id: levelId,
-      p_account_email: String(email || "").trim(),
-      p_role: role
-    });
-    if (error) throw error;
-    return data;
-  }
-
-  async function removeCustomLevelAccess(levelId, userId) {
-    const { error } = await requireClient().rpc("remove_custom_level_access", { p_level_id: levelId, p_user_id: userId });
-    if (error) throw error;
-  }
-
-  async function publishCustomLevel(levelId) {
-    const { data, error } = await requireClient().rpc("publish_custom_level", { p_level_id: levelId });
-    if (error) throw error;
-    return data;
-  }
-
-  async function unpublishCustomLevel(levelId) {
-    const { error } = await requireClient().rpc("unpublish_custom_level", { p_level_id: levelId });
-    if (error) throw error;
-  }
-
-  async function loadPublishedCustomLevel(levelId) {
-    const { data, error } = await requireClient().from("published_custom_levels")
-      .select("level_id,owner_id,owner_name,level_data,version,published_at,updated_at")
-      .eq("level_id", levelId)
-      .maybeSingle();
-    if (error) throw error;
-    return data;
-  }
-
   function accessToken() {
     return client?.auth ? client.auth.getSession().then(({ data }) => data.session?.access_token || "") : Promise.resolve("");
   }
@@ -272,15 +187,6 @@
     updateProfile,
     loadProgress,
     saveProgress,
-    loadCustomLevelWorkspace,
-    createCustomLevel,
-    updateCustomLevel,
-    deleteCustomLevel,
-    grantCustomLevelAccess,
-    removeCustomLevelAccess,
-    publishCustomLevel,
-    unpublishCustomLevel,
-    loadPublishedCustomLevel,
     accessToken,
     cleanDisplayName,
     friendlyError,
