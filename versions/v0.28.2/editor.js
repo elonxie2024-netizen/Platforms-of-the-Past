@@ -23,11 +23,11 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/slime-player.svg", enemy: "assets/slime-enemy.svg",
-    switch: "assets/switch-left.svg", pressurePlateBase: "assets/pressure-plate-base.svg",
-    pressurePlateTop: "assets/pressure-plate-top.svg", jumpPadBase: "assets/jump-pad-base.svg",
-    jumpPadTop: "assets/jump-pad-top.svg", blade: "assets/moving-obstacle.svg",
-    cracks: "assets/fragile-block-cracks.svg"
+    player: "../assets/slime-player.svg", enemy: "../assets/slime-enemy.svg",
+    switch: "../assets/switch-left.svg", pressurePlateBase: "../assets/pressure-plate-base.svg",
+    pressurePlateTop: "../assets/pressure-plate-top.svg", jumpPadBase: "../assets/jump-pad-base.svg",
+    jumpPadTop: "../assets/jump-pad-top.svg", blade: "../assets/moving-obstacle.svg",
+    cracks: "../assets/fragile-block-cracks.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
@@ -54,14 +54,14 @@
   let accountContext = { userId: null, displayName: "", service: null };
   let workspaceGeneration = 0;
   let workspaceLoading = false;
-  let viewerLandingOpen = false;
+  let publicView = false;
   let cloudSaveTimer = null;
   let cloudSavePromise = null;
   let publicLinkOpened = false;
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.29.0</strong>
+      <strong>Level Editor · v0.28.2</strong>
       <span class="editor-workspace-identity" data-role="workspace-identity">Guest workspace</span>
       <label class="editor-level-picker"><span>Level</span><select data-role="draft-picker" aria-label="Level being edited"></select></label>
       <button data-action="new">New</button><button data-action="duplicate">Duplicate</button><button data-action="delete-draft">Delete</button><button data-action="clear">Clear</button>
@@ -70,7 +70,8 @@
       <button data-action="undo">Undo</button><button data-action="redo">Redo</button>
       <button data-action="import">Import</button><button data-action="export">Export</button>
       <button data-action="import-code">Import Save Code</button><button data-action="copy-code">Copy Save Code</button>
-      <button data-action="share">Share</button>
+      <button data-action="share">Share</button><button data-action="publish">Publish</button><button data-action="unpublish">Unpublish</button><button data-action="copy-public-link">Copy Public Link</button>
+      <button data-action="return-workspace" hidden>My Workspace</button>
       <button data-action="snap">Snap: On</button>
       <button class="editor-playtest" data-action="playtest">Playtest</button>
       <button class="editor-close" data-action="close">Main Menu</button>
@@ -80,19 +81,11 @@
     <section class="editor-sharing-panel" data-role="sharing-panel" hidden>
       <div class="editor-sharing-heading"><div><strong>Draft access</strong><p>Editors can change the draft. Viewers can open and playtest it.</p></div><button type="button" data-action="close-sharing" aria-label="Close sharing">&times;</button></div>
       <form data-role="sharing-form">
-        <label>Account username<input name="username" type="text" required minlength="3" maxlength="24" pattern="[a-z0-9][a-z0-9-]{2,23}" autocomplete="off" placeholder="player-name"></label>
+        <label>Account email<input name="email" type="email" required maxlength="254" autocomplete="off"></label>
         <label>Permission<select name="role"><option value="editor">Editor</option><option value="viewer">Viewer</option></select></label>
         <button type="submit">Grant access</button>
       </form>
       <div class="editor-permission-list" data-role="permission-list"></div>
-      <div class="editor-public-sharing" data-role="public-sharing">
-        <div><strong>Public version</strong><p data-role="publication-status">This level has not been published.</p></div>
-        <div class="editor-public-actions"><button type="button" data-action="publish">Publish</button><button type="button" data-action="unpublish">Unpublish</button><button type="button" data-action="copy-public-link">Copy Public Link</button></div>
-      </div>
-    </section>
-    <section class="editor-viewer-landing" data-role="viewer-landing" hidden>
-      <p class="eyebrow">Shared level</p><h2 data-role="viewer-title">Shared Level</h2><p data-role="viewer-owner"></p><p>Viewer access allows playtesting, read-only inspection, export, and save-code copying.</p>
-      <div><button type="button" data-action="viewer-play">Play Level</button><button type="button" data-action="viewer-edit">Open in Editor (Read-only)</button></div>
     </section>
     <div class="editor-workspace">
       <aside class="editor-sidebar"><h3>Place</h3><div class="editor-palette"></div></aside>
@@ -126,8 +119,6 @@
   const sharingPanel = host.querySelector('[data-role="sharing-panel"]');
   const sharingForm = host.querySelector('[data-role="sharing-form"]');
   const permissionList = host.querySelector('[data-role="permission-list"]');
-  const publicationStatus = host.querySelector('[data-role="publication-status"]');
-  const viewerLanding = host.querySelector('[data-role="viewer-landing"]');
 
   Object.keys(LABELS).forEach((name) => {
     const button = document.createElement("button");
@@ -191,15 +182,14 @@
 
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
   function clipboardStorageKey() { return `platforms-past-editor-object-clipboard-v2:${accountContext.userId || "guest"}`; }
-  function accountBackupStorageKey(userId = accountContext.userId) { return `platforms-past-level-editor-workspace-v2:${userId}`; }
   function nextDraftKey() {
     let key;
     do key = `draft-${draftSerial++}`; while (drafts.some((draft) => draft.key === key));
     return key;
   }
   function activeDraft() { return drafts.find((draft) => draft.key === activeDraftKey) || null; }
-  function activeRole() { return activeDraft()?.role || (accountContext.userId ? "owner" : "guest"); }
-  function canEdit() { return ["guest", "owner", "editor"].includes(activeRole()) && activeDraft()?.loaded !== false && !workspaceLoading; }
+  function activeRole() { return publicView ? "public" : activeDraft()?.role || (accountContext.userId ? "owner" : "guest"); }
+  function canEdit() { return ["guest", "owner", "editor"].includes(activeRole()) && !workspaceLoading; }
   function isOwner() { return activeRole() === "owner" && Boolean(activeDraft()?.cloudId); }
   function uniqueLevelIdentity(baseName = "My Level", baseId = "my-level") {
     const ids = new Set(drafts.map((draft) => draft.level.id));
@@ -209,10 +199,9 @@
   }
   function syncDraftPicker() {
     draftPicker.replaceChildren(...drafts.map((draft, index) => {
-      const option = new Option(draft.title || draft.level?.name || draft.level?.id || `Untitled Level ${index + 1}`, draft.key);
+      const option = new Option(draft.level.name || draft.level.id || `Untitled Level ${index + 1}`, draft.key);
       option.textContent += draft.role && draft.role !== "owner" ? ` (${draft.role})` : "";
-      const owner = draft.ownerProfile?.username ? ` · shared by @${draft.ownerProfile.username}` : "";
-      option.title = `${draft.level?.id || draft.cloudId}${draft.role ? ` · ${draft.role}` : ""}${owner}`;
+      option.title = `${draft.level.id}${draft.role ? ` · ${draft.role}` : ""}`;
       return option;
     }));
     draftPicker.value = activeDraftKey;
@@ -230,41 +219,12 @@
   function serialize() { return JSON.stringify(data); }
 
   function scheduleCloudSave() {
-    if (!accountContext.userId) return;
+    if (!accountContext.userId || publicView) return;
     clearTimeout(cloudSaveTimer);
-    const target = activeDraft();
-    cloudSaveTimer = setTimeout(() => { cloudSaveTimer = null; saveDraftToCloud(target); }, 500);
-  }
-  function persistAccountBackup() {
-    if (!accountContext.userId) return;
-    try {
-      const dirtyDrafts = drafts.filter(draft => draft.dirty && draft.loaded !== false && draft.level).map(draft => ({
-        key: draft.key, cloudId: draft.cloudId || null, ownerId: draft.ownerId || accountContext.userId,
-        role: draft.role || "owner", updatedAt: draft.updatedAt || null, title: draft.level.name,
-        level: draft.level
-      }));
-      const key = accountBackupStorageKey();
-      if (dirtyDrafts.length) localStorage.setItem(key, JSON.stringify({ version: 1, drafts: dirtyDrafts }));
-      else localStorage.removeItem(key);
-    } catch { statusNote = "A local crash backup could not be written; keep this tab open until cloud saving succeeds."; }
-  }
-  async function resolveSaveConflict(draft, validation, service) {
-    if (document.visibilityState === "hidden") throw new Error("This level changed elsewhere. Reopen the editor to choose whether to reload or overwrite it.");
-    const reload = confirm("This level changed elsewhere. Reload the newer cloud version? Choose Cancel to overwrite it with this version.");
-    if (reload) {
-      const remote = await service.loadCustomLevelDraft(draft.cloudId);
-      const prepared = remote && api.cloneLevel(remote.level_data);
-      if (!prepared?.ok) throw new Error("The newer cloud level could not be loaded safely.");
-      draft.level = prepared.level; draft.title = prepared.level.name; draft.updatedAt = remote.updated_at;
-      draft.dirty = false; draft.loaded = true;
-      if (draft.key === activeDraftKey) { data = draft.level; resetDraftView(); fitLevel(); }
-      statusNote = "Reloaded the newer cloud version and discarded the conflicting local edit.";
-      return null;
-    }
-    return service.updateCustomLevel(draft.cloudId, validation.level, null, true);
+    cloudSaveTimer = setTimeout(() => { cloudSaveTimer = null; saveDraftToCloud(activeDraft()); }, 500);
   }
   async function saveDraftToCloud(draft, force = false) {
-    if (!draft || draft.loaded === false || !accountContext.userId || !accountContext.service || !["owner", "editor"].includes(draft.role)) return false;
+    if (!draft || !accountContext.userId || !accountContext.service || !["owner", "editor"].includes(draft.role)) return false;
     if (!force && !draft.dirty) return true;
     const validation = api.cloneLevel(draft.level);
     if (!validation.ok) { statusNote = `Cloud save paused: ${validation.errors[0]}`; refresh(); return false; }
@@ -274,26 +234,18 @@
     const operation = async () => {
       if (generation !== workspaceGeneration || accountContext.userId !== userId) return false;
       try {
-        let saved;
-        try {
-          saved = draft.cloudId
-            ? await service.updateCustomLevel(draft.cloudId, validation.level, draft.updatedAt)
-            : await service.createCustomLevel(userId, validation.level);
-        } catch (error) {
-          if (error?.code !== "POTP_CONFLICT") throw error;
-          saved = await resolveSaveConflict(draft, validation, service);
-          if (!saved) { persistAccountBackup(); refresh(); return false; }
-        }
+        const saved = draft.cloudId
+          ? await service.updateCustomLevel(draft.cloudId, validation.level)
+          : await service.createCustomLevel(userId, validation.level);
         if (generation !== workspaceGeneration || accountContext.userId !== userId) return false;
         draft.cloudId = saved.id; draft.ownerId = saved.owner_id; draft.role ||= "owner"; draft.dirty = false;
-        draft.updatedAt = saved.updated_at; draft.title = saved.level_data?.name || draft.level.name; draft.loaded = true;
         statusNote = `${draft.level.name} saved to ${draft.role === "owner" ? "your" : "the shared"} workspace.`;
-        persistAccountBackup(); refresh(); return true;
+        refresh(); return true;
       } catch (error) {
         if (generation === workspaceGeneration) {
           draft.dirty = true;
           statusNote = `Cloud save failed: ${service.friendlyError?.(error) || error.message || "try again"}`;
-          persistAccountBackup(); refresh();
+          refresh();
         }
         return false;
       }
@@ -311,11 +263,9 @@
   function persist(changed = false) {
     const current = activeDraft();
     if (current) current.level = data;
+    if (publicView) return;
     if (accountContext.userId) {
-      if (changed && current && canEdit()) {
-        current.dirty = true; current.loaded = true; current.title = current.level.name;
-        persistAccountBackup(); scheduleCloudSave();
-      }
+      if (changed && current && canEdit()) { current.dirty = true; scheduleCloudSave(); }
       return;
     }
     try {
@@ -351,7 +301,7 @@
     return repaired;
   }
   function restoreGuestWorkspace() {
-    drafts = []; activeDraftKey = ""; data = freshLevel(); viewerLandingOpen = false;
+    drafts = []; activeDraftKey = ""; data = freshLevel(); publicView = false;
     try {
       const savedWorkspace = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
       let repairedCount = 0, rejectedCount = 0, restoredStoredDraft = false;
@@ -388,48 +338,10 @@
       persist(false);
     }
   }
-  function restoreAccountBackups(userId, allowOfflineCloudDrafts = false) {
-    try {
-      const saved = JSON.parse(localStorage.getItem(accountBackupStorageKey(userId)) || "null");
-      if (saved?.version !== 1 || !Array.isArray(saved.drafts)) return 0;
-      let restored = 0;
-      for (const backup of saved.drafts) {
-        const prepared = api.cloneLevel(backup?.level);
-        if (!prepared.ok) continue;
-        let draft = backup.cloudId ? drafts.find(item => item.cloudId === backup.cloudId) : null;
-        if (!draft && ((!backup.cloudId && backup.role === "owner") || (backup.cloudId && allowOfflineCloudDrafts))) {
-          draft = { key: nextDraftKey(), cloudId: backup.cloudId || null, ownerId: backup.ownerId || userId, role: backup.role || "owner", permissions: [], publication: null };
-          drafts.unshift(draft);
-        }
-        if (!draft || !["owner", "editor"].includes(draft.role)) continue;
-        draft.level = prepared.level; draft.title = prepared.level.name; draft.loaded = true; draft.dirty = true;
-        draft.updatedAt = backup.updatedAt || draft.updatedAt || null;
-        restored++;
-      }
-      return restored;
-    } catch { return 0; }
-  }
-  async function ensureDraftLoaded(draft = activeDraft()) {
-    if (!draft || draft.loaded !== false || !draft.cloudId) return Boolean(draft);
-    const generation = workspaceGeneration;
-    workspaceLoading = true; statusNote = `Loading ${draft.title || "level"}...`; refresh();
-    try {
-      const record = await accountContext.service.loadCustomLevelDraft(draft.cloudId);
-      if (generation !== workspaceGeneration || !record) throw new Error("This shared level is no longer available.");
-      const prepared = api.cloneLevel(record.level_data);
-      if (!prepared.ok) throw new Error(prepared.errors[0]);
-      draft.level = prepared.level; draft.title = prepared.level.name; draft.updatedAt = record.updated_at; draft.loaded = true;
-      if (draft.key === activeDraftKey) data = draft.level;
-      workspaceLoading = false; statusNote = `Loaded ${draft.level.name}.`; resetDraftView(); fitLevel(); refresh();
-      return true;
-    } catch (error) {
-      workspaceLoading = false; statusNote = `Level load failed: ${accountContext.service?.friendlyError?.(error) || error.message}`; refresh();
-      return false;
-    }
-  }
   async function setAccountContext(context = {}) {
     const nextUserId = context.userId || null;
-    if (nextUserId === accountContext.userId && !workspaceLoading && !context.force) {
+    const resetGuest = !nextUserId && context.resetGuest === true;
+    if (nextUserId === accountContext.userId && !workspaceLoading && !context.force && !resetGuest) {
       accountContext.displayName = context.displayName || accountContext.displayName;
       accountContext.service = context.service || accountContext.service;
       refresh(); return;
@@ -441,46 +353,48 @@
     sharingPanel.hidden = true;
     resetDraftView();
     if (!nextUserId) {
+      if (resetGuest) {
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(LEGACY_STORAGE_KEY);
+          localStorage.removeItem(clipboardStorageKey());
+        } catch { /* A fresh in-memory guest workspace still replaces the account view. */ }
+      }
       restoreGuestWorkspace();
-      statusNote = "Guest workspace loaded.";
+      statusNote = resetGuest ? "Started a fresh empty guest workspace." : "Guest workspace loaded.";
       refresh();
       return;
     }
 
-    drafts = []; activeDraftKey = ""; data = freshLevel(); viewerLandingOpen = false; workspaceLoading = true;
+    drafts = []; activeDraftKey = ""; data = freshLevel(); publicView = false; workspaceLoading = true;
     statusNote = "Loading your account workspace..."; refresh();
     try {
       const records = await accountContext.service.loadCustomLevelWorkspace(nextUserId);
       if (generation !== workspaceGeneration || accountContext.userId !== nextUserId) return;
       for (const record of records) {
-        const placeholder = freshLevel(); placeholder.name = record.title || "Untitled Level"; placeholder.id = `cloud-${record.id}`;
+        const prepared = api.cloneLevel(record.level_data);
+        if (!prepared.ok) continue;
         drafts.push({
           key: `cloud-${record.id}`, cloudId: record.id, ownerId: record.owner_id,
-          ownerProfile: record.ownerProfile || null, role: record.role, permissions: record.permissions || [], publication: record.publication || null,
-          dirty: false, loaded: false, updatedAt: record.updated_at, title: record.title || "Untitled Level", level: placeholder
+          role: record.role, permissions: record.permissions || [], publication: record.publication || null,
+          dirty: false, level: prepared.level
         });
       }
       if (!drafts.length) {
         const level = freshLevel();
-        drafts.push({ key: nextDraftKey(), role: "owner", ownerId: nextUserId, permissions: [], publication: null, dirty: false, loaded: true, updatedAt: null, title: level.name, level });
+        drafts.push({ key: nextDraftKey(), role: "owner", ownerId: nextUserId, permissions: [], publication: null, dirty: true, level });
       }
-      const restoredBackups = restoreAccountBackups(nextUserId);
       activeDraftKey = drafts[0].key; data = drafts[0].level; workspaceLoading = false;
-      statusNote = records.length ? `Loaded ${drafts.length} account level entr${drafts.length === 1 ? "y" : "ies"} without downloading level data.${restoredBackups ? ` Recovered ${restoredBackups} local edit${restoredBackups === 1 ? "" : "s"}.` : ""}` : "Started an unsaved private workspace. Your first edit will create the level.";
-      resetDraftView(); refresh();
+      statusNote = records.length ? `Loaded ${drafts.length} account level${drafts.length === 1 ? "" : "s"}.` : "Started your private account workspace.";
+      resetDraftView(); fitLevel(); refresh();
+      if (drafts[0].dirty) scheduleCloudSave();
     } catch (error) {
       if (generation !== workspaceGeneration) return;
       workspaceLoading = false;
-      drafts = [];
-      const restoredBackups = restoreAccountBackups(nextUserId, true);
-      if (!drafts.length) {
-        const level = freshLevel();
-        drafts = [{ key: nextDraftKey(), role: "owner", ownerId: nextUserId, permissions: [], publication: null, dirty: false, loaded: true, updatedAt: null, title: level.name, level }];
-      }
-      activeDraftKey = drafts[0].key; data = drafts[0].level;
-      statusNote = restoredBackups
-        ? `Cloud workspace unavailable. Recovered ${restoredBackups} local edit${restoredBackups === 1 ? "" : "s"}; they will retry after the connection returns.`
-        : `Account workspace unavailable: ${accountContext.service?.friendlyError?.(error) || error.message || "try again"}`;
+      const level = freshLevel();
+      drafts = [{ key: nextDraftKey(), role: "owner", ownerId: nextUserId, permissions: [], publication: null, dirty: false, level }];
+      activeDraftKey = drafts[0].key; data = level;
+      statusNote = `Account workspace unavailable: ${accountContext.service?.friendlyError?.(error) || error.message || "try again"}`;
       resetDraftView(); refresh();
     }
   }
@@ -533,7 +447,7 @@
     const result = api.validateLevel(data);
     status.className = `editor-status ${result.valid ? "ok" : "error"}`;
     status.textContent = result.valid ? statusNote : `${result.errors.length} issue${result.errors.length === 1 ? "" : "s"}: ${result.errors.slice(0, 3).join(" · ")}`;
-    host.querySelector('[data-action="playtest"]').disabled = !result.valid || workspaceLoading || activeDraft()?.loaded === false;
+    host.querySelector('[data-action="playtest"]').disabled = !result.valid || workspaceLoading;
     return result;
   }
 
@@ -1310,24 +1224,16 @@
   function refresh() {
     syncDraftPicker();
     const editable = canEdit(); const role = activeRole(); const draft = activeDraft();
-    workspaceIdentity.textContent = accountContext.userId ? `${accountContext.displayName || "Account"} workspace · ${role}` : "Guest workspace · local";
+    workspaceIdentity.textContent = publicView ? `Published snapshot · v${draft?.publication?.version || 1}`
+      : accountContext.userId ? `${accountContext.displayName || "Account"} workspace · ${role}` : "Guest workspace · local";
     host.classList.toggle("editor-readonly", !editable);
-    host.querySelector(".editor-workspace").hidden = viewerLandingOpen;
-    viewerLanding.hidden = !viewerLandingOpen;
-    if (viewerLandingOpen) {
-      viewerLanding.querySelector('[data-role="viewer-title"]').textContent = draft?.title || draft?.level?.name || "Shared Level";
-      viewerLanding.querySelector('[data-role="viewer-owner"]').textContent = draft?.ownerProfile?.username
-        ? `Shared by @${draft.ownerProfile.username}` : "Shared by another player";
-    }
     host.querySelector('[data-action="undo"]').disabled=!editable||!undoStack.length;host.querySelector('[data-action="redo"]').disabled=!editable||!redoStack.length;
     host.querySelector('[data-action="group"]').disabled=!editable||selectedIds.size<2;
     host.querySelector('[data-action="ungroup"]').disabled=!editable||!selectedObjects().some((object)=>object.groupId);
     host.querySelector('[data-action="copy"]').disabled=!selectedIds.size;
     for (const action of ["clear", "paste"]) host.querySelector(`[data-action="${action}"]`).disabled = !editable;
     for (const action of ["new", "duplicate", "import", "import-code"]) host.querySelector(`[data-action="${action}"]`).disabled = workspaceLoading;
-    const deleteButton = host.querySelector('[data-action="delete-draft"]');
-    deleteButton.textContent = accountContext.userId && ["editor", "viewer"].includes(role) ? "Remove" : "Delete";
-    deleteButton.disabled = role === "guest" ? drafts.length <= 1 : role === "owner" ? drafts.length <= 1 && !draft?.cloudId : !draft?.cloudId;
+    host.querySelector('[data-action="delete-draft"]').disabled = drafts.length <= 1 || (accountContext.userId && role !== "owner") || publicView;
     host.querySelector('[data-action="share"]').disabled = !isOwner();
     host.querySelector('[data-action="publish"]').disabled = role !== "owner" || workspaceLoading;
     host.querySelector('[data-action="publish"]').textContent = draft?.publication ? "Publish Update" : "Publish";
@@ -1335,9 +1241,7 @@
     const publicLinkButton = host.querySelector('[data-action="copy-public-link"]');
     publicLinkButton.hidden = !draft?.publication;
     publicLinkButton.disabled = !draft?.publication;
-    publicationStatus.textContent = draft?.publication
-      ? `Published update ${draft.publication.version}. The public link serves this version.`
-      : "This level has not been published. Use draft access above to share it privately.";
+    host.querySelector('[data-action="return-workspace"]').hidden = !publicView;
     if (!isOwner()) sharingPanel.hidden = true;
     renderInspector();
     host.querySelectorAll(".editor-palette button").forEach(control => control.disabled = !editable);
@@ -1350,18 +1254,15 @@
     cameraX = 0; cameraY = 0; undoStack = []; redoStack = []; viewFitted = false;
     host.querySelectorAll("[data-tool]").forEach((button) => button.classList.toggle("active", button.dataset.tool === "select"));
   }
-  async function activateDraft(key, note) {
+  function activateDraft(key, note) {
     if (key === activeDraftKey || !drafts.some((draft) => draft.key === key)) return;
-    persist(false); await flushCloudSaves(); activeDraftKey = key; data = activeDraft().level; resetDraftView();
-    await ensureDraftLoaded(activeDraft());
-    viewerLandingOpen = activeRole() === "viewer";
-    statusNote = note || `${viewerLandingOpen ? "Viewing" : "Now editing"} ${data.name} as ${activeRole()}.`;
-    persist(false); sharingPanel.hidden = true; fitLevel(); refresh();
+    persist(false); activeDraftKey = key; data = activeDraft().level; resetDraftView();
+    statusNote = note || `Now editing ${data.name} as ${activeRole()}.`; persist(false); sharingPanel.hidden = true; fitLevel(); refresh();
   }
   function addDraft(level, note) {
     persist(false);
-    viewerLandingOpen = false;
-    const draft = { key: nextDraftKey(), level, title: level.name, loaded: true, ...(accountContext.userId ? { role: "owner", ownerId: accountContext.userId, permissions: [], publication: null, dirty: true, updatedAt: null } : {}) };
+    publicView = false;
+    const draft = { key: nextDraftKey(), level, ...(accountContext.userId ? { role: "owner", ownerId: accountContext.userId, permissions: [], publication: null, dirty: true } : {}) };
     drafts.push(draft); activeDraftKey = draft.key; data = draft.level; resetDraftView();
     statusNote = note; persist(Boolean(accountContext.userId)); fitLevel(); refresh();
   }
@@ -1384,31 +1285,19 @@
     addDraft(copy, `Duplicated ${sourceName} as ${copy.name}.`);
   }
   async function deleteDraft() {
+    if (drafts.length <= 1) return;
     const index = drafts.findIndex((draft) => draft.key === activeDraftKey);
     const draft = drafts[index];
-    const collaborator = accountContext.userId && ["editor", "viewer"].includes(draft.role);
-    if (!collaborator && drafts.length <= 1 && !draft.cloudId) return;
-    const question = collaborator
-      ? `Remove “${draft.title || data.name}” from your workspace? The owner's level will not be deleted.`
-      : `Delete “${draft.title || data.name}”? This cannot be undone.`;
-    if (!confirm(question)) return;
-    if (collaborator) {
-      try { await accountContext.service.leaveCustomLevel(draft.cloudId); }
-      catch (error) { statusNote = `Remove failed: ${accountContext.service.friendlyError?.(error) || error.message}`; return refresh(); }
-    } else if (draft.cloudId) {
+    if (accountContext.userId && draft.role !== "owner") { statusNote = "Only the owner can delete this cloud level."; return refresh(); }
+    if (!confirm(`Delete the local level “${data.name}”? This cannot be undone.`)) return;
+    if (draft.cloudId) {
       try { await accountContext.service.deleteCustomLevel(draft.cloudId); }
       catch (error) { statusNote = `Delete failed: ${accountContext.service.friendlyError?.(error) || error.message}`; return refresh(); }
     }
     drafts.splice(index, 1);
-    if (!drafts.length) {
-      const level = freshLevel();
-      drafts.push({ key: nextDraftKey(), role: accountContext.userId ? "owner" : "guest", ownerId: accountContext.userId, permissions: [], publication: null, dirty: false, loaded: true, updatedAt: null, title: level.name, level });
-    }
     const replacement = drafts[Math.min(index, drafts.length - 1)];
-    activeDraftKey = replacement.key; data = replacement.level; resetDraftView(); await ensureDraftLoaded(replacement);
-    viewerLandingOpen = activeRole() === "viewer";
-    statusNote = collaborator ? "Removed the shared level from your workspace." : "Deleted the level and switched to another draft.";
-    persist(false); persistAccountBackup(); fitLevel(); refresh();
+    activeDraftKey = replacement.key; data = replacement.level; resetDraftView();
+    statusNote = "Deleted the level and switched to another draft."; persist(false); fitLevel(); refresh();
   }
   function exportData() { const result=api.exportLevel(data);if(!result.ok){statusNote=result.errors[0];return refresh();}const blob=new Blob([result.json],{type:"application/json"}),link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=`${data.id}.json`;link.click();URL.revokeObjectURL(link.href);statusNote="Exported validated level JSON.";refresh(); }
   async function copySaveCode() {
@@ -1460,8 +1349,7 @@
     if (!permissions.length) { permissionList.textContent = "Only you currently have access."; return; }
     permissions.forEach(permission => {
       const row = document.createElement("div"); row.className = "editor-permission-row";
-      const name = permission.profile?.username ? `@${permission.profile.username}` : permission.profile?.display_name || "Player";
-      const identity = document.createElement("span"); identity.textContent = `${name} · ${permission.role}`;
+      const identity = document.createElement("span"); identity.textContent = `${permission.display_name} · ${permission.role}`;
       const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "Remove"; remove.dataset.removePermission = permission.user_id;
       row.append(identity, remove); permissionList.append(row);
     });
@@ -1472,17 +1360,16 @@
     const draft = activeDraft();
     if (!isOwner()) return;
     const formData = new FormData(sharingForm);
-    const username = String(formData.get("username") || "").trim().toLowerCase();
+    const email = String(formData.get("email") || "").trim();
     const role = formData.get("role") === "viewer" ? "viewer" : "editor";
-    if (!username) return;
+    if (!email) return;
     sharingForm.querySelectorAll("input, select, button").forEach(control => control.disabled = true);
     try {
-      const permission = await accountContext.service.grantCustomLevelAccess(draft.cloudId, username, role);
+      const permission = await accountContext.service.grantCustomLevelAccess(draft.cloudId, email, role);
       const row = Array.isArray(permission) ? permission[0] : permission;
       draft.permissions = [...(draft.permissions || []).filter(item => item.user_id !== row.user_id), row];
-      const sharedName = row.profile?.username ? `@${row.profile.username}` : "that player";
-      sharingForm.reset(); statusNote = `Granted ${role} access to ${sharedName}.`; renderPermissions();
-    } catch (error) { statusNote = `Sharing failed: ${error.message || "check the username"}`; }
+      sharingForm.reset(); statusNote = `Granted ${role} access to ${row.display_name}.`; renderPermissions();
+    } catch (error) { statusNote = `Sharing failed: ${error.message || "check the account email"}`; }
     sharingForm.querySelectorAll("input, select, button").forEach(control => control.disabled = false);
     refresh();
   }
@@ -1507,7 +1394,7 @@
     try {
       const publication = await accountContext.service.publishCustomLevel(draft.cloudId);
       draft.publication = Array.isArray(publication) ? publication[0] : publication;
-      statusNote = `Published update ${draft.publication.version}. The public link now serves this version.`;
+      statusNote = `Published version ${draft.publication.version}. Later draft edits will not change it until you publish again.`;
       refresh();
     } catch (error) { statusNote = `Publish failed: ${error.message || "try again"}`; refresh(); }
   }
@@ -1542,8 +1429,7 @@
     else if(action==="share"){sharingPanel.hidden=!sharingPanel.hidden;if(!sharingPanel.hidden){renderPermissions();sharingForm.querySelector("input")?.focus();}}
     else if(action==="close-sharing")sharingPanel.hidden=true;
     else if(action==="publish")publishCurrent();else if(action==="unpublish")unpublishCurrent();else if(action==="copy-public-link")copyPublicLink();
-    else if(action==="viewer-play"){if(playtestCallback)playtestCallback(clone(data),{source:"viewer"});}
-    else if(action==="viewer-edit"){viewerLandingOpen=false;fitLevel();refresh();}
+    else if(action==="return-workspace")setAccountContext({...accountContext,force:true});
     else if(action==="snap"){snap=!snap;event.target.textContent=`Snap: ${snap?"On":"Off"}`;statusNote=`Grid snapping ${snap?"enabled":"disabled"}.`;refresh();}
     else if(action==="zoom-out")setZoom(zoom/1.2);
     else if(action==="zoom-in")setZoom(zoom*1.2);
@@ -1571,16 +1457,9 @@
   draftPicker.addEventListener("change", () => activateDraft(draftPicker.value));
   new ResizeObserver(resizeCanvas).observe(viewport);
 
-  async function open() {
-    document.querySelector("#mainMenu").hidden=true;host.hidden=false;document.querySelector(".touch-controls").hidden=true;document.querySelector(".instructions").hidden=true;
-    await ensureDraftLoaded(activeDraft());
-    viewerLandingOpen = activeRole() === "viewer";
-    requestAnimationFrame(()=>{resizeCanvas();if(!openedOnce){fitLevel();openedOnce=true;}refresh();});
-  }
+  function open() { document.querySelector("#mainMenu").hidden=true;host.hidden=false;document.querySelector(".touch-controls").hidden=true;document.querySelector(".instructions").hidden=true;requestAnimationFrame(()=>{resizeCanvas();if(!openedOnce){fitLevel();openedOnce=true;}refresh();}); }
   function close() { host.hidden=true;document.querySelector("#mainMenu").hidden=false;document.querySelector(".touch-controls").hidden=false;document.querySelector(".instructions").hidden=false;document.querySelector("#levelEditorButton")?.focus(); }
-  function showAfterPlaytest(note="Returned from playtest.") { host.hidden=false;document.querySelector(".touch-controls").hidden=true;document.querySelector(".instructions").hidden=true;viewerLandingOpen=activeRole()==="viewer";statusNote=note;requestAnimationFrame(()=>{resizeCanvas();refresh();}); }
-
-  addEventListener("pagehide", () => { persistAccountBackup(); void flushCloudSaves(); });
+  function showAfterPlaytest(note="Returned from playtest.") { host.hidden=false;document.querySelector(".touch-controls").hidden=true;document.querySelector(".instructions").hidden=true;statusNote=note;requestAnimationFrame(()=>{resizeCanvas();refresh();}); }
 
   restoreGuestWorkspace(); setTool("select");
   window.PlatformsEditor=Object.freeze({

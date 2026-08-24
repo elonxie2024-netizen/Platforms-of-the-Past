@@ -38,11 +38,6 @@
     return String(value || "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 24);
   }
 
-  function cleanUsername(value) {
-    const username = String(value || "").trim().toLowerCase();
-    return /^[a-z0-9][a-z0-9-]{2,23}$/.test(username) ? username : "";
-  }
-
   function fallbackDisplayName(user) {
     return `Traveler-${String(user?.id || "player").slice(0, 6)}`;
   }
@@ -55,10 +50,7 @@
     if (message.includes("password") && (message.includes("least") || message.includes("weak"))) return "Use a password with at least 6 characters.";
     if (message.includes("rate limit") || message.includes("too many")) return "Too many attempts. Wait a moment and try again.";
     if (message.includes("fetch") || message.includes("network") || message.includes("timed out") || message.includes("could not be reached")) return "Accounts are temporarily unavailable. You can keep playing as a guest.";
-    if (message.includes("duplicate key") && message.includes("username")) return "That username is already taken.";
-    if (message.includes("at most 50 levels")) return "Your account already owns the maximum of 50 levels.";
-    if (message.includes("could not share with that account")) return "Could not share with that account.";
-    if (message.includes("custom_levels") || message.includes("custom_level_permissions") || message.includes("published_custom_levels")) return "Custom-level cloud setup is incomplete. Run the latest Supabase migration.";
+    if (message.includes("custom_levels") || message.includes("custom_level_permissions") || message.includes("published_custom_levels")) return "Custom-level cloud setup is incomplete. Run the v0.28.0 Supabase migration.";
     if (message.includes("player_profiles") || message.includes("player_progress") || message.includes("schema cache")) return "Account database setup is incomplete. Guest play is still available.";
     return "That account request could not be completed. Please try again.";
   }
@@ -93,15 +85,13 @@
     return () => listeners.delete(listener);
   }
 
-  async function signUp(email, password, displayName, username, redirectTo) {
+  async function signUp(email, password, displayName, redirectTo) {
     const name = cleanDisplayName(displayName);
     if (!name) throw new Error("Choose a display name first.");
-    const handle = cleanUsername(username);
-    if (!handle) throw new Error("Choose a username using 3–24 lowercase letters, numbers, or hyphens.");
     const { data, error } = await requireClient().auth.signUp({
       email: email.trim(),
       password,
-      options: { data: { display_name: name, username: handle }, emailRedirectTo: redirectTo }
+      options: { data: { display_name: name }, emailRedirectTo: redirectTo }
     });
     if (error) throw error;
     return { ...data, needsVerification: !data.session };
@@ -132,40 +122,29 @@
     const database = requireClient();
     const { data, error } = await database
       .from("player_profiles")
-      .select("user_id,display_name,username,created_at,updated_at")
+      .select("user_id,display_name,created_at,updated_at")
       .eq("user_id", user.id)
       .maybeSingle();
     if (error) throw error;
     if (data) return data;
     const displayName = cleanDisplayName(requestedName || user.user_metadata?.display_name) || fallbackDisplayName(user);
-    const requestedUsername = cleanUsername(user.user_metadata?.username);
-    const username = requestedUsername || `traveler-${String(user.id).replaceAll("-", "").slice(0, 15)}`;
-    let { data: created, error: createError } = await database
+    const { data: created, error: createError } = await database
       .from("player_profiles")
-      .upsert({ user_id: user.id, display_name: displayName, username }, { onConflict: "user_id" })
-      .select("user_id,display_name,username,created_at,updated_at")
+      .upsert({ user_id: user.id, display_name: displayName }, { onConflict: "user_id" })
+      .select("user_id,display_name,created_at,updated_at")
       .single();
-    if (createError?.code === "23505" && requestedUsername) {
-      ({ data: created, error: createError } = await database
-        .from("player_profiles")
-        .upsert({ user_id: user.id, display_name: displayName, username: `traveler-${String(user.id).replaceAll("-", "").slice(0, 15)}` }, { onConflict: "user_id" })
-        .select("user_id,display_name,username,created_at,updated_at")
-        .single());
-    }
     if (createError) throw createError;
     return created;
   }
 
-  async function updateProfile(userId, displayName, username) {
+  async function updateProfile(userId, displayName) {
     const name = cleanDisplayName(displayName);
     if (!name) throw new Error("Choose a display name first.");
-    const handle = cleanUsername(username);
-    if (!handle) throw new Error("Choose a username using 3–24 lowercase letters, numbers, or hyphens.");
     const { data, error } = await requireClient()
       .from("player_profiles")
-      .update({ display_name: name, username: handle, updated_at: new Date().toISOString() })
+      .update({ display_name: name, updated_at: new Date().toISOString() })
       .eq("user_id", userId)
-      .select("user_id,display_name,username,created_at,updated_at")
+      .select("user_id,display_name,created_at,updated_at")
       .single();
     if (error) throw error;
     return data;
@@ -197,64 +176,43 @@
     const database = requireClient();
     const { data: levels, error: levelError } = await database
       .from("custom_levels")
-      .select("id,owner_id,title,created_at,updated_at")
+      .select("id,owner_id,level_data,created_at,updated_at")
       .order("updated_at", { ascending: false });
     if (levelError) throw levelError;
     const levelIds = (levels || []).map(level => level.id);
     if (!levelIds.length) return [];
     const [{ data: permissions, error: permissionError }, { data: publications, error: publicationError }] = await Promise.all([
-      database.from("custom_level_permissions").select("level_id,owner_id,user_id,role,created_at,updated_at").in("level_id", levelIds),
+      database.from("custom_level_permissions").select("level_id,owner_id,user_id,role,display_name,created_at,updated_at").in("level_id", levelIds),
       database.from("published_custom_levels").select("level_id,version,published_at,updated_at").in("level_id", levelIds)
     ]);
     if (permissionError) throw permissionError;
     if (publicationError) throw publicationError;
-    const profileIds = [...new Set([...(levels || []).map(level => level.owner_id), ...(permissions || []).map(permission => permission.user_id)])];
-    const profiles = await loadPublicProfiles(profileIds);
     return (levels || []).map(level => ({
       ...level,
       role: level.owner_id === userId
         ? "owner"
         : permissions?.find(permission => permission.level_id === level.id && permission.user_id === userId)?.role || "viewer",
-      ownerProfile: profiles.find(profile => profile.user_id === level.owner_id) || null,
-      permissions: (permissions || []).filter(permission => permission.level_id === level.id).map(permission => ({
-        ...permission, profile: profiles.find(profile => profile.user_id === permission.user_id) || null
-      })),
+      permissions: (permissions || []).filter(permission => permission.level_id === level.id),
       publication: (publications || []).find(publication => publication.level_id === level.id) || null
     }));
   }
 
-  async function loadPublicProfiles(userIds) {
-    if (!userIds?.length) return [];
-    const { data, error } = await requireClient().from("player_profiles")
-      .select("user_id,display_name,username").in("user_id", [...new Set(userIds)]);
-    if (error) throw error;
-    return data || [];
-  }
-
-  async function loadCustomLevelDraft(levelId) {
-    const { data, error } = await requireClient().from("custom_levels")
-      .select("id,owner_id,title,level_data,created_at,updated_at").eq("id", levelId).maybeSingle();
-    if (error) throw error;
-    return data;
-  }
-
   async function createCustomLevel(userId, levelData) {
     const { data, error } = await requireClient().from("custom_levels")
-      .insert({ owner_id: userId, title: levelData.name, level_data: levelData })
-      .select("id,owner_id,title,level_data,created_at,updated_at")
+      .insert({ owner_id: userId, level_data: levelData })
+      .select("id,owner_id,level_data,created_at,updated_at")
       .single();
     if (error) throw error;
     return data;
   }
 
-  async function updateCustomLevel(levelId, levelData, expectedUpdatedAt, overwrite = false) {
-    let query = requireClient().from("custom_levels")
-      .update({ title: levelData.name, level_data: levelData })
-      .eq("id", levelId);
-    if (!overwrite && expectedUpdatedAt) query = query.eq("updated_at", expectedUpdatedAt);
-    const { data, error } = await query.select("id,owner_id,title,level_data,created_at,updated_at").maybeSingle();
+  async function updateCustomLevel(levelId, levelData) {
+    const { data, error } = await requireClient().from("custom_levels")
+      .update({ level_data: levelData, updated_at: new Date().toISOString() })
+      .eq("id", levelId)
+      .select("id,owner_id,level_data,created_at,updated_at")
+      .single();
     if (error) throw error;
-    if (!data) { const conflict = new Error("This level changed elsewhere."); conflict.code = "POTP_CONFLICT"; throw conflict; }
     return data;
   }
 
@@ -263,25 +221,18 @@
     if (error) throw error;
   }
 
-  async function grantCustomLevelAccess(levelId, username, role) {
+  async function grantCustomLevelAccess(levelId, email, role) {
     const { data, error } = await requireClient().rpc("grant_custom_level_access", {
       p_level_id: levelId,
-      p_username: cleanUsername(username),
+      p_account_email: String(email || "").trim(),
       p_role: role
     });
     if (error) throw error;
-    const row = Array.isArray(data) ? data[0] : data;
-    const [profile] = row ? await loadPublicProfiles([row.user_id]) : [];
-    return row ? { ...row, profile: profile || null } : row;
+    return data;
   }
 
   async function removeCustomLevelAccess(levelId, userId) {
     const { error } = await requireClient().rpc("remove_custom_level_access", { p_level_id: levelId, p_user_id: userId });
-    if (error) throw error;
-  }
-
-  async function leaveCustomLevel(levelId) {
-    const { error } = await requireClient().rpc("leave_custom_level", { p_level_id: levelId });
     if (error) throw error;
   }
 
@@ -297,15 +248,10 @@
   }
 
   async function loadPublishedCustomLevel(levelId) {
-    const { data, error } = await requireClient().rpc("get_published_custom_level", { p_level_id: levelId });
-    if (error) throw error;
-    return Array.isArray(data) ? data[0] || null : data;
-  }
-
-  async function loadPublishedCustomLevelVersion(levelId, version) {
-    const { data, error } = await requireClient().from("published_custom_level_versions")
-      .select("level_id,version,level_data,published_at")
-      .eq("level_id", levelId).eq("version", version).maybeSingle();
+    const { data, error } = await requireClient().from("published_custom_levels")
+      .select("level_id,owner_id,owner_name,level_data,version,published_at,updated_at")
+      .eq("level_id", levelId)
+      .maybeSingle();
     if (error) throw error;
     return data;
   }
@@ -327,21 +273,16 @@
     loadProgress,
     saveProgress,
     loadCustomLevelWorkspace,
-    loadCustomLevelDraft,
-    loadPublicProfiles,
     createCustomLevel,
     updateCustomLevel,
     deleteCustomLevel,
     grantCustomLevelAccess,
     removeCustomLevelAccess,
-    leaveCustomLevel,
     publishCustomLevel,
     unpublishCustomLevel,
     loadPublishedCustomLevel,
-    loadPublishedCustomLevelVersion,
     accessToken,
     cleanDisplayName,
-    cleanUsername,
     friendlyError,
     isAvailable: () => Boolean(client)
   };

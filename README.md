@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.28.2`
+**Current version:** `v0.29.0`
 
 ## How it works
 
@@ -36,7 +36,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Publish a run.** Complete the full adventure from Dirtbound Trail and optionally publish it to the global leaderboard. Guests choose a run name; signed-in players publish under their public display name. Records are shared across devices, gameplay-changing releases use separate boards, and rankings can be viewed by fastest time, most stars, or highest total score.
 
-**Use an optional account.** Sign up or sign in with email and password to synchronize roadmap unlocks, completed chapters, and gauntlets through Supabase. Emails remain private, passwords are handled only by Supabase Auth, and guest play continues to work without an account or network connection.
+**Use an optional account.** Sign up or sign in with email and password to synchronize roadmap unlocks, completed chapters, gauntlets, and private level drafts through Supabase. Public usernames enable safe level sharing without exposing or looking up email addresses. Passwords are handled only by Supabase Auth, and guest play continues to work without an account or network connection.
 
 **Play past versions.** Open Versions from the main menu to launch any archived release build in a new tab.
 
@@ -95,7 +95,7 @@ The playable prototype includes:
 - A global, version-separated leaderboard for named full-adventure runs
 - Optional Supabase email/password accounts with persistent sessions, password recovery, private emails, public display names, and cloud progression
 - A versioned, validated level-data format with safe import/export, stable object links, and runtime-state cloning
-- A visual level editor with a separate local guest workspace, private Supabase account workspaces, Owner/Editor/Viewer draft permissions, explicit public snapshot publishing, direct-to-play public links for the latest published version, JSON import/export, portable `POTP1-` text save codes, and isolated in-engine playtesting
+- A visual level editor with preserved local guest work, lazy Supabase account workspaces, crash recovery, conflict-aware Owner/Editor collaboration, play-first Viewer access, username sharing, append-only publication history, stable direct-to-play public links, JSON import/export, portable `POTP1-` text save codes, and isolated in-engine playtesting
 - A playable archive of every released version
 - A complete in-game changelog based on the Git history
 - Responsive running and jumping with stable high-speed platform-edge landings
@@ -136,7 +136,7 @@ Made by [elonxie2024-netizen](https://github.com/elonxie2024-netizen).
 
 ## Supabase maintenance
 
-The public leaderboard, account profiles, private progression records, custom-level drafts, collaboration permissions, published snapshots, functions, and access rules are created by [`supabase-setup.sql`](supabase-setup.sql). Existing installations that already ran the v0.28.0 setup can run the metadata-only [`supabase-v0.28.2-migration.sql`](supabase-v0.28.2-migration.sql) for this release.
+The public leaderboard, account profiles, private progression records, custom-level drafts, collaboration permissions, publication history, functions, and access rules are created by [`supabase-setup.sql`](supabase-setup.sql). Existing installations that already ran the v0.28.x setup must run [`supabase-v0.29.0-migration.sql`](supabase-v0.29.0-migration.sql) for this release.
 
 In Supabase Authentication settings, keep Email enabled and add `https://elonxie2024-netizen.github.io/Platforms-of-the-Past/` to the allowed redirect URLs. Set it as the Site URL when GitHub Pages is the production host. Email confirmation may remain enabled; the game supports both confirmed-email and immediate-session sign-up configurations. Password reset emails use the same allowed return URL.
 
