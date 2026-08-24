@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.28.0`
+**Current version:** `v0.28.1`
 
 ## How it works
 
@@ -136,7 +136,7 @@ Made by [elonxie2024-netizen](https://github.com/elonxie2024-netizen).
 
 ## Supabase maintenance
 
-The public leaderboard, account profiles, private progression records, custom-level drafts, collaboration permissions, published snapshots, functions, and access rules are created by [`supabase-setup.sql`](supabase-setup.sql). Existing installations can run only [`supabase-v0.28.0-migration.sql`](supabase-v0.28.0-migration.sql) for this release.
+The public leaderboard, account profiles, private progression records, custom-level drafts, collaboration permissions, published snapshots, functions, and access rules are created by [`supabase-setup.sql`](supabase-setup.sql). Existing installations that already ran the v0.28.0 setup can run only [`supabase-v0.28.1-migration.sql`](supabase-v0.28.1-migration.sql) for this release.
 
 In Supabase Authentication settings, keep Email enabled and add `https://elonxie2024-netizen.github.io/Platforms-of-the-Past/` to the allowed redirect URLs. Set it as the Site URL when GitHub Pages is the production host. Email confirmation may remain enabled; the game supports both confirmed-email and immediate-session sign-up configurations. Password reset emails use the same allowed return URL.
 

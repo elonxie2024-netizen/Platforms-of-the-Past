@@ -141,8 +141,7 @@ const resetEmail = document.querySelector("#resetEmail");
 const profileDisplayName = document.querySelector("#profileDisplayName");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.28.1", commit: "Pending commit", date: "2026-08-24", message: "Clear guest editor levels after signing out", description: "Fixed account isolation on shared browsers by discarding the browser's previous guest editor workspace whenever an account signs out. The editor now switches immediately to one fresh blank guest level, while levels created during a normal guest session still remain available across guest refreshes." },
-  { version: "v0.28.0", commit: "f6c84e5", date: "2026-08-23", message: "Add account level workspaces, sharing, and publishing", description: "Separated the guest editor workspace from Supabase-backed account workspaces and switched levels immediately with authentication state. Added backend-enforced Owner, Editor, and Viewer draft roles, owner-managed sharing by account email, immutable public snapshots with explicit update publishing and unpublishing, and read-only public playtest links for signed-out visitors. Private drafts, collaborator permissions, and public snapshots use separate RLS-protected tables." },
+  { version: "v0.28.0", commit: "Pending commit", date: "2026-08-23", message: "Add account level workspaces, sharing, and publishing", description: "Separated the guest editor workspace from Supabase-backed account workspaces and switched levels immediately with authentication state. Added backend-enforced Owner, Editor, and Viewer draft roles, owner-managed sharing by account email, immutable public snapshots with explicit update publishing and unpublishing, and read-only public playtest links for signed-out visitors. Private drafts, collaborator permissions, and public snapshots use separate RLS-protected tables." },
   { version: "v0.27.1", commit: "0006b87", date: "2026-08-23", message: "Add portable custom-level save codes", description: "Added self-contained POTP1- save codes generated from the existing serialized level JSON. The editor can copy a level as text and import a friend's code as a new draft after decoding and running the same safe level validation, while invalid codes leave every current draft unchanged." },
   { version: "v0.27.0", commit: "c85db9b", date: "2026-08-22", message: "Add editor groups, copy and paste, and imported music", description: "Added multi-object selection and rigid groups whose members move together while retaining their individual platform, hazard, collectible, mechanic, and enemy behavior. Added object/group copy and paste with safe ID, group, controller, and attachment remapping. Expanded Level Settings with portable imported audio, per-level song volume, looping, validation, export, and playtest playback." },
   { version: "v0.26.6", commit: "86f2095", date: "2026-08-22", message: "Expand level-editor projects and controls", description: "Added a persistent multi-level editor workspace with a level picker plus New, Duplicate, Delete, Import, and Export actions, so creators can keep several independent local levels in progress without overwriting one another. Existing single drafts migrate automatically. Also fixed enemy placement data, audited every palette mechanic, and made controlled movement available for spikes, lava, stars, crates, blocks, pads, enemies, switches, pressure plates, automatic objects, ordinary platforms, and the exit through selectable controllers and draggable targets." },
@@ -1237,13 +1236,13 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.28.1";
+const GAME_VERSION = "v0.28.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
 const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const LEADERBOARD_RULESETS = [
-  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.28.1" },
+  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.28.0" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1286,7 +1285,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
+  "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
@@ -1474,7 +1473,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1493,7 +1492,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -2700,17 +2699,12 @@ async function syncProgressWithAccount(session, event = "SIGNED_IN") {
   renderAccountState(finalMessage);
 }
 
-function restoreGuestProgress(resetEditorWorkspace = false) {
+function restoreGuestProgress() {
   accountSyncGeneration++;
   accountSession = null;
   accountProfile = null;
   accountRecoveryActive = false;
-  window.PlatformsEditor?.setAccountContext({
-    userId: null,
-    displayName: "Guest",
-    service: window.PlatformsAccount,
-    resetGuest: resetEditorWorkspace
-  });
+  window.PlatformsEditor?.setAccountContext({ userId: null, displayName: "Guest", service: window.PlatformsAccount });
   if (accountProgressSyncTimer) clearTimeout(accountProgressSyncTimer);
   applyProgress(readStoredProgress(GUEST_PROGRESS_STORAGE_KEY));
   applyRewindMenuState();
@@ -2749,7 +2743,7 @@ async function initializeAccounts() {
   window.PlatformsAccount.subscribe((event, session) => {
     setTimeout(() => {
       if (session?.user) syncProgressWithAccount(session, event);
-      else if (event === "SIGNED_OUT" || event === "INITIAL_SESSION") restoreGuestProgress(event === "SIGNED_OUT");
+      else if (event === "SIGNED_OUT" || event === "INITIAL_SESSION") restoreGuestProgress();
     }, 0);
   });
   try {
@@ -3364,7 +3358,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -4845,7 +4839,7 @@ signOutButton.addEventListener("click", async () => {
   }
   try {
     await window.PlatformsAccount.signOut();
-    restoreGuestProgress(true);
+    restoreGuestProgress();
   } catch (error) {
     accountNotice.textContent = accountFriendlyError(error);
   } finally {

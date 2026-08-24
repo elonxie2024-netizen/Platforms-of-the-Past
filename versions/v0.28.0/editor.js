@@ -23,11 +23,11 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/slime-player.svg", enemy: "assets/slime-enemy.svg",
-    switch: "assets/switch-left.svg", pressurePlateBase: "assets/pressure-plate-base.svg",
-    pressurePlateTop: "assets/pressure-plate-top.svg", jumpPadBase: "assets/jump-pad-base.svg",
-    jumpPadTop: "assets/jump-pad-top.svg", blade: "assets/moving-obstacle.svg",
-    cracks: "assets/fragile-block-cracks.svg"
+    player: "../assets/slime-player.svg", enemy: "../assets/slime-enemy.svg",
+    switch: "../assets/switch-left.svg", pressurePlateBase: "../assets/pressure-plate-base.svg",
+    pressurePlateTop: "../assets/pressure-plate-top.svg", jumpPadBase: "../assets/jump-pad-base.svg",
+    jumpPadTop: "../assets/jump-pad-top.svg", blade: "../assets/moving-obstacle.svg",
+    cracks: "../assets/fragile-block-cracks.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
@@ -61,7 +61,7 @@
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.28.1</strong>
+      <strong>Level Editor · v0.28.0</strong>
       <span class="editor-workspace-identity" data-role="workspace-identity">Guest workspace</span>
       <label class="editor-level-picker"><span>Level</span><select data-role="draft-picker" aria-label="Level being edited"></select></label>
       <button data-action="new">New</button><button data-action="duplicate">Duplicate</button><button data-action="delete-draft">Delete</button><button data-action="clear">Clear</button>
@@ -340,8 +340,7 @@
   }
   async function setAccountContext(context = {}) {
     const nextUserId = context.userId || null;
-    const resetGuest = !nextUserId && context.resetGuest === true;
-    if (nextUserId === accountContext.userId && !workspaceLoading && !context.force && !resetGuest) {
+    if (nextUserId === accountContext.userId && !workspaceLoading && !context.force) {
       accountContext.displayName = context.displayName || accountContext.displayName;
       accountContext.service = context.service || accountContext.service;
       refresh(); return;
@@ -353,15 +352,8 @@
     sharingPanel.hidden = true;
     resetDraftView();
     if (!nextUserId) {
-      if (resetGuest) {
-        try {
-          localStorage.removeItem(STORAGE_KEY);
-          localStorage.removeItem(LEGACY_STORAGE_KEY);
-          localStorage.removeItem(clipboardStorageKey());
-        } catch { /* A fresh in-memory guest workspace still replaces the account view. */ }
-      }
       restoreGuestWorkspace();
-      statusNote = resetGuest ? "Started a fresh empty guest workspace." : "Guest workspace loaded.";
+      statusNote = "Guest workspace loaded.";
       refresh();
       return;
     }
