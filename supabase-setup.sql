@@ -11,7 +11,7 @@ create table if not exists public.leaderboard_rulesets (
 
 insert into public.leaderboard_rulesets (id, label, accepted_versions)
 values
-  ('crate-jump-collision-v1', 'Version 0.24.1 to 0.28.1', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1']),
+  ('crate-jump-collision-v1', 'Version 0.24.1 to 0.28.2', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1', 'v0.28.2']),
   ('crate-platform-collision-v1', 'Version 0.23.2 to 0.24.0', array['v0.23.2', 'v0.24.0']),
   ('history-forge-gate-v1', 'Version 0.23.1 to 0.23.1', array['v0.23.1']),
   ('crate-gravity-v1', 'Version 0.23.0 to 0.23.0', array['v0.23.0']),

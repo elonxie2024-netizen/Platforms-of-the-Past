@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.28.1`
+**Current version:** `v0.28.2`
 
 ## How it works
 
@@ -95,7 +95,7 @@ The playable prototype includes:
 - A global, version-separated leaderboard for named full-adventure runs
 - Optional Supabase email/password accounts with persistent sessions, password recovery, private emails, public display names, and cloud progression
 - A versioned, validated level-data format with safe import/export, stable object links, and runtime-state cloning
-- A visual level editor with a separate local guest workspace, private Supabase account workspaces, Owner/Editor/Viewer draft permissions, explicit public snapshot publishing, JSON import/export, portable `POTP1-` text save codes, and isolated in-engine playtesting
+- A visual level editor with a separate local guest workspace, private Supabase account workspaces, Owner/Editor/Viewer draft permissions, explicit public snapshot publishing, direct-to-play public links for the latest published version, JSON import/export, portable `POTP1-` text save codes, and isolated in-engine playtesting
 - A playable archive of every released version
 - A complete in-game changelog based on the Git history
 - Responsive running and jumping with stable high-speed platform-edge landings
@@ -136,7 +136,7 @@ Made by [elonxie2024-netizen](https://github.com/elonxie2024-netizen).
 
 ## Supabase maintenance
 
-The public leaderboard, account profiles, private progression records, custom-level drafts, collaboration permissions, published snapshots, functions, and access rules are created by [`supabase-setup.sql`](supabase-setup.sql). Existing installations that already ran the v0.28.0 setup can run only [`supabase-v0.28.1-migration.sql`](supabase-v0.28.1-migration.sql) for this release.
+The public leaderboard, account profiles, private progression records, custom-level drafts, collaboration permissions, published snapshots, functions, and access rules are created by [`supabase-setup.sql`](supabase-setup.sql). Existing installations that already ran the v0.28.0 setup can run the metadata-only [`supabase-v0.28.2-migration.sql`](supabase-v0.28.2-migration.sql) for this release.
 
 In Supabase Authentication settings, keep Email enabled and add `https://elonxie2024-netizen.github.io/Platforms-of-the-Past/` to the allowed redirect URLs. Set it as the Site URL when GitHub Pages is the production host. Email confirmation may remain enabled; the game supports both confirmed-email and immediate-session sign-up configurations. Password reset emails use the same allowed return URL.
 

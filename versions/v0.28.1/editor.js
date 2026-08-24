@@ -23,11 +23,11 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/slime-player.svg", enemy: "assets/slime-enemy.svg",
-    switch: "assets/switch-left.svg", pressurePlateBase: "assets/pressure-plate-base.svg",
-    pressurePlateTop: "assets/pressure-plate-top.svg", jumpPadBase: "assets/jump-pad-base.svg",
-    jumpPadTop: "assets/jump-pad-top.svg", blade: "assets/moving-obstacle.svg",
-    cracks: "assets/fragile-block-cracks.svg"
+    player: "../assets/slime-player.svg", enemy: "../assets/slime-enemy.svg",
+    switch: "../assets/switch-left.svg", pressurePlateBase: "../assets/pressure-plate-base.svg",
+    pressurePlateTop: "../assets/pressure-plate-top.svg", jumpPadBase: "../assets/jump-pad-base.svg",
+    jumpPadTop: "../assets/jump-pad-top.svg", blade: "../assets/moving-obstacle.svg",
+    cracks: "../assets/fragile-block-cracks.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
@@ -61,7 +61,7 @@
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.28.2</strong>
+      <strong>Level Editor · v0.28.1</strong>
       <span class="editor-workspace-identity" data-role="workspace-identity">Guest workspace</span>
       <label class="editor-level-picker"><span>Level</span><select data-role="draft-picker" aria-label="Level being edited"></select></label>
       <button data-action="new">New</button><button data-action="duplicate">Duplicate</button><button data-action="delete-draft">Delete</button><button data-action="clear">Clear</button>
@@ -406,14 +406,11 @@
       const published = await accountContext.service.loadPublishedCustomLevel(levelId);
       const prepared = published && api.cloneLevel(published.level_data);
       if (!published || !prepared?.ok) throw new Error("Published level was not found or is invalid.");
-      if (!playtestCallback) throw new Error("Published-level play is not ready.");
-      playtestCallback(prepared.level, {
-        source: "published",
-        levelId: published.level_id,
-        ownerName: published.owner_name,
-        version: published.version
-      });
-      return true;
+      ++workspaceGeneration; publicView = true; workspaceLoading = false; sharingPanel.hidden = true;
+      drafts = [{ key: `published-${levelId}`, cloudId: levelId, ownerId: published.owner_id, role: "public", publication: published, permissions: [], level: prepared.level }];
+      activeDraftKey = drafts[0].key; data = drafts[0].level; resetDraftView();
+      statusNote = `Viewing published version ${published.version} by ${published.owner_name}. This snapshot is read-only.`;
+      open(); fitLevel(); refresh(); return true;
     } catch (error) {
       statusNote = accountContext.service?.friendlyError?.(error) || error.message || "Published level could not be opened.";
       publicLinkOpened = false; refresh(); return false;
@@ -1238,9 +1235,7 @@
     host.querySelector('[data-action="publish"]').disabled = role !== "owner" || workspaceLoading;
     host.querySelector('[data-action="publish"]').textContent = draft?.publication ? "Publish Update" : "Publish";
     host.querySelector('[data-action="unpublish"]').disabled = !isOwner() || !draft?.publication;
-    const publicLinkButton = host.querySelector('[data-action="copy-public-link"]');
-    publicLinkButton.hidden = !draft?.publication;
-    publicLinkButton.disabled = !draft?.publication;
+    host.querySelector('[data-action="copy-public-link"]').disabled = !draft?.publication;
     host.querySelector('[data-action="return-workspace"]').hidden = !publicView;
     if (!isOwner()) sharingPanel.hidden = true;
     renderInspector();
