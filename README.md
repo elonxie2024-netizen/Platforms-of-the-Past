@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.31.0`
+**Current version:** `v0.31.1`
 
 ## How it works
 
@@ -105,7 +105,7 @@ The playable prototype includes:
 - A following camera and completion summary
 - A main menu with a saved volume setting
 - Quit controls during a run and after completing the game
-- Procedural soundtracks for the menu and each level
+- Four-section procedural soundtracks for the menu and levels, with persistent master, music, and per-effect volume controls
 - Surface-aware landing sounds and particles plus effects for collecting, finishing, and dying
 - Keyboard and touchscreen controls
 
@@ -137,7 +137,7 @@ Made by [elonxie2024-netizen](https://github.com/elonxie2024-netizen).
 
 ## Supabase maintenance
 
-The public leaderboard, account profiles, private progression records, custom-level drafts, collaboration permissions, publication history, community catalog, functions, and access rules are created by [`supabase-setup.sql`](supabase-setup.sql). Existing installations must run [`supabase-v0.29.0-migration.sql`](supabase-v0.29.0-migration.sql) for the collaboration schema, [`supabase-v0.29.1-migration.sql`](supabase-v0.29.1-migration.sql) for its metadata, [`supabase-v0.30.0-migration.sql`](supabase-v0.30.0-migration.sql) for the Community Levels catalog, and the metadata-only [`supabase-v0.30.1-migration.sql`](supabase-v0.30.1-migration.sql), [`supabase-v0.30.2-migration.sql`](supabase-v0.30.2-migration.sql), [`supabase-v0.30.3-migration.sql`](supabase-v0.30.3-migration.sql), and [`supabase-v0.31.0-migration.sql`](supabase-v0.31.0-migration.sql) updates for their releases.
+The public leaderboard, account profiles, private progression records, custom-level drafts, collaboration permissions, publication history, community catalog, functions, and access rules are created by [`supabase-setup.sql`](supabase-setup.sql). Existing installations must run [`supabase-v0.29.0-migration.sql`](supabase-v0.29.0-migration.sql) for the collaboration schema, [`supabase-v0.29.1-migration.sql`](supabase-v0.29.1-migration.sql) for its metadata, [`supabase-v0.30.0-migration.sql`](supabase-v0.30.0-migration.sql) for the Community Levels catalog, and the metadata-only [`supabase-v0.30.1-migration.sql`](supabase-v0.30.1-migration.sql), [`supabase-v0.30.2-migration.sql`](supabase-v0.30.2-migration.sql), [`supabase-v0.30.3-migration.sql`](supabase-v0.30.3-migration.sql), [`supabase-v0.31.0-migration.sql`](supabase-v0.31.0-migration.sql), and [`supabase-v0.31.1-migration.sql`](supabase-v0.31.1-migration.sql) updates for their releases.
 
 In Supabase Authentication settings, keep Email enabled and add `https://elonxie2024-netizen.github.io/Platforms-of-the-Past/` to the allowed redirect URLs. Set it as the Site URL when GitHub Pages is the production host. Email confirmation may remain enabled; the game supports both confirmed-email and immediate-session sign-up configurations. Password reset emails use the same allowed return URL.
 

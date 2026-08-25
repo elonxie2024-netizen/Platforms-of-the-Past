@@ -311,7 +311,7 @@ canvas {
   bottom: 48px;
   width: 44px;
   height: 44px;
-  background: url("assets/slime-player.svg") center / contain no-repeat;
+  background: url("../assets/slime-player.svg") center / contain no-repeat;
   filter: drop-shadow(0 6px 5px #17482b45);
   will-change: left, bottom, transform;
 }
@@ -543,36 +543,6 @@ canvas {
 }
 
 .settings-panel input { width: 100%; accent-color: #ffe05d; cursor: pointer; }
-
-.settings-panel .advanced-volume-toggle {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ffffff32;
-  border-radius: 10px;
-  color: #eaf8ff;
-  background: #ffffff10;
-  font: inherit;
-  font-size: .78rem;
-  font-weight: 850;
-  cursor: pointer;
-}
-
-.settings-panel .advanced-volume-toggle:hover,
-.settings-panel .advanced-volume-toggle[aria-expanded="true"] { background: #ffffff20; }
-
-.advanced-volume-controls {
-  display: grid;
-  gap: 6px;
-  max-height: 225px;
-  overflow-y: auto;
-  padding: 10px 8px 10px 2px;
-  border-block: 1px solid #ffffff1e;
-  scrollbar-gutter: stable;
-}
-
-.advanced-volume-controls[hidden] { display: none; }
-
-.advanced-volume-controls label:not(:first-child) { margin-top: 4px; }
 
 .leaderboard-picker {
   width: min(330px, 100%);

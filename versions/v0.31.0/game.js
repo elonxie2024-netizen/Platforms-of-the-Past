@@ -57,9 +57,6 @@ const settingsButton = document.querySelector("#settingsButton");
 const settingsPanel = document.querySelector("#settingsPanel");
 const volumeInput = document.querySelector("#volumeInput");
 const volumeValue = document.querySelector("#volumeValue");
-const advancedVolumeButton = document.querySelector("#advancedVolumeButton");
-const advancedVolumeControls = document.querySelector("#advancedVolumeControls");
-const channelVolumeInputs = [...document.querySelectorAll("[data-volume-channel]")];
 const smallScreenButton = document.querySelector("#smallScreenButton");
 const largeScreenButton = document.querySelector("#largeScreenButton");
 const menuStage = document.querySelector(".menu-stage");
@@ -154,8 +151,7 @@ const profileDisplayName = document.querySelector("#profileDisplayName");
 const profileUsername = document.querySelector("#profileUsername");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.31.1", commit: "Pending commit", date: "2026-08-25", message: "Add advanced volume controls", description: "Kept Master Volume at the top of Settings and added a normally collapsed advanced audio mixer. Music and all fourteen built-in sound-effect types now have independent persistent volume sliders, allowing individual sounds such as star collection to be reduced or completely muted without changing the remaining music and effects." },
-  { version: "v0.31.0", commit: "89d15c4", date: "2026-08-25", message: "Expand and rearrange the soundtrack", description: "Recomposed the menu and three gameplay themes as substantially different four-section arrangements. Every procedural track now has a 64-step loop instead of 16 steps, with new melodies, changing bass progressions, harmony voices, rhythmic variation, quieter passages, and stronger final sections while preserving each theme's established mood." },
+  { version: "v0.31.0", commit: "Pending commit", date: "2026-08-25", message: "Expand and rearrange the soundtrack", description: "Recomposed the menu and three gameplay themes as substantially different four-section arrangements. Every procedural track now has a 64-step loop instead of 16 steps, with new melodies, changing bass progressions, harmony voices, rhythmic variation, quieter passages, and stronger final sections while preserving each theme's established mood." },
   { version: "v0.30.3", commit: "b2644f4", date: "2026-08-25", message: "Make the custom Rewind field automatic", description: "Removed the separate Rewind-field toggle from the level editor. Enabling Rewind in a custom level now always enables its object-selection field, including for older saved levels whose legacy field setting was disabled, while creators can still tune the field radius and offset." },
   { version: "v0.30.2", commit: "c9dc4a4", date: "2026-08-25", message: "Always show mechanic path arrows", description: "Separated mechanic feedback from optional tutorial prompts: enabled Rewind levels now always show their golden motion-history arrows, just as Echo route previews always do, while the tutorial settings control only the prompts at the top of the screen. Also stopped custom levels from accidentally inheriting the campaign's level-index-based Rewind field. Verified both golden path renderers with tutorial prompts disabled." },
   { version: "v0.30.1", commit: "aef20c6", date: "2026-08-24", message: "Fix custom-level Rewind and publication clarity", description: "Fixed custom-level Rewind so enabling the mechanic works independently of the optional tutorial display. Verified the real F and C keyboard controls for combined Rewind and Echo levels in both editor playtests and published play. The editor now also warns when the currently published snapshot is behind its private draft and directs the owner to Publish Update." },
@@ -1350,13 +1346,13 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.31.1";
+const GAME_VERSION = "v0.31.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
 const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const LEADERBOARD_RULESETS = [
-  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.31.1" },
+  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.31.0" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1399,7 +1395,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.31.1", "v0.31.0", "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
+  "v0.31.0", "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
@@ -1452,30 +1448,10 @@ let runQueuePosition = 0;
 let nextLevelIndex = null;
 let runProgress = { completedLevels: new Set(), hazardDeaths: new Set(), mechanics: new Set() };
 let masterVolume = 1;
-const AUDIO_MIX_STORAGE_KEY = "platforms-audio-mix-v1";
-const AUDIO_CHANNEL_DEFAULTS = Object.freeze({
-  music: 1,
-  "land-grass": 1,
-  "land-stone": 1,
-  "land-crate": 1,
-  "jump-pad": 1,
-  switch: 1,
-  "time-zap": 1,
-  "rewind-awaken": 1,
-  "rewind-start": 1,
-  "rewind-release": 1,
-  "block-break": 1,
-  "enemy-stomp": 1,
-  death: 1,
-  star: 1,
-  flag: 1
-});
-const audioChannelVolumes = { ...AUDIO_CHANNEL_DEFAULTS };
 let audioContext = null;
 let masterGain = null;
 let musicGain = null;
 let sfxGain = null;
-const sfxChannelGains = new Map();
 let musicTimer = null;
 let currentTrack = "menu";
 let musicStep = 0;
@@ -1612,7 +1588,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1631,7 +1607,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -3636,7 +3612,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -4836,7 +4812,7 @@ async function startImportedMusic(config) {
     source.buffer = buffer;
     source.loop = config.loop !== false;
     source.connect(musicGain);
-    musicGain.gain.value = .42 * audioChannelVolumes.music * Math.max(0, Math.min(1, config.volume ?? .8));
+    musicGain.gain.value = .42 * Math.max(0, Math.min(1, config.volume ?? .8));
     importedMusicSource = source;
     importedMusicUrl = config.dataUrl;
     source.addEventListener("ended", () => { if (importedMusicSource === source) importedMusicSource = null; }, { once: true });
@@ -4887,7 +4863,7 @@ function startMusic(trackName) {
   musicStep = 0;
   stopMusicVoices();
   if (audioContext) {
-    musicGain.gain.value = .42 * audioChannelVolumes.music;
+    musicGain.gain.value = .42;
     nextMusicNoteTime = audioContext.currentTime + .04;
     scheduleMusic();
   }
@@ -4902,7 +4878,7 @@ async function ensureAudio() {
     musicGain = audioContext.createGain();
     sfxGain = audioContext.createGain();
     masterGain.gain.value = masterVolume;
-    musicGain.gain.value = .42 * audioChannelVolumes.music;
+    musicGain.gain.value = .42;
     sfxGain.gain.value = .55;
     musicGain.connect(masterGain);
     sfxGain.connect(masterGain);
@@ -4916,19 +4892,8 @@ async function ensureAudio() {
   return true;
 }
 
-function getSfxChannelGain(name) {
-  if (!audioContext || !sfxGain) return null;
-  if (!sfxChannelGains.has(name)) {
-    const channel = audioContext.createGain();
-    channel.gain.value = audioChannelVolumes[name] ?? 1;
-    channel.connect(sfxGain);
-    sfxChannelGains.set(name, channel);
-  }
-  return sfxChannelGains.get(name);
-}
-
-function playNoise(duration, gain, cutoff = 900, destination = sfxGain) {
-  if (!audioContext || !destination) return;
+function playNoise(duration, gain, cutoff = 900) {
+  if (!audioContext || !sfxGain) return;
   const frameCount = Math.max(1, Math.floor(audioContext.sampleRate * duration));
   const buffer = audioContext.createBuffer(1, frameCount, audioContext.sampleRate);
   const data = buffer.getChannelData(0);
@@ -4941,53 +4906,51 @@ function playNoise(duration, gain, cutoff = 900, destination = sfxGain) {
   envelope.gain.setValueAtTime(gain, audioContext.currentTime);
   envelope.gain.exponentialRampToValueAtTime(.0001, audioContext.currentTime + duration);
   source.buffer = buffer;
-  source.connect(filter).connect(envelope).connect(destination);
+  source.connect(filter).connect(envelope).connect(sfxGain);
   source.start();
 }
 
 function playSfx(name, intensity = 1) {
-  if (!audioContext || audioContext.state !== "running" || !sfxGain || masterVolume === 0 || audioChannelVolumes[name] === 0) return;
+  if (!audioContext || audioContext.state !== "running" || !sfxGain || masterVolume === 0) return;
   const now = audioContext.currentTime;
-  const destination = getSfxChannelGain(name);
-  if (!destination) return;
   if (name === "land-grass") {
-    playNoise(.085, .035 * intensity, 520, destination);
-    scheduleTone(95, now, .07, "sine", .045 * intensity, destination);
+    playNoise(.085, .035 * intensity, 520);
+    scheduleTone(95, now, .07, "sine", .045 * intensity, sfxGain);
   } else if (name === "land-stone") {
-    playNoise(.045, .08 * intensity, 3200, destination);
-    scheduleTone(175, now, .055, "square", .085 * intensity, destination);
-    scheduleTone(115, now + .018, .05, "triangle", .065 * intensity, destination);
+    playNoise(.045, .08 * intensity, 3200);
+    scheduleTone(175, now, .055, "square", .085 * intensity, sfxGain);
+    scheduleTone(115, now + .018, .05, "triangle", .065 * intensity, sfxGain);
   } else if (name === "land-crate") {
-    playNoise(.06, .05 * intensity, 1400, destination);
-    scheduleTone(145, now, .065, "triangle", .075 * intensity, destination);
-    scheduleTone(105, now + .025, .055, "sine", .055 * intensity, destination);
+    playNoise(.06, .05 * intensity, 1400);
+    scheduleTone(145, now, .065, "triangle", .075 * intensity, sfxGain);
+    scheduleTone(105, now + .025, .055, "sine", .055 * intensity, sfxGain);
   } else if (name === "jump-pad") {
-    [55, 62, 67].forEach((note, index) => scheduleTone(midiToFrequency(note), now + index * .035, .13, "square", .09, destination));
-    playNoise(.07, .035, 1800, destination);
+    [55, 62, 67].forEach((note, index) => scheduleTone(midiToFrequency(note), now + index * .035, .13, "square", .09, sfxGain));
+    playNoise(.07, .035, 1800);
   } else if (name === "switch") {
-    scheduleTone(160, now, .08, "square", .07, destination);
-    scheduleTone(245, now + .06, .13, "triangle", .09, destination);
+    scheduleTone(160, now, .08, "square", .07, sfxGain);
+    scheduleTone(245, now + .06, .13, "triangle", .09, sfxGain);
   } else if (name === "time-zap") {
-    playNoise(.28, .13, 5200, destination);
-    scheduleTone(520, now, .1, "sawtooth", .12, destination);
-    scheduleTone(1160, now + .07, .18, "square", .1, destination);
-    scheduleTone(185, now + .16, .22, "sawtooth", .11, destination);
+    playNoise(.28, .13, 5200);
+    scheduleTone(520, now, .1, "sawtooth", .12, sfxGain);
+    scheduleTone(1160, now + .07, .18, "square", .1, sfxGain);
+    scheduleTone(185, now + .16, .22, "sawtooth", .11, sfxGain);
   } else if (name === "rewind-awaken") {
-    [60, 67, 72, 79, 84].forEach((note, index) => scheduleTone(midiToFrequency(note), now + index * .09, .3, "sine", .13, destination));
-    scheduleTone(110, now, .65, "triangle", .08, destination);
+    [60, 67, 72, 79, 84].forEach((note, index) => scheduleTone(midiToFrequency(note), now + index * .09, .3, "sine", .13, sfxGain));
+    scheduleTone(110, now, .65, "triangle", .08, sfxGain);
   } else if (name === "rewind-start") {
-    scheduleTone(720, now, .18, "sine", .08, destination);
-    scheduleTone(420, now + .06, .22, "triangle", .075, destination);
+    scheduleTone(720, now, .18, "sine", .08, sfxGain);
+    scheduleTone(420, now + .06, .22, "triangle", .075, sfxGain);
   } else if (name === "rewind-release") {
-    scheduleTone(420, now, .1, "triangle", .065, destination);
-    scheduleTone(680, now + .045, .14, "sine", .07, destination);
+    scheduleTone(420, now, .1, "triangle", .065, sfxGain);
+    scheduleTone(680, now + .045, .14, "sine", .07, sfxGain);
   } else if (name === "block-break") {
-    playNoise(.12, .075, 1250, destination);
-    scheduleTone(125, now, .09, "square", .07, destination);
-    scheduleTone(82, now + .045, .11, "triangle", .06, destination);
+    playNoise(.12, .075, 1250);
+    scheduleTone(125, now, .09, "square", .07, sfxGain);
+    scheduleTone(82, now + .045, .11, "triangle", .06, sfxGain);
   } else if (name === "enemy-stomp") {
-    scheduleTone(185, now, .07, "square", .075, destination);
-    scheduleTone(285, now + .035, .1, "triangle", .065, destination);
+    scheduleTone(185, now, .07, "square", .075, sfxGain);
+    scheduleTone(285, now + .035, .1, "triangle", .065, sfxGain);
   } else if (name === "death") {
     const oscillator = audioContext.createOscillator();
     const envelope = audioContext.createGain();
@@ -4996,14 +4959,14 @@ function playSfx(name, intensity = 1) {
     oscillator.frequency.exponentialRampToValueAtTime(65, now + .2);
     envelope.gain.setValueAtTime(.12, now);
     envelope.gain.exponentialRampToValueAtTime(.0001, now + .22);
-    oscillator.connect(envelope).connect(destination);
+    oscillator.connect(envelope).connect(sfxGain);
     oscillator.start(now);
     oscillator.stop(now + .23);
-    playNoise(.11, .06, 900, destination);
+    playNoise(.11, .06);
   } else if (name === "star") {
-    [79, 83, 86].forEach((note, index) => scheduleTone(midiToFrequency(note), now + index * .045, .12, "sine", .14, destination));
+    [79, 83, 86].forEach((note, index) => scheduleTone(midiToFrequency(note), now + index * .045, .12, "sine", .14, sfxGain));
   } else if (name === "flag") {
-    [72, 76, 79, 84].forEach((note, index) => scheduleTone(midiToFrequency(note), now + index * .07, .18, "triangle", .15, destination));
+    [72, 76, 79, 84].forEach((note, index) => scheduleTone(midiToFrequency(note), now + index * .07, .18, "triangle", .15, sfxGain));
   }
 }
 
@@ -5016,55 +4979,11 @@ function setVolume(value) {
   try { localStorage.setItem("platforms-volume", String(percent)); } catch { /* Storage may be unavailable. */ }
 }
 
-function currentMusicVolumeTarget() {
-  const importedLevelVolume = currentTrack === "custom"
-    ? Math.max(0, Math.min(1, currentLevel()?.customMusic?.volume ?? .8))
-    : 1;
-  return .42 * audioChannelVolumes.music * importedLevelVolume;
-}
-
-function updateChannelVolumeControl(name) {
-  const input = channelVolumeInputs.find((candidate) => candidate.dataset.volumeChannel === name);
-  if (!input) return;
-  const percent = Math.round(audioChannelVolumes[name] * 100);
-  input.value = String(percent);
-  const output = input.previousElementSibling?.querySelector("output");
-  if (output) output.textContent = `${percent}%`;
-}
-
-function saveAudioMix() {
-  try { localStorage.setItem(AUDIO_MIX_STORAGE_KEY, JSON.stringify(audioChannelVolumes)); }
-  catch { /* Storage may be unavailable. */ }
-}
-
-function setAudioChannelVolume(name, value, persist = true) {
-  if (!(name in AUDIO_CHANNEL_DEFAULTS)) return;
-  audioChannelVolumes[name] = Math.max(0, Math.min(1, Number(value) / 100));
-  updateChannelVolumeControl(name);
-  if (audioContext) {
-    if (name === "music" && musicGain) {
-      musicGain.gain.setTargetAtTime(currentMusicVolumeTarget(), audioContext.currentTime, .02);
-    } else {
-      const channel = sfxChannelGains.get(name);
-      if (channel) channel.gain.setTargetAtTime(audioChannelVolumes[name], audioContext.currentTime, .02);
-    }
-  }
-  if (persist) saveAudioMix();
-}
-
 try {
   const savedVolume = localStorage.getItem("platforms-volume");
   if (savedVolume !== null) volumeInput.value = savedVolume;
-  const savedAudioMix = JSON.parse(localStorage.getItem(AUDIO_MIX_STORAGE_KEY) || "null");
-  if (savedAudioMix && typeof savedAudioMix === "object" && !Array.isArray(savedAudioMix)) {
-    Object.keys(AUDIO_CHANNEL_DEFAULTS).forEach((name) => {
-      const value = Number(savedAudioMix[name]);
-      if (Number.isFinite(value)) audioChannelVolumes[name] = Math.max(0, Math.min(1, value));
-    });
-  }
 } catch { /* Use the default volume. */ }
 setVolume(volumeInput.value);
-Object.keys(AUDIO_CHANNEL_DEFAULTS).forEach(updateChannelVolumeControl);
 
 signUpButton.addEventListener("click", () => showAccountMode("signup"));
 signInButton.addEventListener("click", () => showAccountMode("signin"));
@@ -5241,22 +5160,9 @@ settingsButton.addEventListener("click", () => {
   settingsPanel.hidden = !opening;
   settingsButton.setAttribute("aria-expanded", String(opening));
   if (opening) volumeInput.focus();
-  else {
-    advancedVolumeControls.hidden = true;
-    advancedVolumeButton.setAttribute("aria-expanded", "false");
-  }
 });
 
 volumeInput.addEventListener("input", () => setVolume(volumeInput.value));
-advancedVolumeButton.addEventListener("click", () => {
-  const opening = advancedVolumeControls.hidden;
-  advancedVolumeControls.hidden = !opening;
-  advancedVolumeButton.setAttribute("aria-expanded", String(opening));
-  if (opening) channelVolumeInputs[0]?.focus();
-});
-channelVolumeInputs.forEach((input) => input.addEventListener("input", () => {
-  setAudioChannelVolume(input.dataset.volumeChannel, input.value);
-}));
 document.addEventListener("pointerdown", () => ensureAudio(), { once: true });
 document.addEventListener("keydown", () => ensureAudio(), { once: true });
 
