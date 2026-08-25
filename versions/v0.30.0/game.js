@@ -151,8 +151,7 @@ const profileDisplayName = document.querySelector("#profileDisplayName");
 const profileUsername = document.querySelector("#profileUsername");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.30.1", commit: "Pending commit", date: "2026-08-24", message: "Fix custom-level Rewind and publication clarity", description: "Fixed custom-level Rewind so enabling the mechanic works independently of the optional tutorial display. Verified the real F and C keyboard controls for combined Rewind and Echo levels in both editor playtests and published play. The editor now also warns when the currently published snapshot is behind its private draft and directs the owner to Publish Update." },
-  { version: "v0.30.0", commit: "6c34304", date: "2026-08-24", message: "Add the Community Levels browser", description: "Added a main-menu catalog of every currently published custom level with level and creator search, Newest and Recently Updated sorting, incremental loading, creator display names and usernames, publication metadata, and direct Play controls. Catalog requests return lightweight metadata only; the selected published snapshot is downloaded when Play is pressed, while unpublished levels and private drafts remain excluded." },
+  { version: "v0.30.0", commit: "Pending commit", date: "2026-08-24", message: "Add the Community Levels browser", description: "Added a main-menu catalog of every currently published custom level with level and creator search, Newest and Recently Updated sorting, incremental loading, creator display names and usernames, publication metadata, and direct Play controls. Catalog requests return lightweight metadata only; the selected published snapshot is downloaded when Play is pressed, while unpublished levels and private drafts remain excluded." },
   { version: "v0.29.1", commit: "2eacd72", date: "2026-08-24", message: "Lock account workspaces on sign-out", description: "Made guest construction workspaces temporary and isolated. Signing out now immediately locks the previous account workspace, removes every account draft from memory, clears obsolete browser guest drafts, and presents exactly one blank default guest level. Account workspace listings also reject any record that is not owned by the signed-in player or explicitly shared with that player as an Editor or Viewer; public visitors continue directly into gameplay without editor access." },
   { version: "v0.29.0", commit: "18b7cf0", date: "2026-08-24", message: "Harden collaborative level workspaces", description: "Protected account edits with correctly targeted autosaves, per-account crash backups, page-exit flushing, lazy level loading, and optimistic concurrency prompts. Added unique public usernames for private sharing without email lookup, live creator attribution, collaborator removal, a 50-level owner quota, and a play-first Viewer screen. Consolidated publishing controls under Share, hid auth UUIDs from public access, and added append-only published-version history while keeping stable public links pointed at the current published update." },
   { version: "v0.28.2", commit: "0f18617", date: "2026-08-24", message: "Open public level links directly in gameplay", description: "Hid Public Link until a draft has an actual published snapshot, leaving private draft access under Share. Published links now fetch the latest explicitly published version and start it directly in gameplay instead of opening the level editor; quitting or completing the public level returns to the main menu." },
@@ -1253,13 +1252,13 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.30.1";
+const GAME_VERSION = "v0.30.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
 const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const LEADERBOARD_RULESETS = [
-  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.30.1" },
+  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.30.0" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1302,7 +1301,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
+  "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
@@ -1495,7 +1494,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1514,7 +1513,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -3475,7 +3474,7 @@ async function loadCommunityLevels(reset = false) {
   } catch (error) {
     if (request !== communityLevelsRequest) return;
     communityLevelsHasMore = false;
-    communityLevelsNote.textContent = "Community Levels is unavailable. Check the connection or run the latest Supabase migration.";
+    communityLevelsNote.textContent = "Community Levels is unavailable. Check the connection or run the v0.30.0 Supabase migration.";
   } finally {
     if (request === communityLevelsRequest) {
       communityLevelsLoading = false;
@@ -3519,7 +3518,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -4081,7 +4080,7 @@ function rewindFieldAnchor() {
 }
 
 function beginTimelinePreview() {
-  if (!currentLevel().rewindChapter) return false;
+  if (!currentLevel().rewindTutorial) return false;
   const candidates = currentTimelineObjects().filter((platform) =>
     isTimelineObject(platform) && platform.timelinePlayback.length === 0 && platform.motionHistory.length >= 2
   );

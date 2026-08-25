@@ -23,11 +23,11 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/slime-player.svg", enemy: "assets/slime-enemy.svg",
-    switch: "assets/switch-left.svg", pressurePlateBase: "assets/pressure-plate-base.svg",
-    pressurePlateTop: "assets/pressure-plate-top.svg", jumpPadBase: "assets/jump-pad-base.svg",
-    jumpPadTop: "assets/jump-pad-top.svg", blade: "assets/moving-obstacle.svg",
-    cracks: "assets/fragile-block-cracks.svg"
+    player: "../assets/slime-player.svg", enemy: "../assets/slime-enemy.svg",
+    switch: "../assets/switch-left.svg", pressurePlateBase: "../assets/pressure-plate-base.svg",
+    pressurePlateTop: "../assets/pressure-plate-top.svg", jumpPadBase: "../assets/jump-pad-base.svg",
+    jumpPadTop: "../assets/jump-pad-top.svg", blade: "../assets/moving-obstacle.svg",
+    cracks: "../assets/fragile-block-cracks.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
@@ -61,7 +61,7 @@
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.30.1</strong>
+      <strong>Level Editor · v0.30.0</strong>
       <span class="editor-workspace-identity" data-role="workspace-identity">Guest workspace</span>
       <label class="editor-level-picker"><span>Level</span><select data-role="draft-picker" aria-label="Level being edited"></select></label>
       <button data-action="new">New</button><button data-action="duplicate">Duplicate</button><button data-action="delete-draft">Delete</button><button data-action="clear">Clear</button>
@@ -1305,15 +1305,9 @@
     const publicLinkButton = host.querySelector('[data-action="copy-public-link"]');
     publicLinkButton.hidden = !draft?.publication;
     publicLinkButton.disabled = !draft?.publication;
-    const draftUpdatedAt = Date.parse(draft?.updatedAt || "");
-    const publicationUpdatedAt = Date.parse(draft?.publication?.updated_at || "");
-    const publicationIsBehind = Boolean(draft?.publication) && (draft.dirty ||
-      (Number.isFinite(draftUpdatedAt) && Number.isFinite(publicationUpdatedAt) && draftUpdatedAt > publicationUpdatedAt));
-    publicationStatus.textContent = !draft?.publication
-      ? "This level has not been published. Use draft access above to share it privately."
-      : publicationIsBehind
-        ? `Published update ${draft.publication.version} is still live, but it does not include your latest draft changes. ${role === "owner" ? "Use Publish Update to update public play." : "The owner must publish an update."}`
-        : `Published update ${draft.publication.version}. The public link serves this version.`;
+    publicationStatus.textContent = draft?.publication
+      ? `Published update ${draft.publication.version}. The public link serves this version.`
+      : "This level has not been published. Use draft access above to share it privately.";
     if (!isOwner()) sharingPanel.hidden = true;
     renderInspector();
     host.querySelectorAll(".editor-palette button").forEach(control => control.disabled = !editable);

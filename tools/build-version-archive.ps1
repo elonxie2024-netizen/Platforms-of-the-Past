@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $releases = [ordered]@{
+  'v0.30.0' = '6c34304'
   'v0.29.1' = '2eacd72'
   'v0.29.0' = '18b7cf0'
   'v0.28.2' = '0f18617'
@@ -147,7 +148,7 @@ foreach ($release in $releases.GetEnumerator()) {
     $content = $content.Replace('"assets/', '"../assets/').Replace("'assets/", "'../assets/").Replace('`assets/', '`../assets/')
     $content = $content.Replace('url(assets/', 'url(../assets/')
     if ($file -eq 'index.html') {
-      $content = $content.Replace('href="styles.css"', 'href="./styles.css"')
+      $content = $content.Replace('href="styles.css', 'href="./styles.css')
       $content = $content.Replace('href="editor.css', 'href="./editor.css')
       $content = $content.Replace('src="level-data.js', 'src="./level-data.js')
       $content = $content.Replace('src="account.js', 'src="./account.js')
@@ -162,7 +163,7 @@ foreach ($release in $releases.GetEnumerator()) {
   if ($generatedGame.Contains('versions/${version}/')) {
     throw "Broken nested version link remained in $($release.Key)."
   }
-  if (-not $generatedIndex.Contains('href="./styles.css"')) {
+  if (-not $generatedIndex.Contains('href="./styles.css')) {
     throw "Archived stylesheet path is invalid in $($release.Key)."
   }
   if (-not $generatedIndex.Contains('src="./game.js')) {
