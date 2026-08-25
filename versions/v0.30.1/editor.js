@@ -23,11 +23,11 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/slime-player.svg", enemy: "assets/slime-enemy.svg",
-    switch: "assets/switch-left.svg", pressurePlateBase: "assets/pressure-plate-base.svg",
-    pressurePlateTop: "assets/pressure-plate-top.svg", jumpPadBase: "assets/jump-pad-base.svg",
-    jumpPadTop: "assets/jump-pad-top.svg", blade: "assets/moving-obstacle.svg",
-    cracks: "assets/fragile-block-cracks.svg"
+    player: "../assets/slime-player.svg", enemy: "../assets/slime-enemy.svg",
+    switch: "../assets/switch-left.svg", pressurePlateBase: "../assets/pressure-plate-base.svg",
+    pressurePlateTop: "../assets/pressure-plate-top.svg", jumpPadBase: "../assets/jump-pad-base.svg",
+    jumpPadTop: "../assets/jump-pad-top.svg", blade: "../assets/moving-obstacle.svg",
+    cracks: "../assets/fragile-block-cracks.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
@@ -61,7 +61,7 @@
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.30.2</strong>
+      <strong>Level Editor · v0.30.1</strong>
       <span class="editor-workspace-identity" data-role="workspace-identity">Guest workspace</span>
       <label class="editor-level-picker"><span>Level</span><select data-role="draft-picker" aria-label="Level being edited"></select></label>
       <button data-action="new">New</button><button data-action="duplicate">Duplicate</button><button data-action="delete-draft">Delete</button><button data-action="clear">Clear</button>
