@@ -151,8 +151,7 @@ const profileDisplayName = document.querySelector("#profileDisplayName");
 const profileUsername = document.querySelector("#profileUsername");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.31.0", commit: "Pending commit", date: "2026-08-25", message: "Expand and rearrange the soundtrack", description: "Recomposed the menu and three gameplay themes as substantially different four-section arrangements. Every procedural track now has a 64-step loop instead of 16 steps, with new melodies, changing bass progressions, harmony voices, rhythmic variation, quieter passages, and stronger final sections while preserving each theme's established mood." },
-  { version: "v0.30.3", commit: "b2644f4", date: "2026-08-25", message: "Make the custom Rewind field automatic", description: "Removed the separate Rewind-field toggle from the level editor. Enabling Rewind in a custom level now always enables its object-selection field, including for older saved levels whose legacy field setting was disabled, while creators can still tune the field radius and offset." },
+  { version: "v0.30.3", commit: "Pending commit", date: "2026-08-25", message: "Make the custom Rewind field automatic", description: "Removed the separate Rewind-field toggle from the level editor. Enabling Rewind in a custom level now always enables its object-selection field, including for older saved levels whose legacy field setting was disabled, while creators can still tune the field radius and offset." },
   { version: "v0.30.2", commit: "c9dc4a4", date: "2026-08-25", message: "Always show mechanic path arrows", description: "Separated mechanic feedback from optional tutorial prompts: enabled Rewind levels now always show their golden motion-history arrows, just as Echo route previews always do, while the tutorial settings control only the prompts at the top of the screen. Also stopped custom levels from accidentally inheriting the campaign's level-index-based Rewind field. Verified both golden path renderers with tutorial prompts disabled." },
   { version: "v0.30.1", commit: "aef20c6", date: "2026-08-24", message: "Fix custom-level Rewind and publication clarity", description: "Fixed custom-level Rewind so enabling the mechanic works independently of the optional tutorial display. Verified the real F and C keyboard controls for combined Rewind and Echo levels in both editor playtests and published play. The editor now also warns when the currently published snapshot is behind its private draft and directs the owner to Publish Update." },
   { version: "v0.30.0", commit: "6c34304", date: "2026-08-24", message: "Add the Community Levels browser", description: "Added a main-menu catalog of every currently published custom level with level and creator search, Newest and Recently Updated sorting, incremental loading, creator display names and usernames, publication metadata, and direct Play controls. Catalog requests return lightweight metadata only; the selected published snapshot is downloaded when Play is pressed, while unpublished levels and private drafts remain excluded." },
@@ -1184,116 +1183,26 @@ window.PlatformsLevelDev = Object.freeze({
   load: (levelOrJson) => window.PlatformsLevelData.loadLevel(levelOrJson, LEVEL_RUNTIME_ADAPTERS)
 });
 
-const musicSections = (...sections) => sections.flat();
-
 const MUSIC_TRACKS = {
   menu: {
-    tempo: 92, wave: "triangle", gain: .09, harmonyWave: "sine", harmonyGain: .034, bassGain: .072,
-    melody: musicSections(
-      [72,null,76,79, 76,null,74,72, 69,null,72,76, 74,null,71,null],
-      [72,74,76,null, 79,81,79,76, 74,76,77,null, 81,79,76,null],
-      [67,null,71,74, 72,null,69,67, 64,67,72,null, 71,69,67,null],
-      [72,null,76,79, 81,null,79,76, 74,77,81,null, 79,76,72,null]
-    ),
-    harmony: musicSections(
-      [60,null,null,64, null,null,62,null, 57,null,null,60, null,null,59,null],
-      [60,null,64,null, 67,null,64,null, 62,null,65,null, 69,null,64,null],
-      [55,null,null,59, null,null,57,null, 52,null,55,null, 59,null,55,null],
-      [60,null,null,64, 69,null,67,null, 62,null,65,null, 67,null,64,null]
-    ),
-    bass: musicSections(
-      [48,null,null,null, 43,null,null,null, 45,null,null,null, 47,null,null,null],
-      [48,null,55,null, 52,null,55,null, 50,null,57,null, 53,null,55,null],
-      [43,null,null,null, 45,null,null,null, 40,null,null,null, 43,null,null,null],
-      [48,null,55,null, 52,null,57,null, 50,null,55,null, 48,null,null,null]
-    ),
-    drums: musicSections(
-      ["k",null,"h",null, null,null,"h",null, "k",null,"h",null, null,null,"h",null],
-      ["k",null,"h",null, "s",null,"h",null, "k",null,"h",null, "s",null,"h",null],
-      ["k",null,null,null, "h",null,null,null, "k",null,null,null, "h",null,null,null],
-      ["k",null,"h",null, "s",null,"h",null, "k",null,"h",null, "s",null,"h","h"]
-    )
+    tempo: 92, wave: "triangle", gain: .11,
+    melody: [72, null, 76, null, 79, null, 76, null, 74, null, 77, null, 81, null, 77, null],
+    bass: [48, null, null, null, 55, null, null, null, 50, null, null, null, 55, null, null, null]
   },
   level1: {
-    tempo: 112, wave: "triangle", gain: .085, harmonyWave: "square", harmonyGain: .018, bassGain: .078,
-    melody: musicSections(
-      [64,66,67,71, 69,67,66,null, 64,67,69,72, 71,69,67,null],
-      [67,69,71,74, 76,74,71,69, 66,69,72,76, 74,72,69,null],
-      [60,64,67,69, 67,64,62,null, 62,66,69,71, 74,71,69,null],
-      [64,67,71,76, 74,71,69,67, 66,69,72,74, 71,67,64,null]
-    ),
-    harmony: musicSections(
-      [52,null,55,null, 57,null,54,null, 52,null,57,null, 59,null,55,null],
-      [55,null,59,null, 60,null,59,null, 54,null,57,null, 62,null,57,null],
-      [48,null,52,null, 55,null,50,null, 50,null,54,null, 57,null,55,null],
-      [52,null,55,null, 59,null,57,null, 54,null,57,null, 59,null,52,null]
-    ),
-    bass: musicSections(
-      [48,null,55,null, 52,null,55,null, 48,null,57,null, 52,null,55,null],
-      [43,null,50,null, 47,null,50,null, 45,null,52,null, 50,null,55,null],
-      [45,null,52,null, 48,null,55,null, 47,null,54,null, 43,null,50,null],
-      [48,null,55,null, 52,null,57,null, 50,null,55,null, 48,null,null,null]
-    ),
-    drums: musicSections(
-      ["k","h","h","h", "s","h","h","h", "k","h","h","h", "s","h","h","h"],
-      ["k","h","h","k", "s","h","h","h", "k","h","h","k", "s","h","h","h"],
-      ["k",null,"h",null, "s",null,"h",null, "k",null,"h",null, "s","h","h","h"],
-      ["k","h","h","k", "s","h","h","h", "k","h","h","k", "s","h","s","h"]
-    )
+    tempo: 112, wave: "triangle", gain: .1,
+    melody: [64, 67, 71, 72, 71, 67, 64, null, 67, 71, 74, 76, 74, 71, 67, null],
+    bass: [48, null, 55, null, 52, null, 55, null, 48, null, 55, null, 52, null, 55, null]
   },
   level2: {
-    tempo: 94, wave: "sawtooth", gain: .052, harmonyWave: "triangle", harmonyGain: .032, bassGain: .08,
-    melody: musicSections(
-      [57,null,60,61, 64,null,61,null, 55,null,58,62, 60,null,57,null],
-      [53,57,60,null, 65,64,60,null, 55,59,62,null, 67,65,62,null],
-      [50,null,53,57, 60,58,57,null, 48,null,52,55, 59,57,52,null],
-      [57,60,64,65, 64,61,60,null, 55,58,62,64, 61,60,57,null]
-    ),
-    harmony: musicSections(
-      [45,null,null,48, null,null,49,null, 43,null,null,46, null,null,45,null],
-      [41,null,48,null, 53,null,52,null, 43,null,50,null, 55,null,53,null],
-      [38,null,null,45, null,46,45,null, 36,null,null,43, 47,null,40,null],
-      [45,null,48,null, 52,null,49,null, 43,null,46,null, 52,null,45,null]
-    ),
-    bass: musicSections(
-      [45,null,null,null, 40,null,null,null, 43,null,null,null, 38,null,null,null],
-      [41,null,48,null, 40,null,47,null, 43,null,50,null, 38,null,45,null],
-      [38,null,null,null, 41,null,null,null, 36,null,null,null, 40,null,null,null],
-      [45,null,40,null, 41,null,38,null, 43,null,38,null, 45,null,null,null]
-    ),
-    drums: musicSections(
-      ["k",null,"h",null, "s",null,"h",null, "k",null,"h",null, "s",null,"h",null],
-      ["k","h",null,"h", "s",null,"h",null, "k","h",null,"h", "s",null,"h","h"],
-      ["k",null,null,null, "h",null,null,null, "k",null,null,null, "s",null,"h",null],
-      ["k",null,"h","k", "s",null,"h",null, "k",null,"h","k", "s","h","s","h"]
-    )
+    tempo: 94, wave: "sawtooth", gain: .065,
+    melody: [57, null, 60, 64, 62, null, 60, null, 55, null, 59, 62, 60, null, 57, null],
+    bass: [45, null, null, null, 40, null, null, null, 43, null, null, null, 40, null, null, null]
   },
   level3: {
-    tempo: 124, wave: "sine", gain: .1, harmonyWave: "triangle", harmonyGain: .038, bassGain: .082,
-    melody: musicSections(
-      [76,79,83,88, 86,83,81,79, 78,81,84,90, 88,84,81,null],
-      [79,83,86,91, 90,86,83,81, 84,88,91,95, 93,91,88,null],
-      [72,76,79,84, 83,79,76,74, 71,74,78,83, 81,78,74,null],
-      [76,81,84,88, 91,88,84,81, 79,83,86,91, 95,91,88,84]
-    ),
-    harmony: musicSections(
-      [64,null,67,null, 71,null,69,null, 66,null,69,null, 72,null,69,null],
-      [67,null,71,null, 74,null,71,null, 72,null,76,null, 79,null,76,null],
-      [60,null,64,null, 67,null,64,null, 59,null,62,null, 66,null,62,null],
-      [64,null,69,null, 72,null,69,null, 67,null,71,null, 76,null,72,null]
-    ),
-    bass: musicSections(
-      [52,null,59,null, 55,null,59,null, 50,null,57,null, 55,null,59,null],
-      [55,null,62,null, 59,null,62,null, 57,null,64,null, 60,null,67,null],
-      [48,null,55,null, 52,null,55,null, 47,null,54,null, 50,null,57,null],
-      [52,null,59,null, 57,null,64,null, 55,null,62,null, 52,null,59,null]
-    ),
-    drums: musicSections(
-      ["k","h","h","h", "s","h","k","h", "k","h","h","h", "s","h","k","h"],
-      ["k","h","k","h", "s","h","k","h", "k","h","k","h", "s","h","s","h"],
-      ["k",null,"h",null, "s",null,"h",null, "k",null,"h",null, "s","h","h","h"],
-      ["k","h","k","h", "s","h","k","h", "k","h","k","h", "s","h","s","s"]
-    )
+    tempo: 124, wave: "sine", gain: .12,
+    melody: [76, 79, 83, 86, 83, 79, 78, 81, 84, 88, 84, 81, 79, 83, 86, 91],
+    bass: [52, null, 59, null, 55, null, 59, null, 52, null, 59, null, 55, null, 59, null]
   }
 };
 
@@ -1346,13 +1255,13 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.31.0";
+const GAME_VERSION = "v0.30.3";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
 const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const LEADERBOARD_RULESETS = [
-  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.31.0" },
+  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.30.3" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1395,7 +1304,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.31.0", "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
+  "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
@@ -1588,7 +1497,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1607,7 +1516,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -3612,7 +3521,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -4779,16 +4688,6 @@ function stopMusicVoices() {
   activeMusicVoices.clear();
 }
 
-function scheduleMusicDrum(hit, start, stepDuration) {
-  if (!hit) return;
-  if (hit.includes("k")) scheduleTone(midiToFrequency(36), start, stepDuration * .42, "sine", .045, musicGain, true);
-  if (hit.includes("s")) {
-    scheduleTone(midiToFrequency(48), start, stepDuration * .24, "square", .018, musicGain, true);
-    scheduleTone(midiToFrequency(55), start + .012, stepDuration * .18, "triangle", .014, musicGain, true);
-  }
-  if (hit.includes("h")) scheduleTone(midiToFrequency(96), start, stepDuration * .12, "square", .008, musicGain, true);
-}
-
 function stopImportedMusic() {
   importedMusicToken++;
   if (importedMusicSource) {
@@ -4830,18 +4729,12 @@ function scheduleMusic() {
   while (nextMusicNoteTime < audioContext.currentTime + .16) {
     const melody = track.melody[musicStep % track.melody.length];
     const bass = track.bass[musicStep % track.bass.length];
-    const harmony = track.harmony?.[musicStep % track.harmony.length];
-    const drum = track.drums?.[musicStep % track.drums.length];
     if (melody !== null) {
       scheduleTone(midiToFrequency(melody), nextMusicNoteTime, stepDuration * .78, track.wave, track.gain, musicGain, true);
     }
-    if (harmony !== null && harmony !== undefined) {
-      scheduleTone(midiToFrequency(harmony), nextMusicNoteTime, stepDuration * .9, track.harmonyWave || "triangle", track.harmonyGain || .025, musicGain, true);
-    }
     if (bass !== null) {
-      scheduleTone(midiToFrequency(bass), nextMusicNoteTime, stepDuration * 1.7, "sine", track.bassGain || .075, musicGain, true);
+      scheduleTone(midiToFrequency(bass), nextMusicNoteTime, stepDuration * 1.7, "sine", .095, musicGain, true);
     }
-    scheduleMusicDrum(drum, nextMusicNoteTime, stepDuration);
     musicStep++;
     nextMusicNoteTime += stepDuration;
   }
