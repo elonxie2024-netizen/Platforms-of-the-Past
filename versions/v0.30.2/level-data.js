@@ -582,15 +582,13 @@
     if (settings.postRun) runtime.postRun = true;
     if (settings.requiredStars !== undefined) runtime.requiredStars = settings.requiredStars;
     if (settings.requiredLevelStars !== undefined) runtime.requiredLevelStars = settings.requiredLevelStars;
-    if (settings.rewind?.enabled) {
-      runtime.rewindChapter = true;
-      runtime.rewindField = true;
-    }
+    if (settings.rewind?.enabled) runtime.rewindChapter = true;
     if (settings.rewind?.tutorial) {
       runtime.rewindTutorial = true;
       runtime.rewindHintUnlocked = false;
     }
     if (settings.rewind?.showHintOnPlate) runtime.showRewindHintOnPlate = true;
+    if (settings.rewind?.field?.enabled) runtime.rewindField = true;
     if (settings.rewind?.field?.radius !== undefined) runtime.rewindFieldRadius = settings.rewind.field.radius;
     if (settings.rewind?.field?.offset !== undefined) runtime.rewindFieldOffset = settings.rewind.field.offset;
     if (settings.echo?.enabled) runtime.echoChapter = true;

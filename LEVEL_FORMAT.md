@@ -52,7 +52,7 @@ Unknown fields are rejected. This is intentional: misspellings fail clearly, and
 | `rewind.enabled` | Enables the level's Rewind chapter behavior |
 | `rewind.tutorial` | Enables established Rewind control presentation |
 | `rewind.showHintOnPlate` | Shows the established contextual Rewind hint after a plate activates |
-| `rewind.field` | Enables and sizes the object-selection field with `radius` and `offset` |
+| `rewind.field` | Sizes and positions the automatic object-selection field with `radius` and `offset`; the field is always active when Rewind is enabled (legacy `enabled` values are accepted but ignored) |
 | `echo.enabled` | Enables Echo recording/replay behavior |
 | `echo.tutorial` | Enables the established first-use Echo control presentation |
 | `echo.canPushCrates` | Allows Echo actors to push crates |

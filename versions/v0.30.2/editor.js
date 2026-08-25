@@ -23,11 +23,11 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/slime-player.svg", enemy: "assets/slime-enemy.svg",
-    switch: "assets/switch-left.svg", pressurePlateBase: "assets/pressure-plate-base.svg",
-    pressurePlateTop: "assets/pressure-plate-top.svg", jumpPadBase: "assets/jump-pad-base.svg",
-    jumpPadTop: "assets/jump-pad-top.svg", blade: "assets/moving-obstacle.svg",
-    cracks: "assets/fragile-block-cracks.svg"
+    player: "../assets/slime-player.svg", enemy: "../assets/slime-enemy.svg",
+    switch: "../assets/switch-left.svg", pressurePlateBase: "../assets/pressure-plate-base.svg",
+    pressurePlateTop: "../assets/pressure-plate-top.svg", jumpPadBase: "../assets/jump-pad-base.svg",
+    jumpPadTop: "../assets/jump-pad-top.svg", blade: "../assets/moving-obstacle.svg",
+    cracks: "../assets/fragile-block-cracks.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
@@ -61,7 +61,7 @@
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.30.3</strong>
+      <strong>Level Editor · v0.30.2</strong>
       <span class="editor-workspace-identity" data-role="workspace-identity">Guest workspace</span>
       <label class="editor-level-picker"><span>Level</span><select data-role="draft-picker" aria-label="Level being edited"></select></label>
       <button data-action="new">New</button><button data-action="duplicate">Duplicate</button><button data-action="delete-draft">Delete</button><button data-action="clear">Clear</button>
@@ -1069,14 +1069,10 @@
     }
     field("Theme", "settings.theme", data.settings.theme || "default", { values: [["default","Default"],["lava","Lava"],["rewind","Rewind"]], change: (input) => commit(() => data.settings.theme = input.value, "Changed theme.") });
     field("Required level stars", "settings.requiredLevelStars", data.settings.requiredLevelStars || 0, { change: (input) => commit(() => data.settings.requiredLevelStars = Number(input.value), "Changed required stars.") });
-    check("Enable Rewind", "settings.rewind.enabled", data.settings.rewind?.enabled, { change: (input) => commit(() => {
-      data.settings.rewind ||= {};
-      data.settings.rewind.field ||= { radius: 360, offset: 0 };
-      data.settings.rewind.enabled = input.checked;
-      data.settings.rewind.field.enabled = input.checked;
-    }, "Changed Rewind availability.") });
+    check("Enable Rewind", "settings.rewind.enabled", data.settings.rewind?.enabled, { change: (input) => commit(() => { data.settings.rewind ||= {}; data.settings.rewind.enabled = input.checked; }, "Changed Rewind availability.") });
     check("Show Rewind tutorial", "settings.rewind.tutorial", data.settings.rewind?.tutorial, { change: (input) => commit(() => { data.settings.rewind ||= {}; data.settings.rewind.tutorial = input.checked; }, "Changed Rewind tutorial presentation.") });
     check("Hint after pressure plate", "settings.rewind.showHintOnPlate", data.settings.rewind?.showHintOnPlate, { change: (input) => commit(() => { data.settings.rewind ||= {}; data.settings.rewind.showHintOnPlate = input.checked; }, "Changed the contextual Rewind hint.") });
+    check("Enable Rewind field", "settings.rewind.field.enabled", data.settings.rewind?.field?.enabled, { change: (input) => commit(() => { data.settings.rewind ||= {}; data.settings.rewind.field ||= { radius: 360, offset: 0 }; data.settings.rewind.field.enabled = input.checked; }, "Changed Rewind field availability.") });
     field("Field radius", "settings.rewind.field.radius", data.settings.rewind.field.radius || 360, { change: (input) => commit(() => { data.settings.rewind.field.radius = Number(input.value); }, "Changed field radius.") });
     field("Field offset", "settings.rewind.field.offset", data.settings.rewind?.field?.offset || 0, { change: (input) => commit(() => { data.settings.rewind.field.offset = Number(input.value); }, "Changed field offset.") });
     check("Enable Echo", "settings.echo.enabled", data.settings.echo?.enabled, { change: (input) => commit(() => { data.settings.echo ||= {}; data.settings.echo.enabled = input.checked; }, "Changed Echo availability.") });
