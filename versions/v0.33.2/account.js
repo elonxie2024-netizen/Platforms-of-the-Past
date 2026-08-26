@@ -132,7 +132,7 @@
     const database = requireClient();
     const { data, error } = await database
       .from("player_profiles")
-      .select("user_id,display_name,username")
+      .select("user_id,display_name,username,created_at,updated_at")
       .eq("user_id", user.id)
       .maybeSingle();
     if (error) throw error;
@@ -143,13 +143,13 @@
     let { data: created, error: createError } = await database
       .from("player_profiles")
       .upsert({ user_id: user.id, display_name: displayName, username }, { onConflict: "user_id" })
-      .select("user_id,display_name,username")
+      .select("user_id,display_name,username,created_at,updated_at")
       .single();
     if (createError?.code === "23505" && requestedUsername) {
       ({ data: created, error: createError } = await database
         .from("player_profiles")
         .upsert({ user_id: user.id, display_name: displayName, username: `traveler-${String(user.id).replaceAll("-", "").slice(0, 15)}` }, { onConflict: "user_id" })
-        .select("user_id,display_name,username")
+        .select("user_id,display_name,username,created_at,updated_at")
         .single());
     }
     if (createError) throw createError;
@@ -165,7 +165,7 @@
       .from("player_profiles")
       .update({ display_name: name, username: handle, updated_at: new Date().toISOString() })
       .eq("user_id", userId)
-      .select("user_id,display_name,username")
+      .select("user_id,display_name,username,created_at,updated_at")
       .single();
     if (error) throw error;
     return data;
