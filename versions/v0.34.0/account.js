@@ -347,28 +347,21 @@
     };
   }
 
-  async function recordPublishedLevelCompletion(runId, deaths) {
-    if (!runId) return null;
+  async function recordPublishedLevelCompletion(levelId, levelVersion, seconds, stars, deaths) {
+    if (!levelId) return null;
     const { data, error } = await requireClient().rpc("record_custom_level_completion", {
-      p_run_id: runId,
+      p_level_id: levelId,
+      p_level_version: Math.max(1, Number(levelVersion) || 1),
+      p_seconds: Math.max(.001, Number(seconds) || .001),
+      p_stars: Math.max(0, Number(stars) || 0),
       p_deaths: Math.max(0, Number(deaths) || 0)
     });
     if (error) throw error;
     return Array.isArray(data) ? data[0] || null : data;
   }
 
-  async function issueCustomLevelRunTicket(levelId, levelVersion) {
-    const { data, error } = await requireClient().rpc("issue_custom_level_run_ticket", {
-      p_level_id: levelId,
-      p_level_version: Math.max(1, Number(levelVersion) || 1)
-    });
-    if (error) throw error;
-    return data;
-  }
-
   async function submitCustomLevelRun(run) {
     const { data, error } = await requireClient().rpc("submit_custom_level_run", {
-      p_run_ticket: run.runTicket,
       p_level_id: run.levelId,
       p_level_version: Math.max(1, Number(run.levelVersion) || 1),
       p_runner_name: cleanDisplayName(run.runnerName) || "Guest",
@@ -455,7 +448,6 @@
     loadPublishedCustomLevelVersion,
     loadPublicPlayerProfile,
     recordPublishedLevelCompletion,
-    issueCustomLevelRunTicket,
     submitCustomLevelRun,
     listCustomLevelRuns,
     loadCustomLevelReviewState,

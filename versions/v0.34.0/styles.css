@@ -311,7 +311,7 @@ canvas {
   bottom: 48px;
   width: 44px;
   height: 44px;
-  background: url("assets/slime-player.svg") center / contain no-repeat;
+  background: url("../assets/slime-player.svg") center / contain no-repeat;
   filter: drop-shadow(0 6px 5px #17482b45);
   will-change: left, bottom, transform;
 }
@@ -1091,8 +1091,7 @@ canvas {
 .custom-level-status { padding: 9px 12px; border: 1px solid #ffffff2b; border-radius: 10px; color: #dcecff; background: #08142799; }
 .custom-level-leaderboard { display: grid; gap: 6px; min-height: 50px; padding: 0; list-style: none; }
 .custom-level-run { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto auto; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 9px; color: #fff; background: #ffffff14; }
-.custom-level-run.invalid { color: #929aa5; background: #6d778326; filter: grayscale(1); }
-.custom-level-run.invalid > * { color: inherit !important; }
+.custom-level-run.invalid { color: #9ca6b3; background: #6d77831c; filter: grayscale(.7); }
 .custom-level-run .run-rank { color: #8de4ff; font-weight: 900; }
 .custom-level-run.invalid .run-rank { color: #929aa5; }
 .custom-level-run small { color: inherit; opacity: .82; }
