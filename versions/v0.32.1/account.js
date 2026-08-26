@@ -323,40 +323,6 @@
     return data;
   }
 
-  async function loadPublicPlayerProfile(userId) {
-    if (!userId) throw new Error("A player profile is required.");
-    const database = requireClient();
-    const [profileResult, categoryResult, levelResult, clearResult] = await Promise.all([
-      database.rpc("get_public_player_profile", { p_user_id: userId }),
-      database.rpc("list_public_profile_categories", { p_user_id: userId, p_limit: 12 }),
-      database.rpc("list_public_profile_levels", { p_user_id: userId }),
-      database.rpc("list_public_profile_highlights", { p_user_id: userId })
-    ]);
-    const error = profileResult.error || categoryResult.error || levelResult.error || clearResult.error;
-    if (error) throw error;
-    const profile = Array.isArray(profileResult.data) ? profileResult.data[0] : profileResult.data;
-    if (!profile) return null;
-    return {
-      profile,
-      categories: Array.isArray(categoryResult.data) ? categoryResult.data : [],
-      levels: Array.isArray(levelResult.data) ? levelResult.data : [],
-      highlights: Array.isArray(clearResult.data) ? clearResult.data : []
-    };
-  }
-
-  async function recordPublishedLevelCompletion(levelId, levelVersion, seconds, stars, deaths) {
-    if (!levelId) return null;
-    const { data, error } = await requireClient().rpc("record_custom_level_completion", {
-      p_level_id: levelId,
-      p_level_version: Math.max(1, Number(levelVersion) || 1),
-      p_seconds: Math.max(.001, Number(seconds) || .001),
-      p_stars: Math.max(0, Number(stars) || 0),
-      p_deaths: Math.max(0, Number(deaths) || 0)
-    });
-    if (error) throw error;
-    return Array.isArray(data) ? data[0] || null : data;
-  }
-
   function accessToken() {
     return client?.auth ? client.auth.getSession().then(({ data }) => data.session?.access_token || "") : Promise.resolve("");
   }
@@ -387,8 +353,6 @@
     listPublishedCustomLevels,
     loadPublishedCustomLevel,
     loadPublishedCustomLevelVersion,
-    loadPublicPlayerProfile,
-    recordPublishedLevelCompletion,
     accessToken,
     cleanDisplayName,
     cleanUsername,

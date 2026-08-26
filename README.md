@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.32.1`
+**Current version:** `v0.33.0`
 
 ## How it works
 
@@ -37,6 +37,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 **Publish a run.** Complete the full adventure from Dirtbound Trail and optionally publish it to the global leaderboard. Guests choose a run name; signed-in players publish under their public display name. Records are shared across devices, gameplay-changing releases use separate boards, and rankings can be viewed by fastest time, most stars, or highest total score.
 
 **Use an optional account.** Sign up or sign in with email and password to synchronize roadmap unlocks, completed chapters, gauntlets, and private level drafts through Supabase. Public usernames enable safe level sharing without exposing or looking up email addresses. Passwords are handled only by Supabase Auth, and guest play continues to work without an account or network connection.
+
+**View public profiles.** Click a signed-in runner on the global leaderboard or a creator in Community Levels to see their public username, best run categories and world placements, currently published levels, and notable signed-in custom-level clears. Custom-level highlights are recorded only for current published snapshots completed without developer cheats.
 
 **Play past versions.** Open Versions from the main menu to launch any archived release build in a new tab.
 
@@ -137,7 +139,7 @@ Made by [elonxie2024-netizen](https://github.com/elonxie2024-netizen).
 
 ## Supabase maintenance
 
-The public leaderboard, account profiles, private progression records, custom-level drafts, collaboration permissions, publication history, community catalog, functions, and access rules are created by [`supabase-setup.sql`](supabase-setup.sql). Existing installations must run [`supabase-v0.29.0-migration.sql`](supabase-v0.29.0-migration.sql) for the collaboration schema, [`supabase-v0.29.1-migration.sql`](supabase-v0.29.1-migration.sql) for its metadata, [`supabase-v0.30.0-migration.sql`](supabase-v0.30.0-migration.sql) for the Community Levels catalog, and the metadata-only [`supabase-v0.30.1-migration.sql`](supabase-v0.30.1-migration.sql), [`supabase-v0.30.2-migration.sql`](supabase-v0.30.2-migration.sql), [`supabase-v0.30.3-migration.sql`](supabase-v0.30.3-migration.sql), [`supabase-v0.31.0-migration.sql`](supabase-v0.31.0-migration.sql), [`supabase-v0.31.1-migration.sql`](supabase-v0.31.1-migration.sql), [`supabase-v0.32.0-migration.sql`](supabase-v0.32.0-migration.sql), and [`supabase-v0.32.1-migration.sql`](supabase-v0.32.1-migration.sql) updates for their releases.
+The public leaderboard, account profiles, private progression records, custom-level drafts, collaboration permissions, publication history, community catalog, public completion records, functions, and access rules are created by [`supabase-setup.sql`](supabase-setup.sql). Existing installations must run [`supabase-v0.29.0-migration.sql`](supabase-v0.29.0-migration.sql) for the collaboration schema, [`supabase-v0.29.1-migration.sql`](supabase-v0.29.1-migration.sql) for its metadata, [`supabase-v0.30.0-migration.sql`](supabase-v0.30.0-migration.sql) for the Community Levels catalog, the v0.30.1 through v0.32.1 migrations in order, and [`supabase-v0.33.0-migration.sql`](supabase-v0.33.0-migration.sql) for public profiles and published-level clear records.
 
 In Supabase Authentication settings, keep Email enabled and add `https://elonxie2024-netizen.github.io/Platforms-of-the-Past/` to the allowed redirect URLs. Set it as the Site URL when GitHub Pages is the production host. Email confirmation may remain enabled; the game supports both confirmed-email and immediate-session sign-up configurations. Password reset emails use the same allowed return URL.
 

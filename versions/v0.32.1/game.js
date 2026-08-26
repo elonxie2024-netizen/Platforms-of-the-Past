@@ -81,13 +81,6 @@ const communityLevelsNote = document.querySelector("#communityLevelsNote");
 const communityLevelsList = document.querySelector("#communityLevelsList");
 const loadMoreCommunityLevelsButton = document.querySelector("#loadMoreCommunityLevelsButton");
 const closeCommunityLevelsButton = document.querySelector("#closeCommunityLevelsButton");
-const publicProfileMenu = document.querySelector("#publicProfileMenu");
-const publicProfileHeader = document.querySelector("#publicProfileHeader");
-const publicProfileNote = document.querySelector("#publicProfileNote");
-const publicProfileCategories = document.querySelector("#publicProfileCategories");
-const publicProfileLevels = document.querySelector("#publicProfileLevels");
-const publicProfileClears = document.querySelector("#publicProfileClears");
-const closePublicProfileButton = document.querySelector("#closePublicProfileButton");
 const pauseMenu = document.querySelector("#pauseMenu");
 const resumeButton = document.querySelector("#resumeButton");
 const pauseRestartLevelButton = document.querySelector("#pauseRestartLevelButton");
@@ -161,8 +154,7 @@ const profileDisplayName = document.querySelector("#profileDisplayName");
 const profileUsername = document.querySelector("#profileUsername");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.33.0", commit: "Pending commit", date: "2026-08-25", message: "Add public player profiles", description: "Made signed-in players clickable from global leaderboards and Community Levels. Public profiles show the player's username, best ranked run categories with world placements, currently published custom levels, and server-recorded highlights for their hardest, fastest, and most impressive published-level clears." },
-  { version: "v0.32.1", commit: "3392acf", date: "2026-08-25", message: "Make Large Screen the default", description: "Changed only the initial display-size preference so new guests and accounts without a saved choice begin in Large Screen. The existing Small Screen and Large Screen modes, controls, scaling calculations, and saved account selections remain unchanged." },
+  { version: "v0.32.1", commit: "Pending commit", date: "2026-08-25", message: "Make Large Screen the default", description: "Changed only the initial display-size preference so new guests and accounts without a saved choice begin in Large Screen. The existing Small Screen and Large Screen modes, controls, scaling calculations, and saved account selections remain unchanged." },
   { version: "v0.32.0", commit: "ac211b4", date: "2026-08-25", message: "Isolate complete player sessions by account", description: "Turned sign-out into a complete identity boundary. Account progression, chapter and gauntlet completion, menu animation and appearance, display size, master and per-sound volumes, editor layout, snapping preference, private drafts, and crash backups remain scoped to that account. Every signed-out guest now starts from default progression, presentation, settings, and one blank editor level; guest state is memory-only, never merges into an account, and cannot expose the previous account's workspace. Signing back into an account restores its saved browser snapshot and cloud progression." },
   { version: "v0.31.1", commit: "9016288", date: "2026-08-25", message: "Add advanced volume controls", description: "Kept Master Volume at the top of Settings and added a normally collapsed advanced audio mixer. Music and all fourteen built-in sound-effect types now have independent persistent volume sliders, allowing individual sounds such as star collection to be reduced or completely muted without changing the remaining music and effects." },
   { version: "v0.31.0", commit: "89d15c4", date: "2026-08-25", message: "Expand and rearrange the soundtrack", description: "Recomposed the menu and three gameplay themes as substantially different four-section arrangements. Every procedural track now has a 64-step loop instead of 16 steps, with new melodies, changing bass progressions, harmony voices, rhythmic variation, quieter passages, and stronger final sections while preserving each theme's established mood." },
@@ -1185,7 +1177,6 @@ const levels = legacyLevels.map((level, index) => {
 let editorPlaytestActive = false;
 let editorPlaytestIndex = -1;
 let publishedLevelActive = false;
-let publishedLevelContext = null;
 
 window.PlatformsLevelDev = Object.freeze({
   schemaVersion: window.PlatformsLevelData?.SCHEMA_VERSION,
@@ -1361,7 +1352,7 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.33.0";
+const GAME_VERSION = "v0.32.1";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
@@ -1369,7 +1360,7 @@ const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const ACCOUNT_PREFERENCES_STORAGE_PREFIX = "platforms-past-account-preferences-v1:";
 const LEGACY_SHARED_PREFERENCE_KEYS = ["platforms-volume", "platforms-audio-mix-v1", "platforms-display-size"];
 const LEADERBOARD_RULESETS = [
-  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.33.0" },
+  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.32.1" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1412,7 +1403,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.33.0", "v0.32.1", "v0.32.0", "v0.31.1", "v0.31.0", "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
+  "v0.32.1", "v0.32.0", "v0.31.1", "v0.31.0", "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
@@ -1443,8 +1434,6 @@ let communityLevelEntries = [];
 let communityLevelsRequest = 0;
 let communityLevelsLoading = false;
 let communityLevelsHasMore = false;
-let publicProfileReturn = "main";
-let publicProfileRequest = 0;
 const ALL_INTRO_LEVELS = Array.from({ length: INTRO_LEVEL_COUNT }, (_, index) => index);
 const RUN_OBJECTIVE_LABELS = {
   "complete-all": "Complete all levels",
@@ -1685,7 +1674,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1704,7 +1693,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -2582,14 +2571,6 @@ function startEditorPlaytest(levelData, options = {}) {
   levels.push(result.level);
   editorPlaytestActive = true;
   publishedLevelActive = options.source === "published";
-  publishedLevelContext = publishedLevelActive ? {
-    levelId: options.levelId,
-    ownerId: options.ownerId || null,
-    ownerName: options.ownerName || "Unknown creator",
-    ownerUsername: options.ownerUsername || "unknown",
-    version: Number(options.version) || 1,
-    startingDeaths: 0
-  } : null;
   document.querySelector("#levelEditor").hidden = true;
   document.querySelector(".touch-controls").hidden = false;
   document.querySelector(".instructions").hidden = false;
@@ -2629,7 +2610,6 @@ function returnFromEditorPlaytest(note = "Returned from playtest.") {
   editorPlaytestActive = false;
   editorPlaytestIndex = -1;
   publishedLevelActive = false;
-  publishedLevelContext = null;
   levelIndex = 0;
   if (removeIndex >= 0 && levels[removeIndex]?.editorPlaytest) levels.splice(removeIndex, 1);
   loadLevel(0, false);
@@ -2653,22 +2633,6 @@ function returnFromEditorPlaytest(note = "Returned from playtest.") {
   } else {
     window.PlatformsEditor?.showAfterPlaytest(note);
   }
-}
-
-function recordPublishedLevelClear() {
-  if (!publishedLevelActive || !publishedLevelContext || !accountSession?.user ||
-      flightEnabled || collisionDisabled || invincibilityEnabled) return;
-  const context = { ...publishedLevelContext };
-  const seconds = Math.round(currentLevelTime() * 1000) / 1000;
-  const stars = currentLevelStarCount();
-  const clearDeaths = Math.max(0, deaths - context.startingDeaths);
-  window.PlatformsAccount?.recordPublishedLevelCompletion(
-    context.levelId,
-    context.version,
-    seconds,
-    stars,
-    clearDeaths
-  ).catch(() => {});
 }
 
 function updateHud() {
@@ -2837,8 +2801,6 @@ function renderAccountState(message = "") {
   signedOutAccountActions.hidden = signedIn;
   signedInAccountActions.hidden = !signedIn;
   accountIdentity.textContent = signedIn ? displayName || "Signed in" : "Playing as Guest";
-  accountIdentity.disabled = !signedIn;
-  accountIdentity.title = signedIn ? "View public profile" : "";
   playButton.textContent = signedIn ? "Play" : "Continue as Guest";
   restartSessionButton.disabled = signedIn;
   restartSessionButton.title = signedIn ? "Sign out before resetting guest progress." : "";
@@ -3055,7 +3017,7 @@ async function loadGlobalLeaderboard(rulesetId, metric, runType) {
     score: "score.desc,seconds.asc,stars.desc,created_at.asc"
   };
   const query = new URLSearchParams({
-    select: "user_id,name,game_version,seconds,stars,score,created_at",
+    select: "name,game_version,seconds,stars,score,created_at",
     leaderboard_id: `eq.${rulesetId}`,
     run_type_id: `eq.${runType}`,
     ranking_metric: `eq.${metric}`,
@@ -3519,14 +3481,8 @@ function renderLeaderboard() {
     const rank = document.createElement("span");
     rank.className = "leaderboard-rank";
     rank.textContent = `#${index + 1}`;
-    const name = document.createElement(entry.user_id ? "button" : "span");
+    const name = document.createElement("span");
     name.className = "leaderboard-name";
-    if (entry.user_id) {
-      name.type = "button";
-      name.classList.add("leaderboard-profile-link");
-      name.title = `View ${entry.name}'s profile`;
-      name.addEventListener("click", () => openPublicProfile(entry.user_id, "leaderboard"));
-    }
     name.textContent = entry.name;
     const details = document.createElement("small");
     details.className = "leaderboard-details";
@@ -3653,151 +3609,6 @@ function formatCommunityDate(value) {
   return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "numeric" }).format(date);
 }
 
-function appendPublicProfileEmpty(container, message) {
-  const empty = document.createElement("p");
-  empty.className = "public-profile-empty";
-  empty.textContent = message;
-  container.append(empty);
-}
-
-function renderPublicProfile(data) {
-  publicProfileCategories.replaceChildren();
-  publicProfileLevels.replaceChildren();
-  publicProfileClears.replaceChildren();
-  publicProfileHeader.replaceChildren();
-  const name = document.createElement("h2");
-  name.textContent = data.profile.display_name || `@${data.profile.username}`;
-  const handle = document.createElement("p");
-  handle.className = "public-profile-handle";
-  handle.textContent = `@${data.profile.username}`;
-  publicProfileHeader.append(name, handle);
-
-  if (!data.categories.length) appendPublicProfileEmpty(publicProfileCategories, "No ranked runs published yet.");
-  data.categories.forEach((category) => {
-    const card = document.createElement("article");
-    card.className = "public-profile-card";
-    const details = document.createElement("div");
-    const title = document.createElement("strong");
-    title.textContent = category.run_type_label || category.run_type_id || "Classic adventure";
-    const meta = document.createElement("small");
-    const result = category.ranking_metric === "stars" ? `${category.stars} stars`
-      : category.ranking_metric === "score" ? `${category.score} pts`
-      : formatRunTime(Number(category.seconds));
-    meta.textContent = `${category.leaderboard_label} · ${result}`;
-    const rank = document.createElement("span");
-    rank.className = "public-profile-rank";
-    rank.textContent = `World #${category.world_rank}`;
-    details.append(title, meta);
-    card.append(details, rank);
-    publicProfileCategories.append(card);
-  });
-
-  if (!data.levels.length) appendPublicProfileEmpty(publicProfileLevels, "No published levels yet.");
-  data.levels.forEach((level) => {
-    const card = document.createElement("article");
-    card.className = "public-profile-card";
-    const details = document.createElement("div");
-    const title = document.createElement("strong");
-    title.textContent = level.level_name || "Untitled Level";
-    const meta = document.createElement("small");
-    meta.textContent = `Published v${level.version} · Updated ${formatCommunityDate(level.updated_at)}`;
-    const play = document.createElement("button");
-    play.type = "button";
-    play.textContent = "Play";
-    play.addEventListener("click", () => playPublicProfileLevel(level.level_id, play));
-    details.append(title, meta);
-    card.append(details, play);
-    publicProfileLevels.append(card);
-  });
-
-  if (!data.highlights.length) appendPublicProfileEmpty(publicProfileClears, "No signed-in community-level clears recorded yet.");
-  const groupedHighlights = new Map();
-  data.highlights.forEach((clear) => {
-    const key = `${clear.level_id}:${clear.level_version}`;
-    const existing = groupedHighlights.get(key);
-    if (existing) existing.labels.push(clear.highlight_label);
-    else groupedHighlights.set(key, { ...clear, labels: [clear.highlight_label] });
-  });
-  groupedHighlights.forEach((clear) => {
-    const card = document.createElement("article");
-    card.className = "public-profile-card";
-    const details = document.createElement("div");
-    const title = document.createElement("strong");
-    title.textContent = clear.level_name || "Untitled Level";
-    const meta = document.createElement("small");
-    meta.textContent = `Cleared v${clear.level_version} in ${formatRunTime(Number(clear.seconds))} · ${clear.stars} stars · ${clear.deaths} deaths`;
-    const badge = document.createElement("span");
-    badge.className = "public-profile-badge";
-    badge.textContent = clear.labels.join(" · ");
-    details.append(title, meta);
-    card.append(details, badge);
-    publicProfileClears.append(card);
-  });
-}
-
-async function openPublicProfile(userId, source = "main") {
-  if (!userId || !window.PlatformsAccount?.loadPublicPlayerProfile) return;
-  publicProfileReturn = source;
-  const request = ++publicProfileRequest;
-  if (source === "community") communityLevelsMenu.hidden = true;
-  else if (source === "leaderboard") leaderboardMenu.hidden = true;
-  else mainMenu.hidden = true;
-  publicProfileMenu.hidden = false;
-  publicProfileHeader.replaceChildren();
-  const loadingTitle = document.createElement("h2");
-  loadingTitle.textContent = "Loading profile...";
-  publicProfileHeader.append(loadingTitle);
-  publicProfileCategories.replaceChildren();
-  publicProfileLevels.replaceChildren();
-  publicProfileClears.replaceChildren();
-  publicProfileNote.textContent = "Loading public records...";
-  closePublicProfileButton.focus();
-  try {
-    const data = await window.PlatformsAccount.loadPublicPlayerProfile(userId);
-    if (request !== publicProfileRequest) return;
-    if (!data) throw new Error("Profile not found.");
-    renderPublicProfile(data);
-    publicProfileNote.textContent = "Public runs, creations, and signed-in community clears.";
-  } catch (error) {
-    if (request !== publicProfileRequest) return;
-    publicProfileHeader.replaceChildren();
-    const unavailable = document.createElement("h2");
-    unavailable.textContent = "Profile unavailable";
-    publicProfileHeader.append(unavailable);
-    publicProfileNote.textContent = String(error?.message || "").toLowerCase().includes("function")
-      ? "Public profiles need the v0.33.0 Supabase migration."
-      : "This public profile could not be loaded.";
-  }
-}
-
-function closePublicProfile() {
-  publicProfileRequest++;
-  publicProfileMenu.hidden = true;
-  if (publicProfileReturn === "community") {
-    communityLevelsMenu.hidden = false;
-    communitySearchInput.focus();
-  } else if (publicProfileReturn === "leaderboard") {
-    leaderboardMenu.hidden = false;
-    closeLeaderboardButton.focus();
-  } else {
-    mainMenu.hidden = false;
-    accountIdentity.focus();
-  }
-}
-
-async function playPublicProfileLevel(levelId, button) {
-  if (!levelId || button.disabled) return;
-  button.disabled = true;
-  publicProfileNote.textContent = "Loading the published level...";
-  const opened = await window.PlatformsEditor?.openPublishedLevel(levelId);
-  if (opened) {
-    publicProfileMenu.hidden = true;
-    return;
-  }
-  button.disabled = false;
-  publicProfileNote.textContent = "This level is unavailable or has been unpublished.";
-}
-
 function renderCommunityLevels() {
   communityLevelsList.replaceChildren();
   if (!communityLevelEntries.length && !communityLevelsLoading) {
@@ -3813,11 +3624,9 @@ function renderCommunityLevels() {
     const details = document.createElement("div");
     const heading = document.createElement("h3");
     heading.textContent = entry.level_name || "Untitled Level";
-    const creator = document.createElement("button");
-    creator.type = "button";
-    creator.className = "community-creator community-profile-link";
+    const creator = document.createElement("p");
+    creator.className = "community-creator";
     creator.textContent = `${entry.owner_name || "Unknown creator"} · @${entry.owner_username || "unknown"}`;
-    creator.addEventListener("click", () => openPublicProfile(entry.owner_id, "community"));
     const publication = document.createElement("p");
     const version = document.createElement("span");
     version.className = "community-version";
@@ -3909,7 +3718,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -4974,9 +4783,6 @@ pauseRestartRunButton.addEventListener("click", startOver);
 pauseQuitButton.addEventListener("click", quitRun);
 mainLeaderboardButton.addEventListener("click", () => openLeaderboard("main"));
 communityLevelsButton.addEventListener("click", openCommunityLevels);
-accountIdentity.addEventListener("click", () => {
-  if (accountProfile?.user_id) openPublicProfile(accountProfile.user_id, "main");
-});
 communitySearchForm.addEventListener("submit", (event) => {
   event.preventDefault();
   loadCommunityLevels(true);
@@ -4984,7 +4790,6 @@ communitySearchForm.addEventListener("submit", (event) => {
 communitySortSelect.addEventListener("change", () => loadCommunityLevels(true));
 loadMoreCommunityLevelsButton.addEventListener("click", () => loadCommunityLevels(false));
 closeCommunityLevelsButton.addEventListener("click", closeCommunityLevels);
-closePublicProfileButton.addEventListener("click", closePublicProfile);
 pauseLeaderboardButton.addEventListener("click", () => openLeaderboard("pause"));
 closeLeaderboardButton.addEventListener("click", closeLeaderboard);
 mainChangelogButton.addEventListener("click", () => openChangelog("main"));
@@ -6314,7 +6119,6 @@ function update(dt) {
   if (finishRequirementMet && overlaps(box, currentLevel().finish)) {
     playSfx("flag");
     if (editorPlaytestActive) {
-      recordPublishedLevelClear();
       returnFromEditorPlaytest("Playtest complete: the exit was reached.");
       return;
     }
