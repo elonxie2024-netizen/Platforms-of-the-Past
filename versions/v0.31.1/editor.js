@@ -5,8 +5,7 @@
   const host = document.querySelector("#levelEditor");
   const LEGACY_STORAGE_KEY = "platforms-past-level-editor-draft-v1";
   const STORAGE_KEY = "platforms-past-level-editor-workspace-v2";
-  const LEGACY_LAYOUT_STORAGE_KEY = "platforms-past-level-editor-layout-v1";
-  const LAYOUT_STORAGE_PREFIX = "platforms-past-level-editor-layout-v2:";
+  const LAYOUT_STORAGE_KEY = "platforms-past-level-editor-layout-v1";
   const GRID = 20;
   const WORLD_H = 570;
   const HISTORY_LIMIT = 80;
@@ -24,11 +23,11 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/slime-player.svg", enemy: "assets/slime-enemy.svg",
-    switch: "assets/switch-left.svg", pressurePlateBase: "assets/pressure-plate-base.svg",
-    pressurePlateTop: "assets/pressure-plate-top.svg", jumpPadBase: "assets/jump-pad-base.svg",
-    jumpPadTop: "assets/jump-pad-top.svg", blade: "assets/moving-obstacle.svg",
-    cracks: "assets/fragile-block-cracks.svg"
+    player: "../assets/slime-player.svg", enemy: "../assets/slime-enemy.svg",
+    switch: "../assets/switch-left.svg", pressurePlateBase: "../assets/pressure-plate-base.svg",
+    pressurePlateTop: "../assets/pressure-plate-top.svg", jumpPadBase: "../assets/jump-pad-base.svg",
+    jumpPadTop: "../assets/jump-pad-top.svg", blade: "../assets/moving-obstacle.svg",
+    cracks: "../assets/fragile-block-cracks.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
@@ -62,7 +61,7 @@
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.32.0</strong>
+      <strong>Level Editor · v0.31.1</strong>
       <span class="editor-workspace-identity" data-role="workspace-identity">Guest workspace</span>
       <label class="editor-level-picker"><span>Level</span><select data-role="draft-picker" aria-label="Level being edited"></select></label>
       <button data-action="new">New</button><button data-action="duplicate">Duplicate</button><button data-action="delete-draft">Delete</button><button data-action="clear">Clear</button>
@@ -136,34 +135,20 @@
     button.addEventListener("click", () => setTool(name)); palette.append(button);
   });
 
-  function layoutStorageKey(userId = accountContext.userId) {
-    return userId ? `${LAYOUT_STORAGE_PREFIX}${userId}` : null;
-  }
-  function readEditorPreferences(userId = accountContext.userId) {
-    const key = layoutStorageKey(userId);
-    if (!key) return { panelWidths: { left: 170, right: 235 }, snap: true };
+  function readPanelWidths() {
     try {
-      const saved = JSON.parse(localStorage.getItem(key) || "null");
+      const saved = JSON.parse(localStorage.getItem(LAYOUT_STORAGE_KEY) || "null");
       return {
-        panelWidths: {
-          left: Math.max(130, Math.min(300, Number(saved?.left) || 170)),
-          right: Math.max(180, Math.min(380, Number(saved?.right) || 235))
-        },
-        snap: saved?.snap !== false
+        left: Math.max(130, Math.min(300, Number(saved?.left) || 170)),
+        right: Math.max(180, Math.min(380, Number(saved?.right) || 235))
       };
-    } catch { return { panelWidths: { left: 170, right: 235 }, snap: true }; }
+    } catch { return { left: 170, right: 235 }; }
   }
-  const initialEditorPreferences = readEditorPreferences();
-  let panelWidths = initialEditorPreferences.panelWidths;
-  snap = initialEditorPreferences.snap;
-  function persistEditorPreferences() {
-    const key = layoutStorageKey();
-    if (key) try { localStorage.setItem(key, JSON.stringify({ ...panelWidths, snap })); } catch { /* Preferences remain usable for this session. */ }
-  }
+  let panelWidths = readPanelWidths();
   function applyPanelWidths(save = false) {
     host.style.setProperty("--editor-sidebar-width", `${panelWidths.left}px`);
     host.style.setProperty("--editor-inspector-width", `${panelWidths.right}px`);
-    if (save) persistEditorPreferences();
+    if (save) try { localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(panelWidths)); } catch { /* Layout remains usable for this session. */ }
   }
   applyPanelWidths();
   host.querySelectorAll("[data-resize-panel]").forEach((handle) => {
@@ -368,8 +353,6 @@
     try {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(LEGACY_STORAGE_KEY);
-      localStorage.removeItem(LEGACY_LAYOUT_STORAGE_KEY);
-      localStorage.removeItem(clipboardStorageKey());
     } catch { /* The in-memory guest workspace is still isolated and temporary. */ }
     statusNote = "Started a fresh temporary guest workspace.";
     resetDraftView();
@@ -424,10 +407,6 @@
     clearTimeout(cloudSaveTimer); cloudSaveTimer = null;
     const generation = ++workspaceGeneration;
     accountContext = { userId: nextUserId, displayName: context.displayName || "", service: context.service || null };
-    const editorPreferences = readEditorPreferences(nextUserId);
-    panelWidths = editorPreferences.panelWidths;
-    snap = editorPreferences.snap;
-    applyPanelWidths(false);
     objectClipboard = null;
     sharingPanel.hidden = true;
     resetDraftView();
@@ -1318,7 +1297,6 @@
     host.querySelector('[data-action="group"]').disabled=!editable||selectedIds.size<2;
     host.querySelector('[data-action="ungroup"]').disabled=!editable||!selectedObjects().some((object)=>object.groupId);
     host.querySelector('[data-action="copy"]').disabled=!selectedIds.size;
-    host.querySelector('[data-action="snap"]').textContent=`Snap: ${snap?"On":"Off"}`;
     for (const action of ["clear", "paste"]) host.querySelector(`[data-action="${action}"]`).disabled = !editable;
     for (const action of ["new", "duplicate", "import", "import-code"]) host.querySelector(`[data-action="${action}"]`).disabled = workspaceLoading;
     const deleteButton = host.querySelector('[data-action="delete-draft"]');
@@ -1546,7 +1524,7 @@
     else if(action==="publish")publishCurrent();else if(action==="unpublish")unpublishCurrent();else if(action==="copy-public-link")copyPublicLink();
     else if(action==="viewer-play"){if(playtestCallback)playtestCallback(clone(data),{source:"viewer"});}
     else if(action==="viewer-edit"){viewerLandingOpen=false;fitLevel();refresh();}
-    else if(action==="snap"){snap=!snap;persistEditorPreferences();event.target.textContent=`Snap: ${snap?"On":"Off"}`;statusNote=`Grid snapping ${snap?"enabled":"disabled"}.`;refresh();}
+    else if(action==="snap"){snap=!snap;event.target.textContent=`Snap: ${snap?"On":"Off"}`;statusNote=`Grid snapping ${snap?"enabled":"disabled"}.`;refresh();}
     else if(action==="zoom-out")setZoom(zoom/1.2);
     else if(action==="zoom-in")setZoom(zoom*1.2);
     else if(action==="zoom-fit")fitLevel();

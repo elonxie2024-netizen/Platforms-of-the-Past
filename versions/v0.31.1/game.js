@@ -154,8 +154,7 @@ const profileDisplayName = document.querySelector("#profileDisplayName");
 const profileUsername = document.querySelector("#profileUsername");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.32.0", commit: "Pending commit", date: "2026-08-25", message: "Isolate complete player sessions by account", description: "Turned sign-out into a complete identity boundary. Account progression, chapter and gauntlet completion, menu animation and appearance, display size, master and per-sound volumes, editor layout, snapping preference, private drafts, and crash backups remain scoped to that account. Every signed-out guest now starts from default progression, presentation, settings, and one blank editor level; guest state is memory-only, never merges into an account, and cannot expose the previous account's workspace. Signing back into an account restores its saved browser snapshot and cloud progression." },
-  { version: "v0.31.1", commit: "9016288", date: "2026-08-25", message: "Add advanced volume controls", description: "Kept Master Volume at the top of Settings and added a normally collapsed advanced audio mixer. Music and all fourteen built-in sound-effect types now have independent persistent volume sliders, allowing individual sounds such as star collection to be reduced or completely muted without changing the remaining music and effects." },
+  { version: "v0.31.1", commit: "Pending commit", date: "2026-08-25", message: "Add advanced volume controls", description: "Kept Master Volume at the top of Settings and added a normally collapsed advanced audio mixer. Music and all fourteen built-in sound-effect types now have independent persistent volume sliders, allowing individual sounds such as star collection to be reduced or completely muted without changing the remaining music and effects." },
   { version: "v0.31.0", commit: "89d15c4", date: "2026-08-25", message: "Expand and rearrange the soundtrack", description: "Recomposed the menu and three gameplay themes as substantially different four-section arrangements. Every procedural track now has a 64-step loop instead of 16 steps, with new melodies, changing bass progressions, harmony voices, rhythmic variation, quieter passages, and stronger final sections while preserving each theme's established mood." },
   { version: "v0.30.3", commit: "b2644f4", date: "2026-08-25", message: "Make the custom Rewind field automatic", description: "Removed the separate Rewind-field toggle from the level editor. Enabling Rewind in a custom level now always enables its object-selection field, including for older saved levels whose legacy field setting was disabled, while creators can still tune the field radius and offset." },
   { version: "v0.30.2", commit: "c9dc4a4", date: "2026-08-25", message: "Always show mechanic path arrows", description: "Separated mechanic feedback from optional tutorial prompts: enabled Rewind levels now always show their golden motion-history arrows, just as Echo route previews always do, while the tutorial settings control only the prompts at the top of the screen. Also stopped custom levels from accidentally inheriting the campaign's level-index-based Rewind field. Verified both golden path renderers with tutorial prompts disabled." },
@@ -1351,15 +1350,13 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.32.0";
+const GAME_VERSION = "v0.31.1";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
 const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
-const ACCOUNT_PREFERENCES_STORAGE_PREFIX = "platforms-past-account-preferences-v1:";
-const LEGACY_SHARED_PREFERENCE_KEYS = ["platforms-volume", "platforms-audio-mix-v1", "platforms-display-size"];
 const LEADERBOARD_RULESETS = [
-  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.32.0" },
+  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.31.1" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1402,7 +1399,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.32.0", "v0.31.1", "v0.31.0", "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
+  "v0.31.1", "v0.31.0", "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
   "v0.6.2", "v0.6.1", "v0.6.0", "v0.5.2", "v0.5.1", "v0.5.0", "v0.4.6", "v0.4.5",
@@ -1455,6 +1452,7 @@ let runQueuePosition = 0;
 let nextLevelIndex = null;
 let runProgress = { completedLevels: new Set(), hazardDeaths: new Set(), mechanics: new Set() };
 let masterVolume = 1;
+const AUDIO_MIX_STORAGE_KEY = "platforms-audio-mix-v1";
 const AUDIO_CHANNEL_DEFAULTS = Object.freeze({
   music: 1,
   "land-grass": 1,
@@ -1492,67 +1490,6 @@ const activeMusicVoices = new Set();
 let importedMusicSource = null;
 let importedMusicUrl = "";
 let importedMusicToken = 0;
-
-function normalizedPlayerPreferences(value = {}) {
-  const savedMix = value.audioMix && typeof value.audioMix === "object" && !Array.isArray(value.audioMix)
-    ? value.audioMix : {};
-  const audioMix = {};
-  Object.keys(AUDIO_CHANNEL_DEFAULTS).forEach((name) => {
-    const numeric = Number(savedMix[name]);
-    audioMix[name] = Number.isFinite(numeric) ? Math.max(0, Math.min(1, numeric)) : 1;
-  });
-  const savedMaster = Number(value.masterVolume);
-  return {
-    masterVolume: Number.isFinite(savedMaster) ? Math.max(0, Math.min(1, savedMaster)) : 1,
-    audioMix,
-    displaySize: value.displaySize === "large" ? "large" : "small",
-    rewindMenuAwakened: Boolean(value.rewindMenuAwakened),
-    menuPlatformTexture: ["grass", "stone", "crate"].includes(value.menuPlatformTexture) ? value.menuPlatformTexture : "grass",
-    menuBackdrop: ["sun", "lava"].includes(value.menuBackdrop) ? value.menuBackdrop : "sun"
-  };
-}
-
-function accountPreferencesStorageKey(userId) {
-  return userId ? `${ACCOUNT_PREFERENCES_STORAGE_PREFIX}${userId}` : null;
-}
-
-function readAccountPreferences(userId) {
-  const key = accountPreferencesStorageKey(userId);
-  if (!key) return normalizedPlayerPreferences();
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? normalizedPlayerPreferences(JSON.parse(raw)) : normalizedPlayerPreferences();
-  } catch { return normalizedPlayerPreferences(); }
-}
-
-function currentPlayerPreferencesSnapshot() {
-  return normalizedPlayerPreferences({
-    masterVolume,
-    audioMix: audioChannelVolumes,
-    displaySize,
-    rewindMenuAwakened,
-    menuPlatformTexture,
-    menuBackdrop
-  });
-}
-
-function persistPlayerPreferences(userId = accountSession?.user?.id) {
-  const key = accountPreferencesStorageKey(userId);
-  if (!key) return;
-  try { localStorage.setItem(key, JSON.stringify(currentPlayerPreferencesSnapshot())); }
-  catch { /* Account preferences remain active in memory when storage is unavailable. */ }
-}
-
-function applyPlayerPreferences(preferences = {}) {
-  const safe = normalizedPlayerPreferences(preferences);
-  setVolume(safe.masterVolume * 100, false);
-  Object.entries(safe.audioMix).forEach(([name, volume]) => setAudioChannelVolume(name, volume * 100, false));
-  setDisplaySize(safe.displaySize, false);
-  rewindMenuAwakened = safe.rewindMenuAwakened;
-  menuPlatformTexture = safe.menuPlatformTexture;
-  menuBackdrop = safe.menuBackdrop;
-  applyRewindMenuState();
-}
 
 function clearLegacySessionState() {
   try { LEGACY_SESSION_STORAGE_KEYS.forEach(key => localStorage.removeItem(key)); }
@@ -1636,35 +1573,37 @@ function readStoredProgress(key) {
 function activeProgressStorageKey() {
   return accountSession?.user?.id
     ? `${ACCOUNT_PROGRESS_STORAGE_PREFIX}${accountSession.user.id}`
-    : null;
+    : GUEST_PROGRESS_STORAGE_KEY;
 }
 
 function writeStoredProgress(key, progress) {
-  if (!key) return;
   try { localStorage.setItem(key, JSON.stringify(normalizedProgress(progress))); }
   catch { /* Progress remains available in memory when storage is blocked. */ }
 }
 
 function persistProgress(syncAccount = true) {
   const progress = currentProgressSnapshot();
-  const key = activeProgressStorageKey();
-  if (key) {
-    writeStoredProgress(key, progress);
-    persistPlayerPreferences();
-  }
+  writeStoredProgress(activeProgressStorageKey(), progress);
   if (syncAccount && accountSession?.user?.id) scheduleAccountProgressSync();
 }
 
-function clearBrowserSharedPlayerState() {
+function migrateLegacyGuestProgress() {
   try {
-    localStorage.removeItem(GUEST_PROGRESS_STORAGE_KEY);
-    LEGACY_SHARED_PREFERENCE_KEYS.forEach((key) => localStorage.removeItem(key));
-  } catch { /* Guest state remains isolated in memory when storage is unavailable. */ }
+    if (localStorage.getItem(GUEST_PROGRESS_STORAGE_KEY) !== null) return;
+    const oldUnlocked = Number(localStorage.getItem("platforms-past-progress-v1"));
+    const oldAwakened = localStorage.getItem("platforms-past-rewind-awakened-v1") === "true";
+    if (!Number.isInteger(oldUnlocked) && !oldAwakened) return;
+    writeStoredProgress(GUEST_PROGRESS_STORAGE_KEY, {
+      highestUnlockedLevel: Number.isInteger(oldUnlocked) ? oldUnlocked : 0,
+      rewindMenuAwakened: oldAwakened,
+      menuCustomizationUnlocked: oldAwakened
+    });
+  } catch { /* Legacy progress remains untouched if storage is unavailable. */ }
 }
 
+migrateLegacyGuestProgress();
 clearLegacySessionState();
-clearBrowserSharedPlayerState();
-applyProgress(normalizedProgress());
+applyProgress(readStoredProgress(GUEST_PROGRESS_STORAGE_KEY));
 
 const spriteSheet = new Image();
 let spritesReady = false;
@@ -1673,7 +1612,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1692,7 +1631,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -2754,6 +2693,11 @@ function leaderboardHeaders(includeJson = false) {
   };
 }
 
+function storedProgressExists(key) {
+  try { return localStorage.getItem(key) !== null; }
+  catch { return false; }
+}
+
 function accountRedirectUrl() {
   const redirect = new URL(location.href);
   redirect.search = "";
@@ -2856,13 +2800,7 @@ async function syncProgressWithAccount(session, event = "SIGNED_IN") {
   const generation = ++accountSyncGeneration;
   const service = window.PlatformsAccount;
   if (!session?.user || !service) return;
-  const previousUserId = accountSession?.user?.id;
-  if (previousUserId && previousUserId !== session.user.id) {
-    writeStoredProgress(`${ACCOUNT_PROGRESS_STORAGE_PREFIX}${previousUserId}`, currentProgressSnapshot());
-    persistPlayerPreferences(previousUserId);
-  }
   accountSession = session;
-  applyPlayerPreferences(readAccountPreferences(session.user.id));
   renderAccountState("Loading account...");
   await window.PlatformsEditor?.setAccountContext({
     userId: session.user.id,
@@ -2872,7 +2810,9 @@ async function syncProgressWithAccount(session, event = "SIGNED_IN") {
 
   const userId = session.user.id;
   const accountKey = `${ACCOUNT_PROGRESS_STORAGE_PREFIX}${userId}`;
+  const guestProgress = readStoredProgress(GUEST_PROGRESS_STORAGE_KEY);
   const cachedProgress = readStoredProgress(accountKey);
+  const preferenceProgress = storedProgressExists(accountKey) ? cachedProgress : guestProgress;
   let remoteProgress = null;
   let syncWarning = "";
 
@@ -2891,7 +2831,7 @@ async function syncProgressWithAccount(session, event = "SIGNED_IN") {
   }
   if (generation !== accountSyncGeneration || accountSession?.user?.id !== userId) return;
 
-  const merged = mergeProgress(cachedProgress, remoteProgress);
+  const merged = mergeProgress(preferenceProgress, remoteProgress, guestProgress, cachedProgress);
   applyProgress(merged);
   writeStoredProgress(accountKey, merged);
   applyRewindMenuState();
@@ -2920,38 +2860,17 @@ async function syncProgressWithAccount(session, event = "SIGNED_IN") {
   renderAccountState(finalMessage);
 }
 
-function restoreGuestProgress() {
+function restoreGuestProgress(freshEditorWorkspace = false) {
   accountSyncGeneration++;
   accountSession = null;
   accountProfile = null;
   accountRecoveryActive = false;
   window.PlatformsEditor?.setAccountContext({
     userId: null, displayName: "Guest", service: window.PlatformsAccount,
-    freshGuest: true
+    freshGuest: freshEditorWorkspace
   });
   if (accountProgressSyncTimer) clearTimeout(accountProgressSyncTimer);
-  accountProgressSyncTimer = null;
-  clearBrowserSharedPlayerState();
-  applyProgress(normalizedProgress());
-  applyPlayerPreferences(normalizedPlayerPreferences());
-  runStartLevel = 0;
-  roadmapChapterIndex = 0;
-  leaderboardMetric = "time";
-  selectedRunConfig = { objective: "complete-all", constraint: "none", metric: "time", levels: [...ALL_INTRO_LEVELS] };
-  activeRunConfig = null;
-  runLevelQueue = [];
-  runQueuePosition = 0;
-  nextLevelIndex = null;
-  resetRunProgress();
-  developmentSequencePosition = 0;
-  levelDeveloperSequencePosition = 0;
-  musicTempoSequencePosition = 0;
-  resetDeveloperEffects();
-  selectLeaderboardMetric("time", false);
-  settingsPanel.hidden = true;
-  settingsButton.setAttribute("aria-expanded", "false");
-  advancedVolumeControls.hidden = true;
-  advancedVolumeButton.setAttribute("aria-expanded", "false");
+  applyProgress(readStoredProgress(GUEST_PROGRESS_STORAGE_KEY));
   applyRewindMenuState();
   if (!roadmapMenu.hidden) renderRoadmap();
   renderAccountState();
@@ -2988,7 +2907,7 @@ async function initializeAccounts() {
   window.PlatformsAccount.subscribe((event, session) => {
     setTimeout(() => {
       if (session?.user) syncProgressWithAccount(session, event);
-      else if (event === "SIGNED_OUT" || event === "INITIAL_SESSION") restoreGuestProgress();
+      else if (event === "SIGNED_OUT" || event === "INITIAL_SESSION") restoreGuestProgress(event === "SIGNED_OUT");
     }, 0);
   });
   try {
@@ -3717,7 +3636,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -5088,13 +5007,13 @@ function playSfx(name, intensity = 1) {
   }
 }
 
-function setVolume(value, persist = true) {
+function setVolume(value) {
   masterVolume = Math.max(0, Math.min(1, Number(value) / 100));
   const percent = Math.round(masterVolume * 100);
   volumeInput.value = String(percent);
   volumeValue.textContent = `${percent}%`;
   if (masterGain && audioContext) masterGain.gain.setTargetAtTime(masterVolume, audioContext.currentTime, .02);
-  if (persist) persistPlayerPreferences();
+  try { localStorage.setItem("platforms-volume", String(percent)); } catch { /* Storage may be unavailable. */ }
 }
 
 function currentMusicVolumeTarget() {
@@ -5113,6 +5032,11 @@ function updateChannelVolumeControl(name) {
   if (output) output.textContent = `${percent}%`;
 }
 
+function saveAudioMix() {
+  try { localStorage.setItem(AUDIO_MIX_STORAGE_KEY, JSON.stringify(audioChannelVolumes)); }
+  catch { /* Storage may be unavailable. */ }
+}
+
 function setAudioChannelVolume(name, value, persist = true) {
   if (!(name in AUDIO_CHANNEL_DEFAULTS)) return;
   audioChannelVolumes[name] = Math.max(0, Math.min(1, Number(value) / 100));
@@ -5125,10 +5049,21 @@ function setAudioChannelVolume(name, value, persist = true) {
       if (channel) channel.gain.setTargetAtTime(audioChannelVolumes[name], audioContext.currentTime, .02);
     }
   }
-  if (persist) persistPlayerPreferences();
+  if (persist) saveAudioMix();
 }
 
-setVolume(100, false);
+try {
+  const savedVolume = localStorage.getItem("platforms-volume");
+  if (savedVolume !== null) volumeInput.value = savedVolume;
+  const savedAudioMix = JSON.parse(localStorage.getItem(AUDIO_MIX_STORAGE_KEY) || "null");
+  if (savedAudioMix && typeof savedAudioMix === "object" && !Array.isArray(savedAudioMix)) {
+    Object.keys(AUDIO_CHANNEL_DEFAULTS).forEach((name) => {
+      const value = Number(savedAudioMix[name]);
+      if (Number.isFinite(value)) audioChannelVolumes[name] = Math.max(0, Math.min(1, value));
+    });
+  }
+} catch { /* Use the default volume. */ }
+setVolume(volumeInput.value);
 Object.keys(AUDIO_CHANNEL_DEFAULTS).forEach(updateChannelVolumeControl);
 
 signUpButton.addEventListener("click", () => showAccountMode("signup"));
@@ -5260,18 +5195,15 @@ signOutButton.addEventListener("click", async () => {
   if (!accountSession?.user?.id || !window.PlatformsAccount?.isAvailable()) return;
   signOutButton.disabled = true;
   accountNotice.textContent = "Signing out...";
-  const signingOutUserId = accountSession.user.id;
-  writeStoredProgress(`${ACCOUNT_PROGRESS_STORAGE_PREFIX}${signingOutUserId}`, currentProgressSnapshot());
-  persistPlayerPreferences(signingOutUserId);
   try {
     await window.PlatformsEditor?.flush();
-    await window.PlatformsAccount.saveProgress(signingOutUserId, accountProgressPayload());
+    await window.PlatformsAccount.saveProgress(accountSession.user.id, accountProgressPayload());
   } catch (error) {
     accountNotice.textContent = accountFriendlyError(error);
   }
   try {
     await window.PlatformsAccount.signOut();
-    restoreGuestProgress();
+    restoreGuestProgress(true);
   } catch (error) {
     accountNotice.textContent = accountFriendlyError(error);
   } finally {
@@ -5516,6 +5448,7 @@ function syncFullscreenUiScale() {
 
 new ResizeObserver(syncFullscreenUiScale).observe(gameFrame);
 
+const DISPLAY_SIZE_STORAGE_KEY = "platforms-display-size";
 const LARGE_SCREEN_MARGIN = 12;
 let displaySize = "small";
 
@@ -5546,10 +5479,14 @@ function setDisplaySize(mode, save = true) {
   smallScreenButton.setAttribute("aria-pressed", String(!large));
   largeScreenButton.classList.toggle("active", large);
   largeScreenButton.setAttribute("aria-pressed", String(large));
-  if (save) persistPlayerPreferences();
+  if (save) {
+    try { localStorage.setItem(DISPLAY_SIZE_STORAGE_KEY, displaySize); } catch { /* Storage may be unavailable. */ }
+  }
   updateDisplayScale();
 }
 
+try { displaySize = localStorage.getItem(DISPLAY_SIZE_STORAGE_KEY) === "large" ? "large" : "small"; }
+catch { displaySize = "small"; }
 smallScreenButton.addEventListener("click", () => setDisplaySize("small"));
 largeScreenButton.addEventListener("click", () => setDisplaySize("large"));
 addEventListener("resize", updateDisplayScale);
@@ -5660,7 +5597,21 @@ function restartSession() {
     accountNotice.textContent = "Sign out before resetting guest progress.";
     return;
   }
-  restoreGuestProgress();
+  try { localStorage.removeItem(GUEST_PROGRESS_STORAGE_KEY); }
+  catch { /* The in-memory reset still works when storage is unavailable. */ }
+  highestUnlockedLevel = 0;
+  completedChapters = new Set();
+  completedGauntlets = new Set();
+  menuCustomizationUnlocked = false;
+  rewindMenuAwakened = false;
+  menuPlatformTexture = "grass";
+  menuBackdrop = "sun";
+  runStartLevel = 0;
+  developmentSequencePosition = 0;
+  levelDeveloperSequencePosition = 0;
+  clearLegacySessionState();
+  persistProgress(false);
+  applyRewindMenuState();
   quitRun();
 }
 
