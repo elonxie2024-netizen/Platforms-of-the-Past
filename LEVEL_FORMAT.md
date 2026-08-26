@@ -277,3 +277,13 @@ The submit RPC reads the immutable snapshot and independently checks the claimed
 Exit and Exit + Required Stars versions begin unverified and only the exact version completed by a valid run becomes verified. A later publication receives a new version row and fresh state. Survival versions rank longest time first. Valid and restored runs receive sequential ranks; disputed and invalidated runs remain visible in time order, display no numeric rank, and do not consume a rank. Strategy decisions are reversible and never delete run records.
 
 This is hardened client-evidence verification, not server-authoritative gameplay. A modified client can still attempt to synthesize internally consistent replay evidence because the browser owns the physics simulation. Fully preventing that class of forgery would require authoritative server simulation or cryptographically attested execution; the current checks are designed to reject obvious/manual RPC forgery and preserve auditable evidence without claiming that stronger guarantee.
+
+## Automated regression tests
+
+Version 0.34.2 adds a dependency-free test harness under `tests/`. Run it from PowerShell at the repository root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tests\run-tests.ps1
+```
+
+The runner starts an isolated headless Chrome or Edge profile, executes the shared verification and serialization behavior, reads the machine-readable results, smoke-tests the complete game boot path, and then checks the authoritative Supabase SQL and client source contracts. It exits nonzero on any failure. `.github/workflows/regression-tests.yml` runs the same command automatically on pushes and pull requests.

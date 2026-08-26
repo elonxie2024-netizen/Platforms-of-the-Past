@@ -24,11 +24,11 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/slime-player.svg", enemy: "assets/slime-enemy.svg",
-    switch: "assets/switch-left.svg", pressurePlateBase: "assets/pressure-plate-base.svg",
-    pressurePlateTop: "assets/pressure-plate-top.svg", jumpPadBase: "assets/jump-pad-base.svg",
-    jumpPadTop: "assets/jump-pad-top.svg", blade: "assets/moving-obstacle.svg",
-    cracks: "assets/fragile-block-cracks.svg"
+    player: "../assets/slime-player.svg", enemy: "../assets/slime-enemy.svg",
+    switch: "../assets/switch-left.svg", pressurePlateBase: "../assets/pressure-plate-base.svg",
+    pressurePlateTop: "../assets/pressure-plate-top.svg", jumpPadBase: "../assets/jump-pad-base.svg",
+    jumpPadTop: "../assets/jump-pad-top.svg", blade: "../assets/moving-obstacle.svg",
+    cracks: "../assets/fragile-block-cracks.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
@@ -62,7 +62,7 @@
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.34.2</strong>
+      <strong>Level Editor · v0.34.1</strong>
       <span class="editor-workspace-identity" data-role="workspace-identity">Guest workspace</span>
       <label class="editor-level-picker"><span>Level</span><select data-role="draft-picker" aria-label="Level being edited"></select></label>
       <button data-action="new">New</button><button data-action="duplicate">Duplicate</button><button data-action="delete-draft">Delete</button><button data-action="clear">Clear</button>
@@ -1094,7 +1094,7 @@
       removeMusic.addEventListener("click", () => commit(() => { delete data.settings.customMusic; if (data.settings.music === "custom") data.settings.music = "level1"; }, "Removed the imported song.")); fields.append(removeMusic);
     }
     field("Theme", "settings.theme", data.settings.theme || "default", { values: [["default","Default"],["lava","Lava"],["rewind","Rewind"]], change: (input) => commit(() => data.settings.theme = input.value, "Changed theme.") });
-    const inferredLevelType = window.PlatformsVerificationRules.resolveLevelType(data.settings);
+    const inferredLevelType = data.settings.levelType || (data.settings.requiredStars > 0 ? "exit-stars" : "exit");
     field("Level Type", "settings.levelType", inferredLevelType, { values: [["exit","Exit"],["exit-stars","Exit + Required Stars"],["survival","Survival"]], change: (input) => commit(() => {
       data.settings.levelType = input.value;
       if (input.value !== "exit-stars") delete data.settings.requiredStars;

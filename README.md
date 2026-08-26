@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.34.1`
+**Current version:** `v0.34.2`
 
 ## How it works
 
@@ -51,6 +51,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 **Customize the menu.** After completing the final cutscene, switch between the original and awakened animations, choose grass, stone, or crate platforms from the game assets, and swap the sunny backdrop for the lava-dark sky.
 
 **Follow development.** Open the changelog from the main menu or pause menu to read every version and Git commit in the game's history.
+
+**Run regression tests.** From PowerShell in the repository folder, run `powershell -ExecutionPolicy Bypass -File .\tests\run-tests.ps1`. The dependency-free suite launches Chrome or Edge headlessly and tests custom-level types, verification, immutable publications, Survival ranking and review rules, serialization, save codes, the complete game boot path, and matching database/source contracts without manual browser interaction. GitHub Actions runs the same command automatically on pushes and pull requests.
 
 **Choose your route.** Play lets you choose Custom run or Roadmap. Custom run opens the challenge builder, while Roadmap separates the adventure into Introduction, Rewind, and Echo chapter pages where you can replay completed levels and your next unlocked challenge. Switch pages with the on-screen arrows or the Left and Right Arrow keys. Guest progress now survives refreshes; Restart session clears it, while signed-in account progress remains protected in the cloud.
 

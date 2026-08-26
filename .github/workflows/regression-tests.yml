@@ -1,0 +1,16 @@
+name: Regression tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  regression-tests:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Run gameplay-data regression suite
+        shell: powershell
+        run: .\tests\run-tests.ps1

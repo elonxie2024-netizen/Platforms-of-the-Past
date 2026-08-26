@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $releases = [ordered]@{
+  'v0.34.1' = 'b53f165'
   'v0.34.0' = '65e59a9'
   'v0.33.3' = '1ff00aa'
   'v0.33.2' = '2c916ad'
@@ -144,7 +145,7 @@ foreach ($release in $releases.GetEnumerator()) {
   $releaseRoot = Join-Path $archiveRoot $release.Key
   New-Item -ItemType Directory -Force -Path $releaseRoot | Out-Null
   $releaseFiles = @('index.html', 'styles.css', 'game.js')
-  foreach ($optionalFile in @('level-data.js', 'account.js', 'editor.css', 'editor.js')) {
+  foreach ($optionalFile in @('verification-rules.js', 'level-data.js', 'account.js', 'editor.css', 'editor.js')) {
     $committedFile = & git -C $repoRoot ls-tree --name-only $release.Value -- $optionalFile
     if ($committedFile -eq $optionalFile) { $releaseFiles += $optionalFile }
   }
@@ -162,6 +163,7 @@ foreach ($release in $releases.GetEnumerator()) {
     if ($file -eq 'index.html') {
       $content = $content.Replace('href="styles.css', 'href="./styles.css')
       $content = $content.Replace('href="editor.css', 'href="./editor.css')
+      $content = $content.Replace('src="verification-rules.js', 'src="./verification-rules.js')
       $content = $content.Replace('src="level-data.js', 'src="./level-data.js')
       $content = $content.Replace('src="account.js', 'src="./account.js')
       $content = $content.Replace('src="editor.js', 'src="./editor.js')
@@ -186,6 +188,9 @@ foreach ($release in $releases.GetEnumerator()) {
   }
   if ($generatedIndex.Contains('level-data.js') -and -not (Test-Path -LiteralPath (Join-Path $releaseRoot 'level-data.js'))) {
     throw "Archived level-data script is missing in $($release.Key)."
+  }
+  if ($generatedIndex.Contains('verification-rules.js') -and -not (Test-Path -LiteralPath (Join-Path $releaseRoot 'verification-rules.js'))) {
+    throw "Archived verification-rules script is missing in $($release.Key)."
   }
   if ($generatedGame.Contains('`assets/')) {
     throw "Archived template-literal asset path is invalid in $($release.Key)."

@@ -1,8 +1,6 @@
 "use strict";
 
 (() => {
-  const verificationRules = window.PlatformsVerificationRules;
-  if (!verificationRules) throw new Error("Verification rules are unavailable.");
   const SCHEMA_VERSION = 1;
   const SAVE_CODE_PREFIX = "POTP1-";
   const MAX_JSON_LENGTH = 8_000_000;
@@ -271,13 +269,10 @@
     if (settings.music === "custom" && settings.customMusic === undefined) errors.push("level.settings.customMusic is required when music is custom.");
     if (settings.theme !== undefined && !["default", "lava", "rewind"].includes(settings.theme)) errors.push("level.settings.theme is unsupported.");
     optionalBoolean(settings.postRun, "level.settings.postRun", errors);
-    if (settings.levelType !== undefined && !verificationRules.LEVEL_TYPES.includes(settings.levelType)) {
+    if (settings.levelType !== undefined && !["exit", "exit-stars", "survival"].includes(settings.levelType)) {
       errors.push("level.settings.levelType must be exit, exit-stars, or survival.");
     }
     if (settings.requiredStars !== undefined) requireInteger(settings.requiredStars, "level.settings.requiredStars", errors, 0, 600);
-    if (settings.levelType !== undefined && settings.levelType !== "exit-stars" && settings.requiredStars !== undefined) {
-      errors.push("level.settings.requiredStars is only supported for Exit + Required Stars levels.");
-    }
     if (settings.requiredLevelStars !== undefined) requireInteger(settings.requiredLevelStars, "level.settings.requiredLevelStars", errors);
     if (settings.rewind !== undefined) {
       if (rejectUnknownKeys(settings.rewind, REWIND_KEYS, "level.settings.rewind", errors)) {
@@ -494,7 +489,7 @@
           if (level.exit?.control?.target && (level.exit.control.target.x < 0 || level.exit.control.target.x > level.width)) errors.push("level.exit.control.target.x must be inside the level width.");
         }
         const obtainableStars = level.objects.filter((object) => object.type === "star" || object.type === "enemy").length;
-        const levelType = verificationRules.resolveLevelType(level.settings || {});
+        const levelType = level.settings?.levelType || (level.settings?.requiredStars > 0 ? "exit-stars" : "exit");
         if (levelType === "exit-stars" && !(level.settings?.requiredStars > 0)) {
           errors.push("level.settings.requiredStars must be at least 1 for Exit + Required Stars levels.");
         }
@@ -589,7 +584,7 @@
       platforms: [], hazards: [], stars: [], jumpPads: [], switches: [], pressurePlates: [], enemies: []
     };
     const settings = source.settings || {};
-    runtime.levelType = verificationRules.resolveLevelType(settings);
+    runtime.levelType = settings.levelType || (settings.requiredStars > 0 ? "exit-stars" : "exit");
     if (settings.customMusic) runtime.customMusic = { ...settings.customMusic };
     if (settings.theme && settings.theme !== "default") runtime.theme = settings.theme;
     if (settings.postRun) runtime.postRun = true;
