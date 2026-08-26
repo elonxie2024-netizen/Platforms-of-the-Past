@@ -15,7 +15,7 @@
   const SPAWN_KEYS = new Set(["x", "y"]);
   const EXIT_KEYS = new Set(["id", "x", "y", "width", "height", "control"]);
   const SETTINGS_KEYS = new Set([
-    "music", "customMusic", "theme", "postRun", "levelType", "requiredStars", "requiredLevelStars",
+    "music", "customMusic", "theme", "postRun", "requiredStars", "requiredLevelStars",
     "rewind", "echo", "gauntlet"
   ]);
   const REWIND_KEYS = new Set(["enabled", "tutorial", "showHintOnPlate", "field"]);
@@ -269,10 +269,7 @@
     if (settings.music === "custom" && settings.customMusic === undefined) errors.push("level.settings.customMusic is required when music is custom.");
     if (settings.theme !== undefined && !["default", "lava", "rewind"].includes(settings.theme)) errors.push("level.settings.theme is unsupported.");
     optionalBoolean(settings.postRun, "level.settings.postRun", errors);
-    if (settings.levelType !== undefined && !["exit", "exit-stars", "survival"].includes(settings.levelType)) {
-      errors.push("level.settings.levelType must be exit, exit-stars, or survival.");
-    }
-    if (settings.requiredStars !== undefined) requireInteger(settings.requiredStars, "level.settings.requiredStars", errors, 0, 600);
+    if (settings.requiredStars !== undefined) requireInteger(settings.requiredStars, "level.settings.requiredStars", errors);
     if (settings.requiredLevelStars !== undefined) requireInteger(settings.requiredLevelStars, "level.settings.requiredLevelStars", errors);
     if (settings.rewind !== undefined) {
       if (rejectUnknownKeys(settings.rewind, REWIND_KEYS, "level.settings.rewind", errors)) {
@@ -489,10 +486,6 @@
           if (level.exit?.control?.target && (level.exit.control.target.x < 0 || level.exit.control.target.x > level.width)) errors.push("level.exit.control.target.x must be inside the level width.");
         }
         const obtainableStars = level.objects.filter((object) => object.type === "star" || object.type === "enemy").length;
-        const levelType = level.settings?.levelType || (level.settings?.requiredStars > 0 ? "exit-stars" : "exit");
-        if (levelType === "exit-stars" && !(level.settings?.requiredStars > 0)) {
-          errors.push("level.settings.requiredStars must be at least 1 for Exit + Required Stars levels.");
-        }
         if (level.settings?.requiredStars > obtainableStars) errors.push("level.settings.requiredStars exceeds the stars available from objects and enemies.");
         if (level.settings?.requiredLevelStars > obtainableStars) errors.push("level.settings.requiredLevelStars exceeds the stars available from objects and enemies.");
         level.objects.forEach((object, index) => {
@@ -584,7 +577,6 @@
       platforms: [], hazards: [], stars: [], jumpPads: [], switches: [], pressurePlates: [], enemies: []
     };
     const settings = source.settings || {};
-    runtime.levelType = settings.levelType || (settings.requiredStars > 0 ? "exit-stars" : "exit");
     if (settings.customMusic) runtime.customMusic = { ...settings.customMusic };
     if (settings.theme && settings.theme !== "default") runtime.theme = settings.theme;
     if (settings.postRun) runtime.postRun = true;

@@ -311,7 +311,7 @@ canvas {
   bottom: 48px;
   width: 44px;
   height: 44px;
-  background: url("assets/slime-player.svg") center / contain no-repeat;
+  background: url("../assets/slime-player.svg") center / contain no-repeat;
   filter: drop-shadow(0 6px 5px #17482b45);
   will-change: left, bottom, transform;
 }
@@ -1079,28 +1079,9 @@ canvas {
 .community-profile-link { color: #8de4ff; font-weight: 800; }
 .community-level-card .community-version { color: #ffe05d; font-weight: 850; }
 .community-level-card button { min-width: 76px; }
-.community-level-card .community-card-actions { display: flex; gap: 8px; }
 .community-levels-empty { padding: 28px 14px; color: #b8cbe2; text-align: center; }
 .community-levels-actions { display: flex; justify-content: center; gap: 10px; }
 .community-levels-actions .secondary-button { color: #fff; background: #ffffff14; }
-
-.custom-level-details-panel { width: min(760px, 92%); max-height: 88%; overflow: auto; }
-.run-integrity-warning { position: absolute; z-index: 16; top: 84px; left: 50%; transform: translateX(-50%); max-width: 72%; padding: 8px 13px; border: 2px solid #e5a96b; border-radius: 10px; color: #fff; background: #542f2fe8; font-weight: 850; text-align: center; }
-.custom-level-details-panel h3 { margin-top: 10px; color: #ffe05d; }
-.custom-level-details-actions { display: flex; gap: 10px; }
-.custom-level-status { padding: 9px 12px; border: 1px solid #ffffff2b; border-radius: 10px; color: #dcecff; background: #08142799; }
-.custom-level-leaderboard { display: grid; gap: 6px; min-height: 50px; padding: 0; list-style: none; }
-.custom-level-run { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto auto; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 9px; color: #fff; background: #ffffff14; }
-.custom-level-run.invalid { color: #9ca6b3; background: #6d77831c; filter: grayscale(.7); }
-.custom-level-run .run-rank { color: #8de4ff; font-weight: 900; }
-.custom-level-run.invalid .run-rank { color: #929aa5; }
-.custom-level-run small { color: inherit; opacity: .82; }
-.custom-level-run button { min-width: 58px; padding: 6px 8px; font-size: .72rem; }
-.survival-review-panel { display: grid; gap: 8px; padding: 10px; border: 1px solid #ffffff24; border-radius: 10px; background: #071326aa; }
-.survival-review-panel p { color: #b8cbe2; font-size: .76rem; line-height: 1.4; }
-.survival-review-list { display: grid; gap: 7px; }
-.survival-review-item { display: grid; gap: 6px; padding: 8px; border-radius: 8px; background: #ffffff10; }
-.survival-review-actions { display: flex; gap: 8px; }
 
 .public-profile-panel {
   width: min(800px, 100%);

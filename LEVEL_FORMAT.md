@@ -17,7 +17,8 @@ The implementation and representative campaign data live in [`level-data.js`](le
   "settings": {
     "music": "level2",
     "theme": "rewind",
-    "requiredLevelStars": 1,
+    "levelType": "exit-stars",
+    "requiredStars": 1,
     "rewind": {
       "enabled": true,
       "tutorial": false,
@@ -47,7 +48,8 @@ Unknown fields are rejected. This is intentional: misspellings fail clearly, and
 | `customMusic` | Safe embedded audio used with `music: "custom"`; contains `name`, an audio `dataUrl`, `loop`, and `volume` |
 | `theme` | `default`, `lava`, or `rewind` |
 | `postRun` | Marks later campaign-style content played after the introductory run |
-| `requiredStars` | Total star requirement used by existing campaign rules |
+| `levelType` | Exactly `exit`, `exit-stars`, or `survival`; omitted legacy data defaults to Exit unless it already has a positive `requiredStars` value |
+| `requiredStars` | Required only for `exit-stars`; the count that must be collected before the exit verifies the run |
 | `requiredLevelStars` | Stars that must be collected in this level before the exit succeeds |
 | `rewind.enabled` | Enables the level's Rewind chapter behavior |
 | `rewind.tutorial` | Enables established Rewind control presentation |
@@ -59,6 +61,8 @@ Unknown fields are rejected. This is intentional: misspellings fail clearly, and
 | `gauntlet` | Optional campaign metadata: `{ "id": "G1", "chapter": 0 }` |
 
 Story transitions, cutscene selection, account data, leaderboard rules, roadmap unlocking, and run construction are deliberately not level data.
+
+Published levels attach verification and leaderboard records to the exact immutable publication version, not to the editable draft. Exit and Exit + Required Stars versions begin unverified and require a valid completed run with no Fly or developer-cheat use. Survival versions are ranked immediately, have no exit completion condition, and sort by longest time.
 
 ## Supported object types
 

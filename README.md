@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.33.3`
+**Current version:** `v0.34.0`
 
 ## How it works
 
@@ -39,6 +39,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 **Use an optional account.** Sign up or sign in with email and password to synchronize roadmap unlocks, completed chapters, gauntlets, and private level drafts through Supabase. Public usernames enable safe level sharing without exposing or looking up email addresses. Passwords are handled only by Supabase Auth, and guest play continues to work without an account or network connection.
 
 **View public profiles.** Click a signed-in runner on the global leaderboard or a creator in Community Levels to see their public username, best run categories and world placements, currently published levels, and notable signed-in custom-level clears. Custom-level highlights are recorded only for current published snapshots completed without developer cheats.
+
+**Choose a custom-level type.** Creators can publish Exit, Exit + Required Stars, or Survival levels. Exit versions become verified after their first valid cheat-free completion; Survival versions rank immediately by longest time. Every gameplay-changing publication is verified independently. Survival strategy disputes start without invalidating a run, require at least three community votes and a two-thirds majority, and remain reversible without deleting run records.
 
 **Play past versions.** Open Versions from the main menu to launch any archived release build in a new tab.
 

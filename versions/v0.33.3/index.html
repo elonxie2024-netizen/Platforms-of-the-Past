@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#11182d">
   <title>Platforms of the Past</title>
-  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=0.34.0">
-  <link rel="stylesheet" href="editor.css?v=0.34.0">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css?v=0.33.3">
+  <link rel="stylesheet" href="./editor.css?v=0.33.3">
 </head>
 <body>
   <main class="game-shell">
@@ -40,10 +40,9 @@
           <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" />
         </svg>
       </button>
-      <p id="runIntegrityWarning" class="run-integrity-warning" hidden aria-live="assertive"></p>
       <div id="mainMenu" class="main-menu">
         <div class="menu-panel">
-          <p class="menu-version">v0.34.0</p>
+          <p class="menu-version">v0.33.3</p>
           <h2>Platforms of the Past</h2>
           <div class="menu-stage" role="img" aria-label="A green slime endlessly jumping between two grassy platforms">
             <div class="menu-sun" aria-hidden="true"></div>
@@ -316,27 +315,6 @@
           </div>
         </div>
       </div>
-      <div id="customLevelDetailsMenu" class="overlay-menu" hidden>
-        <div class="overlay-panel custom-level-details-panel">
-          <p class="eyebrow">Published level</p>
-          <h2 id="customLevelDetailsTitle">Level details</h2>
-          <p id="customLevelDetailsMeta" class="community-levels-note"></p>
-          <p id="customLevelDetailsStatus" class="custom-level-status"></p>
-          <div class="custom-level-details-actions">
-            <button id="customLevelDetailsPlayButton" type="button">Play</button>
-            <button id="customLevelDetailsRefreshButton" type="button">Refresh</button>
-          </div>
-          <h3>Leaderboard</h3>
-          <p id="customLevelLeaderboardNote" class="community-levels-note" aria-live="polite"></p>
-          <ol id="customLevelLeaderboard" class="custom-level-leaderboard"></ol>
-          <section id="survivalReviewPanel" class="survival-review-panel" hidden>
-            <h3>Survival strategy review</h3>
-            <p>Flag a specific run only when its motion shows a permanent safe spot or a trivial repeatable pattern that can continue effectively forever. A decision requires at least three votes and a two-thirds majority; votes can change later.</p>
-            <div id="survivalReviewList" class="survival-review-list"></div>
-          </section>
-          <button id="closeCustomLevelDetailsButton" class="secondary-button" type="button">Back</button>
-        </div>
-      </div>
       <div id="publicProfileMenu" class="overlay-menu" hidden>
         <div class="overlay-panel public-profile-panel">
           <p class="eyebrow">Player profile</p>
@@ -479,9 +457,9 @@
 
     <p class="instructions"><strong>Move</strong> A / D or arrows <span aria-hidden="true">&bull;</span> <strong>Jump</strong> W / Up / Space <span aria-hidden="true">&bull;</span> <strong>Interact</strong> E <span aria-hidden="true">&bull;</span> <strong>Pause</strong> P <span aria-hidden="true">&bull;</span> <strong>Restart level</strong> R <span aria-hidden="true">&bull;</span> <strong>Restart run</strong> T</p>
   </main>
-  <script src="level-data.js?v=0.34.0"></script>
-  <script src="account.js?v=0.34.0"></script>
-  <script src="editor.js?v=0.34.0"></script>
-  <script src="game.js?v=0.34.0"></script>
+  <script src="./level-data.js?v=0.33.3"></script>
+  <script src="./account.js?v=0.33.3"></script>
+  <script src="./editor.js?v=0.33.3"></script>
+  <script src="./game.js?v=0.33.3"></script>
 </body>
 </html>
