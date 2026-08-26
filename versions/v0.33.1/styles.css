@@ -311,7 +311,7 @@ canvas {
   bottom: 48px;
   width: 44px;
   height: 44px;
-  background: url("assets/slime-player.svg") center / contain no-repeat;
+  background: url("../assets/slime-player.svg") center / contain no-repeat;
   filter: drop-shadow(0 6px 5px #17482b45);
   will-change: left, bottom, transform;
 }
@@ -993,8 +993,8 @@ canvas {
 
 .leaderboard-rank { color: #8de4ff; font-weight: 900; }
 .leaderboard-name { overflow: hidden; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
-.overlay-panel .leaderboard-profile-link,
-.overlay-panel .community-profile-link {
+.leaderboard-profile-link,
+.community-profile-link {
   min-width: 0;
   border: 0;
   padding: 0;
@@ -1004,10 +1004,10 @@ canvas {
   font: inherit;
   text-align: left;
 }
-.overlay-panel .leaderboard-profile-link:hover,
-.overlay-panel .community-profile-link:hover { color: #bff2ff; background: transparent; transform: none; text-decoration: underline; }
-.overlay-panel .leaderboard-profile-link:focus-visible,
-.overlay-panel .community-profile-link:focus-visible { outline: 2px solid #ffe05d; outline-offset: 3px; }
+.leaderboard-profile-link:hover,
+.community-profile-link:hover { color: #bff2ff; background: transparent; transform: none; text-decoration: underline; }
+.leaderboard-profile-link:focus-visible,
+.community-profile-link:focus-visible { outline: 2px solid #ffe05d; outline-offset: 3px; }
 .leaderboard-result { color: #ffe05d; font-weight: 900; text-align: right; }
 .leaderboard-details { display: block; color: #aebed4; font-size: .66rem; font-weight: 650; line-height: 1.15; }
 .leaderboard-empty { padding: 24px; color: #b8cbe2; text-align: center; }
