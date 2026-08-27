@@ -60,8 +60,7 @@
     if (message.includes("could not share with that account")) return "Could not share with that account.";
     if (message.includes("custom_levels") || message.includes("custom_level_permissions") || message.includes("published_custom_levels") ||
         message.includes("custom_level_runs") || message.includes("survival_exploit") ||
-        message.includes("enqueue_custom_level_run") || message.includes("get_published_custom_level_details") ||
-        message.includes("verify-custom-run")) {
+        message.includes("enqueue_custom_level_run") || message.includes("verify-custom-run")) {
       return "Custom-level cloud setup is incomplete. Run the latest Supabase setup.";
     }
     if (message.includes("player_profiles") || message.includes("player_progress") || message.includes("schema cache")) return "Account database setup is incomplete. Guest play is still available.";
@@ -102,7 +101,7 @@
     const name = cleanDisplayName(displayName);
     if (!name) throw new Error("Choose a display name first.");
     const handle = cleanUsername(username);
-    if (!handle) throw new Error("Choose a username using 3–24 lowercase letters, numbers, or hyphens.");
+    if (!handle) throw new Error("Choose a username using 3â€“24 lowercase letters, numbers, or hyphens.");
     const { data, error } = await requireClient().auth.signUp({
       email: email.trim(),
       password,
@@ -165,7 +164,7 @@
     const name = cleanDisplayName(displayName);
     if (!name) throw new Error("Choose a display name first.");
     const handle = cleanUsername(username);
-    if (!handle) throw new Error("Choose a username using 3–24 lowercase letters, numbers, or hyphens.");
+    if (!handle) throw new Error("Choose a username using 3â€“24 lowercase letters, numbers, or hyphens.");
     const { data, error } = await requireClient()
       .from("player_profiles")
       .update({ display_name: name, username: handle, updated_at: new Date().toISOString() })
@@ -305,12 +304,6 @@
 
   async function loadPublishedCustomLevel(levelId) {
     const { data, error } = await requireClient().rpc("get_published_custom_level", { p_level_id: levelId });
-    if (error) throw error;
-    return Array.isArray(data) ? data[0] || null : data;
-  }
-
-  async function loadPublishedCustomLevelDetails(levelId) {
-    const { data, error } = await requireClient().rpc("get_published_custom_level_details", { p_level_id: levelId });
     if (error) throw error;
     return Array.isArray(data) ? data[0] || null : data;
   }
@@ -472,7 +465,6 @@
     unpublishCustomLevel,
     listPublishedCustomLevels,
     loadPublishedCustomLevel,
-    loadPublishedCustomLevelDetails,
     loadPublishedCustomLevelVersion,
     loadPublicPlayerProfile,
     recordPublishedLevelCompletion,
@@ -489,3 +481,4 @@
     isAvailable: () => Boolean(client)
   };
 })();
+

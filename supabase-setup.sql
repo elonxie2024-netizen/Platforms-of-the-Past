@@ -14,7 +14,7 @@ create table if not exists public.leaderboard_rulesets (
 
 insert into public.leaderboard_rulesets (id, label, accepted_versions)
 values
-  ('crate-jump-collision-v1', 'Version 0.24.1 to 0.35.2', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1', 'v0.28.2', 'v0.29.0', 'v0.29.1', 'v0.30.0', 'v0.30.1', 'v0.30.2', 'v0.30.3', 'v0.31.0', 'v0.31.1', 'v0.32.0', 'v0.32.1', 'v0.33.0', 'v0.33.1', 'v0.33.2', 'v0.33.3', 'v0.34.0', 'v0.34.1', 'v0.34.2', 'v0.35.0', 'v0.35.1', 'v0.35.2']),
+  ('crate-jump-collision-v1', 'Version 0.24.1 to 0.36.0', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1', 'v0.28.2', 'v0.29.0', 'v0.29.1', 'v0.30.0', 'v0.30.1', 'v0.30.2', 'v0.30.3', 'v0.31.0', 'v0.31.1', 'v0.32.0', 'v0.32.1', 'v0.33.0', 'v0.33.1', 'v0.33.2', 'v0.33.3', 'v0.34.0', 'v0.34.1', 'v0.34.2', 'v0.35.0', 'v0.35.1', 'v0.35.2', 'v0.36.0']),
   ('crate-platform-collision-v1', 'Version 0.23.2 to 0.24.0', array['v0.23.2', 'v0.24.0']),
   ('history-forge-gate-v1', 'Version 0.23.1 to 0.23.1', array['v0.23.1']),
   ('crate-gravity-v1', 'Version 0.23.0 to 0.23.0', array['v0.23.0']),
@@ -1990,7 +1990,11 @@ language sql security definer set search_path = '' stable as $$
       ) as valid_position
     from public.custom_level_runs run
     where run.level_id = p_level_id and run.level_version = p_level_version
-      and exists (select 1 from public.published_custom_levels current where current.level_id = p_level_id)
+      and run.validation_state = 'trusted'
+      and exists (
+        select 1 from public.published_custom_levels current
+        where current.level_id = p_level_id and current.version = p_level_version
+      )
   )
   select ordered.id, ordered.user_id, ordered.runner_name, ordered.seconds, ordered.stars,
     ordered.ranking_status, ordered.status_reason,
@@ -2134,3 +2138,88 @@ grant execute on function public.claim_custom_level_run_verification(uuid) to se
 grant execute on function public.finalize_custom_level_run_verification(uuid, jsonb) to service_role;
 grant execute on function public.list_custom_level_runs(uuid, integer, integer, integer) to anon, authenticated;
 grant execute on function public.record_custom_level_completion(uuid, integer) to authenticated;
+
+-- v0.36.0: metadata-only published-level details and exact-version personal results.
+
+drop function if exists public.get_published_custom_level_details(uuid);
+create function public.get_published_custom_level_details(p_level_id uuid)
+returns table (
+  level_id uuid,
+  owner_id uuid,
+  level_name text,
+  owner_name text,
+  owner_username text,
+  version integer,
+  published_at timestamptz,
+  updated_at timestamptz,
+  level_type text,
+  required_stars integer,
+  verification_status text,
+  review_status text,
+  objective text,
+  player_best_seconds numeric,
+  player_best_stars smallint,
+  player_best_rank bigint,
+  player_best_status text
+)
+language sql security definer set search_path = '' stable as $$
+  with details as (
+    select published.level_id, published.owner_id,
+      coalesce(nullif(btrim(published.level_data ->> 'name'), ''), 'Untitled Level') as level_name,
+      profile.display_name as owner_name, profile.username::text as owner_username,
+      published.version, published.published_at, published.updated_at,
+      status.level_type, status.required_stars, status.verification_status,
+      case
+        when exists (
+          select 1 from public.survival_exploit_reports report
+          where report.level_id = published.level_id and report.level_version = published.version
+            and report.decision_status = 'invalidated'
+        ) then 'invalidated'
+        when exists (
+          select 1 from public.survival_exploit_reports report
+          where report.level_id = published.level_id and report.level_version = published.version
+            and report.decision_status = 'disputed'
+        ) then 'disputed'
+        else 'valid'
+      end as review_status,
+      case status.level_type
+        when 'survival' then 'Survive as long as possible.'
+        when 'exit-stars' then concat('Collect at least ', status.required_stars, ' star',
+          case when status.required_stars = 1 then '' else 's' end, ', then reach the exit.')
+        else 'Reach the exit.'
+      end as objective
+    from public.published_custom_levels published
+    join public.player_profiles profile on profile.user_id = published.owner_id
+    join public.published_custom_level_status status
+      on status.level_id = published.level_id and status.level_version = published.version
+    where published.level_id = p_level_id
+  ), ranked as (
+    select run.user_id, run.seconds, run.stars, run.ranking_status,
+      row_number() over (
+        order by case when details.level_type = 'survival' then run.seconds end desc,
+          case when details.level_type <> 'survival' then run.seconds end asc,
+          run.created_at, run.id
+      ) as display_rank
+    from public.custom_level_runs run
+    cross join details
+    where run.level_id = details.level_id and run.level_version = details.version
+      and run.validation_state = 'trusted'
+      and run.ranking_status in ('valid', 'restored')
+  )
+  select details.level_id, details.owner_id, details.level_name, details.owner_name,
+    details.owner_username, details.version, details.published_at, details.updated_at,
+    details.level_type, details.required_stars, details.verification_status,
+    details.review_status, details.objective,
+    best.seconds, best.stars, best.display_rank, best.ranking_status
+  from details
+  left join lateral (
+    select ranked.seconds, ranked.stars, ranked.display_rank, ranked.ranking_status
+    from ranked
+    where ranked.user_id = (select auth.uid())
+    order by ranked.display_rank
+    limit 1
+  ) best on true;
+$$;
+
+revoke all on function public.get_published_custom_level_details(uuid) from public;
+grant execute on function public.get_published_custom_level_details(uuid) to anon, authenticated;

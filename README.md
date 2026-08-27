@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.35.2`
+**Current version:** `v0.36.0`
 
 ## How it works
 
@@ -46,6 +46,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Store replay evidence efficiently.** Version 0.35.2 records new runs as compact `POTP-RUN-3` evidence: timestamps are delta-encoded, checkpoints are flattened, and nonempty world state is stored in a sparse stream. The trusted verifier expands it internally and applies the same rules, while historical `POTP-RUN-2` evidence remains supported. Compact runs are capped at 650 KB and one hour. Leaderboard and profile listings request metadata only; full replay data is loaded only by the private verifier when it claims one pending run.
 
+**Inspect published levels before playing.** Community Levels and creator profiles now open a public detail screen with creator attribution, level type, objective, immutable version, verification status, the signed-in player's best trusted result, and a per-version leaderboard. Exit levels rank fastest trusted completions; Survival ranks longest trusted runs while keeping disputed and invalidated strategies visible but unranked. The full level snapshot is downloaded only after Play is selected, and existing direct-play links still launch immediately.
+
 **Play past versions.** Open Versions from the main menu to launch any archived release build in a new tab.
 
 **Build on serialized levels.** The first level-data foundation represents gameplay as validated JSON-compatible objects with stable IDs and safe links. Four campaign levels now prove the format while the remaining levels continue through the legacy declarations. See [`LEVEL_FORMAT.md`](LEVEL_FORMAT.md) for the complete schema and development utilities.
@@ -54,7 +56,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Follow development.** Open the changelog from the main menu or pause menu to read every version and Git commit in the game's history.
 
-**Run regression tests.** From PowerShell in the repository folder, run `powershell -ExecutionPolicy Bypass -File .\tests\run-tests.ps1`. The dependency-free suite launches Chrome or Edge headlessly and tests custom-level types, trusted replay derivation, compact replay round trips and measured byte sizes, one-hour and oversized Survival evidence, forged claims, immutable publications, Survival ranking and review rules, serialization, save codes, the complete game boot path, and matching database/source contracts without manual browser interaction. GitHub Actions runs the same command automatically on pushes and pull requests.
+**Run regression tests.** From PowerShell in the repository folder, run `powershell -ExecutionPolicy Bypass -File .\tests\run-tests.ps1`. The dependency-free suite launches Chrome or Edge headlessly and tests custom-level types, trusted replay derivation, compact replay round trips and measured byte sizes, one-hour and oversized Survival evidence, forged claims, immutable publications, exact-version published leaderboards, metadata-only detail queries, personal-best trust filters, Survival ranking and review rules, serialization, save codes, the complete game boot path, and matching database/source contracts without manual browser interaction. GitHub Actions runs the same command automatically on pushes and pull requests.
 
 **Choose your route.** Play lets you choose Custom run or Roadmap. Custom run opens the challenge builder, while Roadmap separates the adventure into Introduction, Rewind, and Echo chapter pages where you can replay completed levels and your next unlocked challenge. Switch pages with the on-screen arrows or the Left and Right Arrow keys. Guest progress now survives refreshes; Restart session clears it, while signed-in account progress remains protected in the cloud.
 

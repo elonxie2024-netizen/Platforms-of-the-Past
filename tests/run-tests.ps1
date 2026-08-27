@@ -53,7 +53,7 @@ try {
     -WindowStyle Hidden -RedirectStandardOutput $mainStdoutPath -RedirectStandardError $mainStderrPath
   if ($mainProcess.ExitCode -ne 0) { throw "The game smoke test exited with code $($mainProcess.ExitCode)." }
   $mainDom = Get-Content -LiteralPath $mainStdoutPath -Raw
-  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.35.2')) {
+  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.36.0')) {
     throw 'The complete game did not initialize with the current verification and level-data scripts.'
   }
   Write-Host 'Complete game initialization: 1/1 passed' -ForegroundColor Green
@@ -70,6 +70,8 @@ try {
   $listStart = $trustedSql.LastIndexOf('create function public.list_custom_level_runs')
   $listEnd = $trustedSql.IndexOf('create or replace function public.record_custom_level_completion', $listStart)
   $listSql = $trustedSql.Substring($listStart, $listEnd - $listStart)
+  $detailStart = $sql.IndexOf('-- v0.36.0: metadata-only published-level details')
+  $detailsSql = if ($detailStart -ge 0) { $sql.Substring($detailStart) } else { '' }
   $contracts = [ordered]@{}
   $contracts['SQL accepts exactly three level types'] = $sql.Contains("level_type in ('exit', 'exit-stars', 'survival')")
   $contracts['SQL creates monotonically increasing immutable versions'] = $sql.Contains('coalesce(max(history.version), 0) + 1')
@@ -105,6 +107,14 @@ try {
   $contracts['Compact replay delta-encodes and decodes streams'] = $validator.Contains('function encodeTimedPairs') -and $validator.Contains('function decodeTimedPairs') -and $validator.Contains('function encodeReplay') -and $validator.Contains('function decodeReplay')
   $contracts['Client preflights replay byte limits'] = $account.Contains('serializedBytes(run.replayData || {}) > replayLimit')
   $contracts['Leaderboard listing never selects replay evidence'] = -not $listSql.Contains('run.*') -and -not $listSql.Contains('replay_data')
+  $contracts['Published detail RPC returns metadata without snapshots or replay evidence'] = $detailsSql.Contains('create function public.get_published_custom_level_details') -and -not $detailsSql.Contains('level_data jsonb') -and -not $detailsSql.Contains('replay_data')
+  $contracts['Published detail RPC reports the current immutable version'] = $detailsSql.Contains('status.level_version = published.version') -and $detailsSql.Contains('published.version')
+  $contracts['Per-level leaderboard requires the exact current published version'] = $listSql.Contains('current.version = p_level_version')
+  $contracts['Per-level leaderboard excludes every non-trusted validation state'] = $listSql.Contains("run.validation_state = 'trusted'")
+  $contracts['Per-level leaderboard preserves reversible Survival rank states'] = $listSql.Contains("run.ranking_status in ('valid', 'restored')") -and $listSql.Contains('then ordered.valid_position else null end')
+  $contracts['Personal best uses only trusted valid or restored runs'] = $detailsSql.Contains("run.validation_state = 'trusted'") -and $detailsSql.Contains("run.ranking_status in ('valid', 'restored')") -and $detailsSql.Contains('ranked.user_id = (select auth.uid())')
+  $contracts['Details are loaded before Community and profile gameplay'] = $game.Contains('openCustomLevelDetails(level.level_id, "profile")') -and $game.Contains('openCustomLevelDetails(entry.level_id, "community")') -and $account.Contains('get_published_custom_level_details')
+  $contracts['Existing direct-play links still bypass the detail screen'] = $game.Contains('new URL(location.href).searchParams.get("level")') -and $game.Contains('openPublishedLevel(publicLevelId)')
   $contracts['Run intake and finalization return metadata instead of replay rows'] = ([regex]::Matches($trustedSql, 'returns jsonb').Count -ge 3) -and $trustedSql.Contains("'id', result.id, 'validation_state', result.validation_state")
   $contracts['Replay byte size is observable without loading evidence'] = $trustedSql.Contains('replay_bytes integer generated always as')
   $contracts['Verifier rejects zero-time checkpoint teleporting'] = $validator.Contains('time <= previousTime')

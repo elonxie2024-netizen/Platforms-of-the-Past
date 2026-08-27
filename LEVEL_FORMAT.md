@@ -296,6 +296,12 @@ Compact evidence is limited to 650,000 UTF-8 bytes, 3,600,000 ms, 20,000 input c
 
 Public leaderboard RPCs explicitly project only rank metadata and never select or return `replay_data`. PostgreSQL stores a generated `replay_bytes` measurement and uses a covering listing index; the full JSONB payload is retrieved only by the service-role claim RPC for a single pending run. Existing rows are preserved without conversion or reclassification.
 
+## Published level details and leaderboards
+
+Version 0.36.0 adds `get_published_custom_level_details(level_id)`, a metadata-only RPC for the current publication. It returns the level name, creator identity, immutable version, dates, type, Required Stars, objective, verification/review status, and the signed-in caller's best trusted result for that exact version. It extracts only the name from `level_data`; it never returns the full snapshot or replay evidence.
+
+`list_custom_level_runs(level_id, level_version, ...)` now serves a leaderboard only when that exact version is the currently published immutable version. It includes only rows with `validation_state = 'trusted'`. Exit and Exit + Required Stars sort ascending by time; Survival sorts descending. Trusted disputed or invalidated Survival runs remain in score order with no display rank and do not consume a rank, while restored runs re-enter ranking normally. Pending, processing, rejected, and legacy rows are excluded. Community and profile listings remain metadata-only, and the existing `get_published_custom_level` snapshot RPC is called only when Play—or an existing direct-play URL—actually starts the level.
+
 ## Automated regression tests
 
 Version 0.34.2 adds a dependency-free test harness under `tests/`. Run it from PowerShell at the repository root:

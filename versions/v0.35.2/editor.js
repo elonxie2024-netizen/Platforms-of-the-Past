@@ -24,11 +24,11 @@
   const PLACE_TO_TYPE = { spikes: "hazard", lava: "hazard" };
   const images = {};
   for (const [key, src] of Object.entries({
-    player: "assets/slime-player.svg", enemy: "assets/slime-enemy.svg",
-    switch: "assets/switch-left.svg", pressurePlateBase: "assets/pressure-plate-base.svg",
-    pressurePlateTop: "assets/pressure-plate-top.svg", jumpPadBase: "assets/jump-pad-base.svg",
-    jumpPadTop: "assets/jump-pad-top.svg", blade: "assets/moving-obstacle.svg",
-    cracks: "assets/fragile-block-cracks.svg"
+    player: "../assets/slime-player.svg", enemy: "../assets/slime-enemy.svg",
+    switch: "../assets/switch-left.svg", pressurePlateBase: "../assets/pressure-plate-base.svg",
+    pressurePlateTop: "../assets/pressure-plate-top.svg", jumpPadBase: "../assets/jump-pad-base.svg",
+    jumpPadTop: "../assets/jump-pad-top.svg", blade: "../assets/moving-obstacle.svg",
+    cracks: "../assets/fragile-block-cracks.svg"
   })) {
     const image = new Image(); image.src = src; image.onload = () => draw(); images[key] = image;
   }
@@ -62,7 +62,7 @@
 
   host.innerHTML = `
     <div class="editor-toolbar">
-      <strong>Level Editor · v0.36.0</strong>
+      <strong>Level Editor Â· v0.35.2</strong>
       <span class="editor-workspace-identity" data-role="workspace-identity">Guest workspace</span>
       <label class="editor-level-picker"><span>Level</span><select data-role="draft-picker" aria-label="Level being edited"></select></label>
       <button data-action="new">New</button><button data-action="duplicate">Duplicate</button><button data-action="delete-draft">Delete</button><button data-action="clear">Clear</button>
@@ -101,12 +101,12 @@
       <div class="editor-viewport">
         <canvas class="editor-canvas" width="960" height="570"></canvas>
         <div class="editor-zoom-controls" aria-label="Editor zoom controls">
-          <button type="button" data-action="zoom-out" aria-label="Zoom out">−</button>
+          <button type="button" data-action="zoom-out" aria-label="Zoom out">âˆ’</button>
           <output data-role="zoom">100%</output>
           <button type="button" data-action="zoom-in" aria-label="Zoom in">+</button>
           <button type="button" data-action="zoom-fit">Fit Level</button>
         </div>
-        <p class="editor-camera-note">Wheel / arrows: pan · Ctrl + wheel: zoom · drag the level edge to resize</p>
+        <p class="editor-camera-note">Wheel / arrows: pan Â· Ctrl + wheel: zoom Â· drag the level edge to resize</p>
       </div>
       <div class="editor-panel-resizer" data-resize-panel="right" title="Drag to resize the properties panel"></div>
       <aside class="editor-inspector"><h3>Properties</h3><div class="editor-fields"></div></aside>
@@ -226,8 +226,8 @@
     draftPicker.replaceChildren(...drafts.map((draft, index) => {
       const option = new Option(draft.title || draft.level?.name || draft.level?.id || `Untitled Level ${index + 1}`, draft.key);
       option.textContent += draft.role && draft.role !== "owner" ? ` (${draft.role})` : "";
-      const owner = draft.ownerProfile?.username ? ` · shared by @${draft.ownerProfile.username}` : "";
-      option.title = `${draft.level?.id || draft.cloudId}${draft.role ? ` · ${draft.role}` : ""}${owner}`;
+      const owner = draft.ownerProfile?.username ? ` Â· shared by @${draft.ownerProfile.username}` : "";
+      option.title = `${draft.level?.id || draft.cloudId}${draft.role ? ` Â· ${draft.role}` : ""}${owner}`;
       return option;
     }));
     draftPicker.value = activeDraftKey;
@@ -529,7 +529,7 @@
   function validate() {
     const result = api.validateLevel(data);
     status.className = `editor-status ${result.valid ? "ok" : "error"}`;
-    status.textContent = result.valid ? statusNote : `${result.errors.length} issue${result.errors.length === 1 ? "" : "s"}: ${result.errors.slice(0, 3).join(" · ")}`;
+    status.textContent = result.valid ? statusNote : `${result.errors.length} issue${result.errors.length === 1 ? "" : "s"}: ${result.errors.slice(0, 3).join(" Â· ")}`;
     host.querySelector('[data-action="playtest"]').disabled = !result.valid || workspaceLoading || activeDraft()?.loaded === false;
     return result;
   }
@@ -848,7 +848,7 @@
   function renameId(input) {
     const object = selectionObject(); const old = object.id; const next = input.value;
     if (!next.trim()) { statusNote = "IDs cannot be empty."; return refresh(); }
-    if (next !== old && allIds().has(next)) { statusNote = `The ID “${next}” is already used. Choose a different one.`; return refresh(); }
+    if (next !== old && allIds().has(next)) { statusNote = `The ID â€œ${next}â€ is already used. Choose a different one.`; return refresh(); }
     commit(() => {
       if (selected === "@exit") data.exit.id = next;
       else { object.id = next; selectedIds.delete(old); selectedIds.add(next); selected = next; }
@@ -928,7 +928,7 @@
     object.motionPath.forEach((point, index) => {
       const row = document.createElement("div"); row.className = "editor-waypoint";
       for (const axis of ["x", "y"]) { const input = document.createElement("input"); input.type = "number"; input.value = point[axis]; input.title = `${axis.toUpperCase()} coordinate`; input.addEventListener("change", () => commit(() => point[axis] = Number(input.value), `Changed waypoint ${index + 1}.`)); row.append(input); }
-      const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "×"; remove.disabled = object.motionPath.length <= 2; remove.addEventListener("click", () => commit(() => { object.motionPath.splice(index, 1); object.pathIndex = Math.min(object.pathIndex || 0, object.motionPath.length - 1); }, "Removed a waypoint.")); row.append(remove); fields.append(row);
+      const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "Ã—"; remove.disabled = object.motionPath.length <= 2; remove.addEventListener("click", () => commit(() => { object.motionPath.splice(index, 1); object.pathIndex = Math.min(object.pathIndex || 0, object.motionPath.length - 1); }, "Removed a waypoint.")); row.append(remove); fields.append(row);
     });
     const add = document.createElement("button"); add.type = "button"; add.textContent = "Add waypoint"; add.addEventListener("click", () => commit(() => { const last = object.motionPath.at(-1); object.motionPath.push({ x: Math.min(data.width, last.x + 120), y: last.y }); }, "Added a waypoint.")); fields.append(add);
   }
@@ -939,7 +939,7 @@
     if (selectedIds.size > 1) {
       const members = selectedObjects();
       const groupIds = new Set(members.map((member) => member.groupId).filter(Boolean));
-      fields.innerHTML = `<p class="editor-selection-summary">${members.length} objects selected${groupIds.size === 1 && members.every((member) => member.groupId) ? ` · ${[...groupIds][0]}` : ""}. Drag any selected object to move the selection together.</p>`;
+      fields.innerHTML = `<p class="editor-selection-summary">${members.length} objects selected${groupIds.size === 1 && members.every((member) => member.groupId) ? ` Â· ${[...groupIds][0]}` : ""}. Drag any selected object to move the selection together.</p>`;
       return;
     }
     if (!object) { fields.textContent = "Select an object or choose something from the placement palette."; return; }
@@ -1298,7 +1298,7 @@
     const unit=1/zoom;
     ctx.save();ctx.strokeStyle="#ffe05d";ctx.lineWidth=4*unit;ctx.setLineDash([12*unit,7*unit]);ctx.strokeRect(0,0,data.width,WORLD_H);ctx.setLineDash([]);
     ctx.fillStyle="#ffe05d";ctx.beginPath();ctx.roundRect(data.width-7*unit,WORLD_H/2-25*unit,14*unit,50*unit,6*unit);ctx.fill();
-    ctx.fillStyle="#07162de8";ctx.font=`800 ${12*unit}px system-ui`;ctx.textAlign="right";ctx.fillText(`LEVEL END · ${data.width}px`,data.width-14*unit,22*unit);ctx.restore();
+    ctx.fillStyle="#07162de8";ctx.font=`800 ${12*unit}px system-ui`;ctx.textAlign="right";ctx.fillText(`LEVEL END Â· ${data.width}px`,data.width-14*unit,22*unit);ctx.restore();
   }
   function draw() {
     if(host.hidden)return;
@@ -1319,7 +1319,7 @@
   function refresh() {
     syncDraftPicker();
     const editable = canEdit(); const role = activeRole(); const draft = activeDraft();
-    workspaceIdentity.textContent = accountContext.userId ? `${accountContext.displayName || "Account"} workspace · ${role}` : "Guest workspace · local";
+    workspaceIdentity.textContent = accountContext.userId ? `${accountContext.displayName || "Account"} workspace Â· ${role}` : "Guest workspace Â· local";
     host.classList.toggle("editor-readonly", !editable);
     host.querySelector(".editor-workspace").hidden = viewerLandingOpen;
     viewerLanding.hidden = !viewerLandingOpen;
@@ -1405,8 +1405,8 @@
     const collaborator = accountContext.userId && ["editor", "viewer"].includes(draft.role);
     if (!collaborator && drafts.length <= 1 && !draft.cloudId) return;
     const question = collaborator
-      ? `Remove “${draft.title || data.name}” from your workspace? The owner's level will not be deleted.`
-      : `Delete “${draft.title || data.name}”? This cannot be undone.`;
+      ? `Remove â€œ${draft.title || data.name}â€ from your workspace? The owner's level will not be deleted.`
+      : `Delete â€œ${draft.title || data.name}â€? This cannot be undone.`;
     if (!confirm(question)) return;
     if (collaborator) {
       try { await accountContext.service.leaveCustomLevel(draft.cloudId); }
@@ -1429,7 +1429,7 @@
   function exportData() { const result=api.exportLevel(data);if(!result.ok){statusNote=result.errors[0];return refresh();}const blob=new Blob([result.json],{type:"application/json"}),link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=`${data.id}.json`;link.click();URL.revokeObjectURL(link.href);statusNote="Exported validated level JSON.";refresh(); }
   async function copySaveCode() {
     const result = api.exportSaveCode(data);
-    if (!result.ok) { statusNote = `Save code unavailable: ${result.errors.join(" · ")}`; return refresh(); }
+    if (!result.ok) { statusNote = `Save code unavailable: ${result.errors.join(" Â· ")}`; return refresh(); }
     try {
       await navigator.clipboard.writeText(result.code);
       statusNote = "Copied the current level save code.";
@@ -1443,7 +1443,7 @@
     const code = prompt("Paste a POTP1- save code:");
     if (code === null) return;
     const result = api.importSaveCode(code);
-    if (!result.ok) { statusNote = `Save code rejected: ${result.errors.join(" · ")}`; return refresh(); }
+    if (!result.ok) { statusNote = `Save code rejected: ${result.errors.join(" Â· ")}`; return refresh(); }
     addDraft(result.level, "Imported a validated save code as a new level. Your current draft was left unchanged.");
   }
   async function importFile(file) {
@@ -1451,7 +1451,7 @@
     const text=await file.text();let importedText=text,repaired=false;
     try { const parsed=JSON.parse(text);repaired=repairKnownEditorData(parsed);if(repaired)importedText=JSON.stringify(parsed); } catch { /* The safe importer reports malformed JSON below. */ }
     const result=api.importLevel(importedText);
-    if(!result.ok){statusNote=`Import rejected: ${result.errors.join(" · ")}`;return refresh();}
+    if(!result.ok){statusNote=`Import rejected: ${result.errors.join(" Â· ")}`;return refresh();}
     addDraft(result.level, repaired?"Imported a new level and repaired its enemy placement data.":"Imported a new validated level without replacing your other drafts.");
   }
 
@@ -1477,7 +1477,7 @@
     permissions.forEach(permission => {
       const row = document.createElement("div"); row.className = "editor-permission-row";
       const name = permission.profile?.username ? `@${permission.profile.username}` : permission.profile?.display_name || "Player";
-      const identity = document.createElement("span"); identity.textContent = `${name} · ${permission.role}`;
+      const identity = document.createElement("span"); identity.textContent = `${name} Â· ${permission.role}`;
       const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "Remove"; remove.dataset.removePermission = permission.user_id;
       row.append(identity, remove); permissionList.append(row);
     });
@@ -1609,3 +1609,4 @@
     setPlaytestCallback:(callback)=>{playtestCallback=callback;}
   });
 })();
+

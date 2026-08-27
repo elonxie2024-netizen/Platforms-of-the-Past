@@ -83,13 +83,8 @@ const loadMoreCommunityLevelsButton = document.querySelector("#loadMoreCommunity
 const closeCommunityLevelsButton = document.querySelector("#closeCommunityLevelsButton");
 const customLevelDetailsMenu = document.querySelector("#customLevelDetailsMenu");
 const customLevelDetailsTitle = document.querySelector("#customLevelDetailsTitle");
-const customLevelDetailsCreator = document.querySelector("#customLevelDetailsCreator");
 const customLevelDetailsMeta = document.querySelector("#customLevelDetailsMeta");
-const customLevelDetailsType = document.querySelector("#customLevelDetailsType");
-const customLevelDetailsVersion = document.querySelector("#customLevelDetailsVersion");
 const customLevelDetailsStatus = document.querySelector("#customLevelDetailsStatus");
-const customLevelDetailsObjective = document.querySelector("#customLevelDetailsObjective");
-const customLevelPersonalBest = document.querySelector("#customLevelPersonalBest");
 const customLevelDetailsPlayButton = document.querySelector("#customLevelDetailsPlayButton");
 const customLevelDetailsRefreshButton = document.querySelector("#customLevelDetailsRefreshButton");
 const customLevelLeaderboardNote = document.querySelector("#customLevelLeaderboardNote");
@@ -178,7 +173,6 @@ const profileDisplayName = document.querySelector("#profileDisplayName");
 const profileUsername = document.querySelector("#profileUsername");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.36.0", commit: "Pending commit", date: "2026-08-27", message: "Add published level details and per-level leaderboards", description: "Added a dedicated metadata-only detail screen before community gameplay from both Community Levels and creator profiles. It shows creator attribution, level type, Required Stars, immutable published version, verification or ranked status, objective, the signed-in player's best trusted result, and an exact-version leaderboard. Exit boards rank fastest trusted completions, Survival boards rank longest trusted runs, disputed and invalidated Survival strategies remain visible as gray unranked rows, and pending, processing, rejected, and legacy evidence is excluded. Full level snapshots still load only after Play, while existing direct-play links remain unchanged." },
   { version: "v0.35.2", commit: "Pending commit", date: "2026-08-27", message: "Optimize replay storage and performance", description: "Added the compact POTP-RUN-3 evidence format without weakening the trusted validator or invalidating historical POTP-RUN-2 runs. Timestamp streams are delta-encoded, player checkpoints are flattened, and nonempty world snapshots are stored sparsely instead of repeating empty arrays. Compact evidence has a 650 KB hard limit, all streams and one-hour Survival duration remain bounded in both the browser and database, and oversized runs are rejected before upload. Leaderboard queries now project metadata explicitly without selecting replay payloads, replay byte counts are stored as generated metadata, and a covering listing index reduces long-term query work. Regression fixtures measure Exit, Required Stars, one-hour Survival, dense maximum-size evidence, backward compatibility, and lazy query shape." },
   { version: "v0.35.1", commit: "Pending commit", date: "2026-08-26", message: "Audit and harden replay verification", description: "Adversarially audited the trusted replay boundary and closed timestamp-compression, same-time checkpoint teleport, terminal mismatch, impossible jump-velocity, invalid object-state, illegal Rewind input, and out-of-order Echo-action bypasses. Published Exit attempts now discard evidence after death and restart instead of joining separate attempts. The Edge trigger rejects malformed and oversized requests earlier, database intake bounds every replay stream, and service-only finalization independently rechecks the replay duration, available stars, completion state, and current verifier version. Added exploit regressions for altered payloads, fabricated claims, wrong tickets and versions, impossible movement and collections, sticky cheats, Rewind/Echo sequencing, death boundaries, truncation, malformed states, and byte limits." },
   { version: "v0.35.0", commit: "Pending commit", date: "2026-08-26", message: "Add trusted replay verification", description: "Replaced the client-trusted custom-level result RPC with a two-stage replay pipeline. Public browsers can only enqueue bounded POTP-RUN-2 evidence as pending; a private Supabase Edge Function loads the exact immutable published snapshot, validates timestamped inputs, Rewind and Echo actions, checkpoints, star positions, terminal state, server time, and sticky integrity events, then derives the result through service-role-only database functions. Legacy runs remain visible but unranked, only trusted runs can verify or rank, malformed and inconsistent evidence is rejected, and the regression suite now covers forged scalar claims and the complete trust boundary." },
@@ -1533,7 +1527,7 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.36.0";
+const GAME_VERSION = "v0.35.2";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
@@ -1541,7 +1535,7 @@ const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const ACCOUNT_PREFERENCES_STORAGE_PREFIX = "platforms-past-account-preferences-v1:";
 const LEGACY_SHARED_PREFERENCE_KEYS = ["platforms-volume", "platforms-audio-mix-v1", "platforms-display-size"];
 const LEADERBOARD_RULESETS = [
-  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.36.0" },
+  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.35.2" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1584,7 +1578,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.36.0", "v0.35.2", "v0.35.1", "v0.35.0", "v0.34.2", "v0.34.1", "v0.34.0",
+  "v0.35.2", "v0.35.1", "v0.35.0", "v0.34.2", "v0.34.1", "v0.34.0",
   "v0.33.3", "v0.33.2", "v0.33.1", "v0.33.0", "v0.32.1", "v0.32.0", "v0.31.1", "v0.31.0", "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
@@ -1861,7 +1855,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1880,7 +1874,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -2760,7 +2754,7 @@ function restartLevel() {
 function startEditorPlaytest(levelData, options = {}) {
   const result = window.PlatformsLevelDev.load(levelData);
   if (!result.ok) {
-    window.PlatformsEditor?.showAfterPlaytest(`Playtest rejected: ${result.errors.join(" · ")}`);
+    window.PlatformsEditor?.showAfterPlaytest(`Playtest rejected: ${result.errors.join(" Â· ")}`);
     return;
   }
   if (editorPlaytestActive) returnFromEditorPlaytest();
@@ -2908,11 +2902,11 @@ function finishPublishedSurvivalRun() {
 function updateHud() {
   levelLabel.textContent = editorPlaytestActive
     ? publishedLevelActive
-      ? `Published Level — ${currentLevel().name}`
-      : `Editor Playtest — ${currentLevel().name}`
+      ? `Published Level â€” ${currentLevel().name}`
+      : `Editor Playtest â€” ${currentLevel().name}`
     : currentLevel().gauntletId
-    ? `Gauntlet ${currentLevel().gauntletId} — ${currentLevel().name}`
-    : `Level ${levelIndex + 1} / ${CAMPAIGN_LEVEL_COUNT} — ${currentLevel().name}`;
+    ? `Gauntlet ${currentLevel().gauntletId} â€” ${currentLevel().name}`
+    : `Level ${levelIndex + 1} / ${CAMPAIGN_LEVEL_COUNT} â€” ${currentLevel().name}`;
   const enemyStarTotal = (currentLevel().enemies || []).length;
   starLabel.textContent = `Stars ${currentLevelStarCount()} / ${collected.length + enemyStarTotal}`;
 }
@@ -3396,7 +3390,7 @@ function runTypeId(config) {
 
 function runTypeLabel(config) {
   const levelDetail = config.objective === "specific" ? ` (${config.levels.map((index) => index + 1).join(", ")})` : "";
-  return `${RUN_OBJECTIVE_LABELS[config.objective]}${levelDetail} · ${RUN_CONSTRAINT_LABELS[config.constraint]}`;
+  return `${RUN_OBJECTIVE_LABELS[config.objective]}${levelDetail} Â· ${RUN_CONSTRAINT_LABELS[config.constraint]}`;
 }
 
 function availableHazards(levelIndexes) {
@@ -3488,7 +3482,7 @@ function updateRunSetup() {
     runSetupSummary.textContent = "Choose at least one level.";
     return;
   }
-  runSetupSummary.textContent = `${runTypeLabel(config)} · Ranked by ${config.metric}`;
+  runSetupSummary.textContent = `${runTypeLabel(config)} Â· Ranked by ${config.metric}`;
 }
 
 function openPlayChoice() {
@@ -3546,7 +3540,7 @@ function renderRoadmap() {
   const gauntlet = ROADMAP_GAUNTLETS[roadmapChapterIndex];
   const gauntletLevel = levels[gauntlet.levelIndex];
   roadmapChapterLabel.textContent = ROADMAP_CHAPTERS[roadmapChapterIndex] || `Chapter ${roadmapChapterIndex + 1}`;
-  roadmapChapterRange.textContent = `Levels ${chapterStart + 1}-${chapterEnd} · Optional ${gauntlet.id}`;
+  roadmapChapterRange.textContent = `Levels ${chapterStart + 1}-${chapterEnd} Â· Optional ${gauntlet.id}`;
   previousRoadmapChapterButton.disabled = roadmapChapterIndex === 0;
   nextRoadmapChapterButton.disabled = roadmapChapterIndex >= lastChapter;
   levelRoadmap.setAttribute("aria-label", `${roadmapChapterLabel.textContent} roadmap, levels ${chapterStart + 1} through ${chapterEnd}`);
@@ -3608,7 +3602,7 @@ function renderRoadmap() {
   if (gauntletLocked) {
     gauntletButton.innerHTML = '<svg class="roadmap-lock" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3h1.5A1.5 1.5 0 0 1 20 11.5v8A1.5 1.5 0 0 1 18.5 21h-13A1.5 1.5 0 0 1 4 19.5v-8A1.5 1.5 0 0 1 5.5 10H7Zm3 0h4V7a2 2 0 1 0-4 0v3Z"/></svg>';
   } else {
-    gauntletButton.textContent = gauntletComplete ? `${gauntlet.id} ✓` : gauntlet.id;
+    gauntletButton.textContent = gauntletComplete ? `${gauntlet.id} âœ“` : gauntlet.id;
     gauntletButton.addEventListener("click", () => startGauntletRun(gauntlet.levelIndex));
   }
   const gauntletName = document.createElement("span");
@@ -3768,7 +3762,7 @@ function renderLeaderboard() {
     if (leaderboardMetric !== "time") secondaryMetrics.push(formatRunTime(Number(entry.seconds)));
     if (leaderboardMetric !== "stars") secondaryMetrics.push(`${entry.stars} ${entry.stars === 1 ? "star" : "stars"}`);
     if (leaderboardMetric !== "score") secondaryMetrics.push(`${entry.score} pts`);
-    details.textContent = secondaryMetrics.join(" · ");
+    details.textContent = secondaryMetrics.join(" Â· ");
     name.append(details);
     const score = document.createElement("span");
     score.className = "leaderboard-result";
@@ -3917,7 +3911,7 @@ function renderPublicProfile(data) {
     const result = category.ranking_metric === "stars" ? `${category.stars} stars`
       : category.ranking_metric === "score" ? `${category.score} pts`
       : formatRunTime(Number(category.seconds));
-    meta.textContent = `${category.leaderboard_label} · ${result}`;
+    meta.textContent = `${category.leaderboard_label} Â· ${result}`;
     const rank = document.createElement("span");
     rank.className = "public-profile-rank";
     rank.textContent = `World #${category.world_rank}`;
@@ -3934,11 +3928,11 @@ function renderPublicProfile(data) {
     const title = document.createElement("strong");
     title.textContent = level.level_name || "Untitled Level";
     const meta = document.createElement("small");
-    meta.textContent = `Published v${level.version} · Updated ${formatCommunityDate(level.updated_at)}`;
+    meta.textContent = `Published v${level.version} Â· Updated ${formatCommunityDate(level.updated_at)}`;
     const play = document.createElement("button");
     play.type = "button";
-    play.textContent = "Details";
-    play.addEventListener("click", () => openCustomLevelDetails(level.level_id, "profile"));
+    play.textContent = "Play";
+    play.addEventListener("click", () => playPublicProfileLevel(level.level_id, play));
     details.append(title, meta);
     card.append(details, play);
     publicProfileLevels.append(card);
@@ -3959,10 +3953,10 @@ function renderPublicProfile(data) {
     const title = document.createElement("strong");
     title.textContent = clear.level_name || "Untitled Level";
     const meta = document.createElement("small");
-    meta.textContent = `Cleared v${clear.level_version} in ${formatRunTime(Number(clear.seconds))} · ${clear.stars} stars · ${clear.deaths} deaths`;
+    meta.textContent = `Cleared v${clear.level_version} in ${formatRunTime(Number(clear.seconds))} Â· ${clear.stars} stars Â· ${clear.deaths} deaths`;
     const badge = document.createElement("span");
     badge.className = "public-profile-badge";
-    badge.textContent = clear.labels.join(" · ");
+    badge.textContent = clear.labels.join(" Â· ");
     details.append(title, meta);
     card.append(details, badge);
     publicProfileClears.append(card);
@@ -3975,7 +3969,6 @@ async function openPublicProfile(userId, source = "main") {
   const request = ++publicProfileRequest;
   if (source === "community") communityLevelsMenu.hidden = true;
   else if (source === "leaderboard") leaderboardMenu.hidden = true;
-  else if (source === "details") customLevelDetailsMenu.hidden = true;
   else mainMenu.hidden = true;
   publicProfileMenu.hidden = false;
   publicProfileHeader.replaceChildren();
@@ -4014,13 +4007,23 @@ function closePublicProfile() {
   } else if (publicProfileReturn === "leaderboard") {
     leaderboardMenu.hidden = false;
     closeLeaderboardButton.focus();
-  } else if (publicProfileReturn === "details") {
-    customLevelDetailsMenu.hidden = false;
-    customLevelDetailsCreator.focus();
   } else {
     mainMenu.hidden = false;
     accountIdentity.focus();
   }
+}
+
+async function playPublicProfileLevel(levelId, button) {
+  if (!levelId || button.disabled) return;
+  button.disabled = true;
+  publicProfileNote.textContent = "Loading the published level...";
+  const opened = await window.PlatformsEditor?.openPublishedLevel(levelId);
+  if (opened) {
+    publicProfileMenu.hidden = true;
+    return;
+  }
+  button.disabled = false;
+  publicProfileNote.textContent = "This level is unavailable or has been unpublished.";
 }
 
 function renderCommunityLevels() {
@@ -4041,7 +4044,7 @@ function renderCommunityLevels() {
     const creator = document.createElement("button");
     creator.type = "button";
     creator.className = "community-creator community-profile-link";
-    creator.textContent = `${entry.owner_name || "Unknown creator"} · @${entry.owner_username || "unknown"}`;
+    creator.textContent = `${entry.owner_name || "Unknown creator"} Â· @${entry.owner_username || "unknown"}`;
     creator.addEventListener("click", () => openPublicProfile(entry.owner_id, "community"));
     const publication = document.createElement("p");
     const version = document.createElement("span");
@@ -4049,10 +4052,10 @@ function renderCommunityLevels() {
     version.textContent = `Published v${entry.version}`;
     publication.append(
       version,
-      document.createTextNode(` · ${formatCommunityDate(entry.published_at)} · Updated ${formatCommunityDate(entry.updated_at)}`)
+      document.createTextNode(` Â· ${formatCommunityDate(entry.published_at)} Â· Updated ${formatCommunityDate(entry.updated_at)}`)
     );
     const typeStatus = document.createElement("p");
-    typeStatus.textContent = `${customLevelTypeLabel(entry.level_type, entry.required_stars)} · ${customLevelStatusLabel(entry)}`;
+    typeStatus.textContent = `${customLevelTypeLabel(entry.level_type, entry.required_stars)} Â· ${customLevelStatusLabel(entry)}`;
     details.append(heading, creator, publication, typeStatus);
     const actions = document.createElement("div");
     actions.className = "community-card-actions";
@@ -4060,7 +4063,11 @@ function renderCommunityLevels() {
     inspect.type = "button";
     inspect.textContent = "Details";
     inspect.addEventListener("click", () => openCustomLevelDetails(entry.level_id, "community"));
-    actions.append(inspect);
+    const play = document.createElement("button");
+    play.type = "button";
+    play.textContent = "Play";
+    play.addEventListener("click", () => playCommunityLevel(entry.level_id, play));
+    actions.append(inspect, play);
     card.append(details, actions);
     communityLevelsList.append(card);
   });
@@ -4138,53 +4145,31 @@ function customLevelStatusLabel(entry) {
 async function openCustomLevelDetails(levelId, returnTo = "community") {
   const request = ++customLevelDetailsRequest;
   customLevelDetailsReturn = returnTo;
-  customLevelDetailsEntry = null;
   communityLevelsMenu.hidden = true;
-  if (returnTo === "profile") publicProfileMenu.hidden = true;
   if (returnTo === "pause") pauseMenu.hidden = true;
   mainMenu.hidden = true;
   customLevelDetailsMenu.hidden = false;
   customLevelDetailsTitle.textContent = "Loading level...";
-  customLevelDetailsCreator.textContent = "Loading creator...";
-  customLevelDetailsCreator.disabled = true;
-  customLevelDetailsMeta.textContent = "Loading lightweight publication details and rankings...";
-  customLevelDetailsType.textContent = "—";
-  customLevelDetailsVersion.textContent = "—";
-  customLevelDetailsStatus.textContent = "—";
-  customLevelDetailsObjective.textContent = "—";
-  customLevelPersonalBest.textContent = accountSession?.user ? "Loading your best trusted result..." : "Sign in to track your best trusted result.";
+  customLevelDetailsMeta.textContent = "Loading the published version and rankings...";
+  customLevelDetailsStatus.textContent = "";
   customLevelLeaderboard.replaceChildren();
   survivalReviewList.replaceChildren();
   survivalReviewPanel.hidden = true;
   customLevelDetailsPlayButton.disabled = true;
   try {
-    const entry = await window.PlatformsAccount.loadPublishedCustomLevelDetails(levelId);
-    if (request !== customLevelDetailsRequest) return;
-    if (!entry) throw new Error("Published level not found.");
+    const entry = await window.PlatformsAccount.loadPublishedCustomLevel(levelId);
+    if (request !== customLevelDetailsRequest || !entry) return;
     customLevelDetailsEntry = entry;
-    customLevelDetailsTitle.textContent = entry.level_name || "Untitled Level";
-    customLevelDetailsCreator.textContent = `${entry.owner_name || "Unknown creator"} · @${entry.owner_username || "unknown"}`;
-    customLevelDetailsCreator.disabled = !entry.owner_id;
-    customLevelDetailsMeta.textContent = `Published ${formatCommunityDate(entry.published_at)} · Updated ${formatCommunityDate(entry.updated_at)}`;
-    customLevelDetailsType.textContent = customLevelTypeLabel(entry.level_type, entry.required_stars);
-    customLevelDetailsVersion.textContent = `v${entry.version} (current immutable version)`;
+    customLevelDetailsTitle.textContent = entry.level_data?.name || "Untitled Level";
+    customLevelDetailsMeta.textContent = `${entry.owner_name} Â· @${entry.owner_username} Â· Published v${entry.version} Â· ${customLevelTypeLabel(entry.level_type, entry.required_stars)}`;
     customLevelDetailsStatus.textContent = customLevelStatusLabel(entry);
-    customLevelDetailsObjective.textContent = entry.objective || (entry.level_type === "survival"
-      ? "Survive as long as possible." : "Reach the exit.");
-    customLevelPersonalBest.textContent = !accountSession?.user
-      ? "Sign in to track your best trusted result."
-      : entry.player_best_seconds == null
-        ? "You do not have a trusted result for this version yet."
-        : `Your best: #${entry.player_best_rank} · ${formatRunTime(Number(entry.player_best_seconds))} · ${entry.player_best_stars} stars${entry.player_best_status === "restored" ? " · Restored" : ""}`;
     customLevelDetailsPlayButton.hidden = returnTo === "pause";
     customLevelDetailsPlayButton.disabled = false;
     await refreshCustomLevelDetails(request);
   } catch {
     if (request !== customLevelDetailsRequest) return;
     customLevelDetailsTitle.textContent = "Level unavailable";
-    customLevelDetailsCreator.textContent = "";
-    customLevelDetailsMeta.textContent = "This level is unavailable, unpublished, or the v0.36.0 database setup has not been run.";
-    customLevelPersonalBest.textContent = "";
+    customLevelDetailsMeta.textContent = "This level is unavailable, unpublished, or the v0.35.2 database setup has not been run.";
   }
 }
 
@@ -4218,7 +4203,7 @@ function renderCustomLevelRuns(runs) {
         : validationState === "rejected"
           ? "Replay rejected"
           : ({ valid: "Valid", disputed: "Disputed", invalidated: "Invalidated", restored: "Restored" })[run.ranking_status] || "Invalidated";
-    status.textContent = `${stateLabel} · ${invalid ? (run.status_reason || "Not ranked") : `${run.stars} stars`}`;
+    status.textContent = `${stateLabel} Â· ${invalid ? (run.status_reason || "Not ranked") : `${run.stars} stars`}`;
     item.append(rank, name, time, status);
     if (customLevelDetailsEntry.level_type === "survival" && trusted && accountSession?.user && ["valid", "restored", "disputed"].includes(run.ranking_status)) {
       const report = document.createElement("button");
@@ -4247,7 +4232,7 @@ function renderSurvivalReviews(reviews) {
     description.textContent = review.description;
     const tally = document.createElement("small");
     const reviewState = ({ valid: "Valid", disputed: "Disputed", invalidated: "Invalidated", restored: "Restored" })[review.decision_status] || "Disputed";
-    tally.textContent = `${reviewState} · ${review.invalid_votes} invalidate / ${review.valid_votes} allow`;
+    tally.textContent = `${reviewState} Â· ${review.invalid_votes} invalidate / ${review.valid_votes} allow`;
     item.append(description, tally);
     if (review.evidence_url) {
       const evidence = document.createElement("a");
@@ -4311,9 +4296,6 @@ function closeCustomLevelDetails() {
   } else if (customLevelDetailsReturn === "pause") {
     pauseMenu.hidden = false;
     pauseLeaderboardButton.focus();
-  } else if (customLevelDetailsReturn === "profile") {
-    publicProfileMenu.hidden = false;
-    publicProfileLevels.querySelector("button")?.focus();
   } else {
     mainMenu.hidden = false;
     communityLevelsButton.focus();
@@ -4340,7 +4322,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -4525,12 +4507,12 @@ function prepareAdventureResults() {
   const timeScore = Math.round((300 - seconds) * 10) / 10;
   const starBonus = totalStars * 2;
   const finalScore = Math.round((timeScore + starBonus) * 10) / 10;
-  const baseSummary = `Time ${formatRunTime(seconds)} · ${totalStars} stars (+${starBonus}) · Final score ${finalScore}`;
+  const baseSummary = `Time ${formatRunTime(seconds)} Â· ${totalStars} stars (+${starBonus}) Â· Final score ${finalScore}`;
   const introSplits = Array.from({ length: INTRO_LEVEL_COUNT }, (_, index) => levelSplits[index]);
   if (activeRunConfig) {
     const requirement = runRequirementStatus(activeRunConfig);
     const resultSplits = activeRunConfig.levels.map((index) => levelSplits[index]);
-    scoreSummary.textContent = `${baseSummary} · ${requirement.success ? "Challenge complete" : "Challenge failed"}`;
+    scoreSummary.textContent = `${baseSummary} Â· ${requirement.success ? "Challenge complete" : "Challenge failed"}`;
     finishedRun = {
       seconds, stars: totalStars, score: finalScore, splits: resultSplits,
       eligible: requirement.success && resultSplits.every(Number.isFinite),
@@ -4761,7 +4743,7 @@ function showChapterCompletionAfterGauntlet(chapterIndex, gauntletId, gauntletSu
   convergenceChapterMessage.hidden = true;
   chapterCompleteMessage.hidden = true;
   const statuses = [introMasteryStatus, rewindMasteryStatus, echoMasteryStatus, combinedMasteryStatus];
-  statuses[chapterIndex].textContent = `${gauntletId} mastered · ${gauntletSummary}`;
+  statuses[chapterIndex].textContent = `${gauntletId} mastered Â· ${gauntletSummary}`;
   statuses[chapterIndex].hidden = false;
 
   if (chapterIndex === 0) {
@@ -4792,7 +4774,7 @@ function finishGauntlet() {
   completeLevelSplit();
   finishRunTimer();
   const gauntlet = currentLevel();
-  const gauntletSummary = `Run time ${formatRunTime(runElapsed)} · ${currentLevelStarCount()} stars · ${deaths} deaths`;
+  const gauntletSummary = `Run time ${formatRunTime(runElapsed)} Â· ${currentLevelStarCount()} stars Â· ${deaths} deaths`;
   completedGauntlets.add(gauntlet.gauntletId);
   persistProgress();
   const restoredState = restoreChapterReturnState();
@@ -5426,12 +5408,9 @@ communitySortSelect.addEventListener("change", () => loadCommunityLevels(true));
 loadMoreCommunityLevelsButton.addEventListener("click", () => loadCommunityLevels(false));
 closeCommunityLevelsButton.addEventListener("click", closeCommunityLevels);
 closeCustomLevelDetailsButton.addEventListener("click", closeCustomLevelDetails);
-customLevelDetailsCreator.addEventListener("click", () => {
-  if (customLevelDetailsEntry?.owner_id) openPublicProfile(customLevelDetailsEntry.owner_id, "details");
-});
-customLevelDetailsRefreshButton.addEventListener("click", () => {
-  if (customLevelDetailsEntry) openCustomLevelDetails(customLevelDetailsEntry.level_id, customLevelDetailsReturn);
-});
+customLevelDetailsRefreshButton.addEventListener("click", () => refreshCustomLevelDetails().catch(() => {
+  customLevelLeaderboardNote.textContent = "Rankings could not be refreshed.";
+}));
 customLevelDetailsPlayButton.addEventListener("click", () => {
   if (customLevelDetailsEntry) playCommunityLevel(customLevelDetailsEntry.level_id, customLevelDetailsPlayButton);
 });
@@ -5799,7 +5778,7 @@ signUpForm.addEventListener("submit", async (event) => {
   const email = String(formData.get("email") || "").trim();
   const password = String(formData.get("password") || "");
   if (!displayName) { setAccountMessage("Choose a public display name.", true); return; }
-  if (!username) { setAccountMessage("Use 3–24 lowercase letters, numbers, or hyphens for your username.", true); return; }
+  if (!username) { setAccountMessage("Use 3â€“24 lowercase letters, numbers, or hyphens for your username.", true); return; }
   if (password.length < 6) { setAccountMessage("Use a password with at least 6 characters.", true); return; }
   if (accountInitializationError || !window.PlatformsAccount?.isAvailable()) {
     setAccountMessage(accountFriendlyError(accountInitializationError), true);
@@ -5891,7 +5870,7 @@ profileForm.addEventListener("submit", async (event) => {
   const displayName = window.PlatformsAccount?.cleanDisplayName(new FormData(profileForm).get("displayName"));
   const username = window.PlatformsAccount?.cleanUsername(new FormData(profileForm).get("username"));
   if (!displayName) { setAccountMessage("Choose a public display name.", true); return; }
-  if (!username) { setAccountMessage("Use 3–24 lowercase letters, numbers, or hyphens for your username.", true); return; }
+  if (!username) { setAccountMessage("Use 3â€“24 lowercase letters, numbers, or hyphens for your username.", true); return; }
   if (!accountSession?.user?.id) { setAccountMessage("Sign in before editing your profile.", true); return; }
   setAccountFormBusy(profileForm, true);
   setAccountMessage("Saving profile...");
@@ -8022,3 +8001,4 @@ populateLeaderboardVersions();
 loadLevel(0, false);
 initializeAccounts();
 requestAnimationFrame(frame);
+
