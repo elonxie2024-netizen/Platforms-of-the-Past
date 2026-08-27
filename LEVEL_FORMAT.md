@@ -278,6 +278,14 @@ Exit and Exit + Required Stars versions begin unverified and only the exact vers
 
 This is hardened client-evidence verification, not server-authoritative gameplay. A modified client can still attempt to synthesize internally consistent replay evidence because the browser owns the physics simulation. Fully preventing that class of forgery would require authoritative server simulation or cryptographically attested execution; the current checks are designed to reject obvious/manual RPC forgery and preserve auditable evidence without claiming that stronger guarantee.
 
+Version 0.35.0 replaces the public decision RPC with a two-stage trust boundary. `enqueue_custom_level_run` accepts only a one-use ticket, identity, bounded `POTP-RUN-2` evidence, and an optional Survival strategy fingerprint. It cannot mark a run trusted: every new row begins `pending`, with no rank. The `verify-custom-run` Edge Function uses the private service role to claim the exact immutable level version, runs the shared deterministic evidence validator, and calls a finalizer that is executable only by `service_role`.
+
+`POTP-RUN-2` contains the level/version/ticket identity, a canonical level digest, spawn and initial-state data, input-mask changes with millisecond timestamps, 250 ms player/world checkpoints, Rewind/Echo/switch/collection actions, sticky integrity events, and a terminal exit or death state. The verifier derives time from the terminal event, derives stars from unique collection actions corroborated by nearby checkpoints, checks the final exit overlap or Survival death, checks input/checkpoint consistency and physical bounds, and rejects mismatched, impossible, malformed, inconsistent, or oversized evidence. Evidence is capped at 1.5 MB, one hour, 20,000 input transitions, 14,450 checkpoints, and 10,000 actions.
+
+Existing pre-v0.35.0 rows are retained with `validation_state = 'legacy'`. They remain visible but receive `#` instead of a rank, cannot verify a newer or older version, and do not populate trusted public-profile clear highlights. New rows move through `pending` and `processing` to either `trusted` or `rejected`; only trusted `valid` or `restored` rows consume ranks. Survival dispute and restoration still operate on stored runs without deleting them.
+
+This architecture prevents a browser from directly writing a trusted result or turning fabricated scalar RPC fields into a rank. The evidence itself still originates in an untrusted browser. The server independently validates and derives the result, but this release does not claim cryptographic attestation or a complete authoritative re-simulation of every physics frame; that would require moving the complete game simulation into controlled server execution.
+
 ## Automated regression tests
 
 Version 0.34.2 adds a dependency-free test harness under `tests/`. Run it from PowerShell at the repository root:
@@ -286,4 +294,4 @@ Version 0.34.2 adds a dependency-free test harness under `tests/`. Run it from P
 powershell -ExecutionPolicy Bypass -File .\tests\run-tests.ps1
 ```
 
-The runner starts an isolated headless Chrome or Edge profile, executes the shared verification and serialization behavior, reads the machine-readable results, smoke-tests the complete game boot path, and then checks the authoritative Supabase SQL and client source contracts. It exits nonzero on any failure. `.github/workflows/regression-tests.yml` runs the same command automatically on pushes and pull requests.
+The runner starts an isolated headless Chrome or Edge profile, executes the shared verification, trusted replay, forged-claim, and serialization behavior, reads the machine-readable results, smoke-tests the complete game boot path, and then checks the authoritative Supabase SQL, Edge Function, and client trust-boundary contracts. It exits nonzero on any failure. `.github/workflows/regression-tests.yml` runs the same command automatically on pushes and pull requests.

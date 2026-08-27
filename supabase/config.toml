@@ -1,0 +1,2 @@
+[functions.verify-custom-run]
+verify_jwt = false

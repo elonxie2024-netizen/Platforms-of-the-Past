@@ -59,8 +59,7 @@
     if (message.includes("at most 50 levels")) return "Your account already owns the maximum of 50 levels.";
     if (message.includes("could not share with that account")) return "Could not share with that account.";
     if (message.includes("custom_levels") || message.includes("custom_level_permissions") || message.includes("published_custom_levels") ||
-        message.includes("custom_level_runs") || message.includes("survival_exploit") ||
-        message.includes("enqueue_custom_level_run") || message.includes("verify-custom-run")) {
+        message.includes("custom_level_runs") || message.includes("survival_exploit") || message.includes("submit_custom_level_run")) {
       return "Custom-level cloud setup is incomplete. Run the latest Supabase setup.";
     }
     if (message.includes("player_profiles") || message.includes("player_progress") || message.includes("schema cache")) return "Account database setup is incomplete. Guest play is still available.";
@@ -101,7 +100,7 @@
     const name = cleanDisplayName(displayName);
     if (!name) throw new Error("Choose a display name first.");
     const handle = cleanUsername(username);
-    if (!handle) throw new Error("Choose a username using 3–24 lowercase letters, numbers, or hyphens.");
+    if (!handle) throw new Error("Choose a username using 3â€“24 lowercase letters, numbers, or hyphens.");
     const { data, error } = await requireClient().auth.signUp({
       email: email.trim(),
       password,
@@ -164,7 +163,7 @@
     const name = cleanDisplayName(displayName);
     if (!name) throw new Error("Choose a display name first.");
     const handle = cleanUsername(username);
-    if (!handle) throw new Error("Choose a username using 3–24 lowercase letters, numbers, or hyphens.");
+    if (!handle) throw new Error("Choose a username using 3â€“24 lowercase letters, numbers, or hyphens.");
     const { data, error } = await requireClient()
       .from("player_profiles")
       .update({ display_name: name, username: handle, updated_at: new Date().toISOString() })
@@ -368,28 +367,21 @@
   }
 
   async function submitCustomLevelRun(run) {
-    const activeClient = requireClient();
-    const { data, error } = await activeClient.rpc("enqueue_custom_level_run", {
+    const { data, error } = await requireClient().rpc("submit_custom_level_run", {
       p_run_ticket: run.runTicket,
       p_level_id: run.levelId,
       p_level_version: Math.max(1, Number(run.levelVersion) || 1),
       p_runner_name: cleanDisplayName(run.runnerName) || "Guest",
+      p_seconds: Math.max(.001, Number(run.seconds) || .001),
+      p_stars: Math.max(0, Number(run.stars) || 0),
+      p_reached_exit: Boolean(run.reachedExit),
+      p_fly_ever: Boolean(run.flyEver),
+      p_cheat_ever: Boolean(run.cheatEver),
       p_replay_data: run.replayData || {},
       p_strategy_fingerprint: run.strategyFingerprint || null
     });
     if (error) throw error;
-    const pending = Array.isArray(data) ? data[0] || null : data;
-    if (!pending?.id) return pending;
-    try {
-      const { data: verified, error: verifierError } = await activeClient.functions.invoke("verify-custom-run", {
-        body: { runId: pending.id }
-      });
-      if (verifierError) throw verifierError;
-      return verified?.run || pending;
-    } catch (verifierError) {
-      console.warn("Trusted replay verification remains pending.", verifierError);
-      return { ...pending, verification_pending: true };
-    }
+    return Array.isArray(data) ? data[0] || null : data;
   }
 
   async function listCustomLevelRuns(levelId, levelVersion, offset = 0, limit = 25) {
@@ -476,3 +468,4 @@
     isAvailable: () => Boolean(client)
   };
 })();
+

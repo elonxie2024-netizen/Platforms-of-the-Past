@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.34.2`
+**Current version:** `v0.35.0`
 
 ## How it works
 
@@ -42,7 +42,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Choose a custom-level type.** Creators can publish Exit, Exit + Required Stars, or Survival levels. Exit versions become verified after their first valid cheat-free completion; Survival versions rank immediately by longest time. Every gameplay-changing publication is verified independently. Survival strategy disputes start without invalidating a run, require at least three community votes and a two-thirds majority, and remain reversible without deleting run records.
 
-**Verify published runs.** Published play now begins with a one-use Supabase ticket bound to the exact immutable level version and the active guest or account session. The backend cross-checks replay checkpoints, collection events, exit position, elapsed time, available stars, and permanent developer-cheat flags before a run can verify or rank. Browser evidence raises the cost of obvious manual RPC forgery, but it is not equivalent to a server-authoritative physics simulation.
+**Verify published runs.** Published play begins with a one-use Supabase ticket bound to the exact immutable level version and current guest or account session. The browser records timestamped input changes, Rewind and Echo actions, checkpoints, initial and terminal state, collection events, and permanent integrity events. Its public RPC can only enqueue that bounded evidence as pending. A deployed Supabase Edge Function retrieves the immutable snapshot with its private service role, derives the outcome, and alone can finalize a trusted rank or version verification. Older client-verified runs remain visible as unranked legacy history.
 
 **Play past versions.** Open Versions from the main menu to launch any archived release build in a new tab.
 
@@ -52,7 +52,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Follow development.** Open the changelog from the main menu or pause menu to read every version and Git commit in the game's history.
 
-**Run regression tests.** From PowerShell in the repository folder, run `powershell -ExecutionPolicy Bypass -File .\tests\run-tests.ps1`. The dependency-free suite launches Chrome or Edge headlessly and tests custom-level types, verification, immutable publications, Survival ranking and review rules, serialization, save codes, the complete game boot path, and matching database/source contracts without manual browser interaction. GitHub Actions runs the same command automatically on pushes and pull requests.
+**Run regression tests.** From PowerShell in the repository folder, run `powershell -ExecutionPolicy Bypass -File .\tests\run-tests.ps1`. The dependency-free suite launches Chrome or Edge headlessly and tests custom-level types, trusted replay derivation, forged claims, immutable publications, Survival ranking and review rules, serialization, save codes, the complete game boot path, and matching database/source contracts without manual browser interaction. GitHub Actions runs the same command automatically on pushes and pull requests.
 
 **Choose your route.** Play lets you choose Custom run or Roadmap. Custom run opens the challenge builder, while Roadmap separates the adventure into Introduction, Rewind, and Echo chapter pages where you can replay completed levels and your next unlocked challenge. Switch pages with the on-screen arrows or the Left and Right Arrow keys. Guest progress now survives refreshes; Restart session clears it, while signed-in account progress remains protected in the cloud.
 
@@ -145,7 +145,17 @@ Made by [elonxie2024-netizen](https://github.com/elonxie2024-netizen).
 
 ## Supabase maintenance
 
-The public leaderboard, account profiles, private progression records, custom-level drafts, collaboration permissions, publication history, community catalog, public completion records, functions, and access rules are created by [`supabase-setup.sql`](supabase-setup.sql). Existing installations must run [`supabase-v0.29.0-migration.sql`](supabase-v0.29.0-migration.sql) for the collaboration schema, [`supabase-v0.29.1-migration.sql`](supabase-v0.29.1-migration.sql) for its metadata, [`supabase-v0.30.0-migration.sql`](supabase-v0.30.0-migration.sql) for the Community Levels catalog, the v0.30.1 through v0.32.1 migrations in order, [`supabase-v0.33.0-migration.sql`](supabase-v0.33.0-migration.sql) for public profiles and published-level clear records, and the metadata-only [`supabase-v0.33.1-migration.sql`](supabase-v0.33.1-migration.sql) update.
+The public leaderboard, account profiles, private progression records, custom-level drafts, collaboration permissions, publication history, community catalog, replay evidence, and access rules are created by [`supabase-setup.sql`](supabase-setup.sql). Run the complete current file in the Supabase SQL Editor when updating the live project; it is written to preserve existing data while applying missing schema and function changes.
+
+Trusted replay validation also requires the server-side function in [`supabase/functions/verify-custom-run/index.ts`](supabase/functions/verify-custom-run/index.ts). After installing the Supabase CLI, link the project and deploy it:
+
+```powershell
+supabase login
+supabase link --project-ref fuhqixfcdeyyjzpdnivy
+supabase functions deploy verify-custom-run
+```
+
+The hosted function receives `SUPABASE_SERVICE_ROLE_KEY` from Supabase and never exposes it to the browser. [`supabase/config.toml`](supabase/config.toml) disables the legacy JWT gateway check because this project uses a modern publishable key; the function itself requires that configured publishable key before processing a pending replay.
 
 In Supabase Authentication settings, keep Email enabled and add `https://elonxie2024-netizen.github.io/Platforms-of-the-Past/` to the allowed redirect URLs. Set it as the Site URL when GitHub Pages is the production host. Email confirmation may remain enabled; the game supports both confirmed-email and immediate-session sign-up configurations. Password reset emails use the same allowed return URL.
 

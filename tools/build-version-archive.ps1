@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $releases = [ordered]@{
+  'v0.34.2' = 'ARCHIVED'
   'v0.34.1' = 'b53f165'
   'v0.34.0' = '65e59a9'
   'v0.33.3' = '1ff00aa'
@@ -143,15 +144,29 @@ Get-ChildItem -LiteralPath $sourceAssetRoot -File | Copy-Item -Destination $arch
 
 foreach ($release in $releases.GetEnumerator()) {
   $releaseRoot = Join-Path $archiveRoot $release.Key
+  if ($release.Value -eq 'ARCHIVED') {
+    if (-not (Test-Path -LiteralPath (Join-Path $releaseRoot 'index.html'))) {
+      throw "Preserved archive $($release.Key) is missing."
+    }
+    continue
+  }
   New-Item -ItemType Directory -Force -Path $releaseRoot | Out-Null
   $releaseFiles = @('index.html', 'styles.css', 'game.js')
   foreach ($optionalFile in @('verification-rules.js', 'level-data.js', 'account.js', 'editor.css', 'editor.js')) {
-    $committedFile = & git -C $repoRoot ls-tree --name-only $release.Value -- $optionalFile
-    if ($committedFile -eq $optionalFile) { $releaseFiles += $optionalFile }
+    if ($release.Value -eq 'WORKTREE') {
+      if (Test-Path -LiteralPath (Join-Path $repoRoot $optionalFile)) { $releaseFiles += $optionalFile }
+    } else {
+      $committedFile = & git -C $repoRoot ls-tree --name-only $release.Value -- $optionalFile
+      if ($committedFile -eq $optionalFile) { $releaseFiles += $optionalFile }
+    }
   }
   foreach ($file in $releaseFiles) {
-    $content = (& git -C $repoRoot show "$($release.Value):$file") -join "`n"
-    if ($LASTEXITCODE -ne 0) { throw "Could not read $file from $($release.Value)." }
+    if ($release.Value -eq 'WORKTREE') {
+      $content = Get-Content -LiteralPath (Join-Path $repoRoot $file) -Raw
+    } else {
+      $content = (& git -C $repoRoot show "$($release.Value):$file") -join "`n"
+      if ($LASTEXITCODE -ne 0) { throw "Could not read $file from $($release.Value)." }
+    }
     if ($file -eq 'game.js') {
       # Archived versions sit beside one another, not beneath another `versions` directory.
       $content = $content.Replace('./versions/${version}/index.html', '../${version}/index.html')

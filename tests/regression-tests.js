@@ -3,6 +3,7 @@
 (() => {
   const rules = window.PlatformsVerificationRules;
   const levels = window.PlatformsLevelData;
+  const replayVerifier = window.PlatformsReplayValidator;
   const results = [];
 
   function test(name, callback) {
@@ -46,6 +47,56 @@
         { id: "star-3", type: "star", x: 760, y: 430 }
       ]
     };
+  }
+
+  function replayEvidence(level, options = {}) {
+    const ticket = "11111111-1111-4111-8111-111111111111";
+    const collectedStars = options.collectedStars || [];
+    const terminalAt = Math.max(1000, 250 + collectedStars.length * 250);
+    const terminalKind = options.terminalKind || (level.settings.levelType === "survival" ? "death" : "exit");
+    const terminalPoint = terminalKind === "exit"
+      ? [terminalAt, level.exit.x, level.exit.y, 300, 0, 2, []]
+      : [terminalAt, level.spawn.x + 100, level.spawn.y, 0, 0, 2, []];
+    const stars = level.objects.filter(object => object.type === "star");
+    const collectedAt = new Map(collectedStars.map((index, order) => [250 + order * 250, stars[index]]));
+    const points = [[0, level.spawn.x, level.spawn.y, 0, 0, 2, []]];
+    for (let time = 250; time < terminalAt; time += 250) {
+      const star = collectedAt.get(time);
+      const progress = time / terminalAt;
+      points.push(star
+        ? [time, star.x, star.y, 300, 0, 2, []]
+        : [time, level.spawn.x + (terminalPoint[1] - level.spawn.x) * progress,
+          level.spawn.y + (terminalPoint[2] - level.spawn.y) * progress, 300, 0, 2, []]);
+    }
+    points.push(terminalPoint);
+    return {
+      format: replayVerifier.FORMAT,
+      gameVersion: "v0.35.0",
+      sampleIntervalMs: 250,
+      levelId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      levelVersion: 3,
+      runTicket: ticket,
+      levelDigest: replayVerifier.levelDigest(level),
+      initialState: { x: level.spawn.x, y: level.spawn.y, objectCount: level.objects.length, objects: [] },
+      inputEvents: [[0, 2]],
+      checkpoints: points,
+      actions: collectedStars.map((index, order) => [250 + order * 250, `star:${index}`]),
+      integrityEvents: options.integrityEvents || [],
+      terminal: { kind: terminalKind, atMs: terminalAt, x: terminalPoint[1], y: terminalPoint[2], reason: terminalKind === "death" ? "hazard" : undefined }
+    };
+  }
+
+  function trustedReplay(level, overrides = {}) {
+    const evidence = overrides.evidence || replayEvidence(level, overrides);
+    return replayVerifier.validateReplay({
+      evidence,
+      levelData: level,
+      levelId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      levelVersion: 3,
+      runTicket: "11111111-1111-4111-8111-111111111111",
+      issuedAtMs: 1000,
+      receivedAtMs: 1000 + evidence.terminal.atMs + 1000
+    });
   }
 
   function verify(run) {
@@ -188,6 +239,91 @@
   test("Serialization: legacy Required Stars remains supported", () => assert(levels.validateLevel(baseLevel({ requiredStars: 2 })).valid));
   test("Serialization: malformed JSON rejected safely", () => assert(!levels.importLevel('{"broken":').ok));
   test("Serialization: unsupported properties rejected safely", () => assert(!levels.validateLevel({ ...baseLevel(), executable: "alert(1)" }).valid));
+
+  test("Trusted replay: valid Exit derives completion", () => {
+    const result = trustedReplay(baseLevel({ levelType: "exit" }));
+    assert(result.ok && result.result.reachedExit && result.result.seconds === 1);
+  });
+  test("Trusted replay: fabricated reached_exit claim cannot replace exit evidence", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.reached_exit = true;
+    evidence.terminal.kind = "death";
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: fabricated stars without positional collection evidence fail", () => {
+    const level = baseLevel({ levelType: "exit-stars", requiredStars: 2 });
+    const evidence = replayEvidence(level);
+    evidence.stars = 999;
+    evidence.actions = [[500, "star:0"], [600, "star:1"]];
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: Required Stars below requirement fails", () => {
+    const level = baseLevel({ levelType: "exit-stars", requiredStars: 2 });
+    assert(!trustedReplay(level, { collectedStars: [0] }).ok);
+  });
+  test("Trusted replay: Required Stars exact requirement passes", () => {
+    const level = baseLevel({ levelType: "exit-stars", requiredStars: 2 });
+    const result = trustedReplay(level, { collectedStars: [0, 1] });
+    assert(result.ok && result.result.stars === 2);
+  });
+  test("Trusted replay: Required Stars above requirement passes", () => {
+    const level = baseLevel({ levelType: "exit-stars", requiredStars: 2 });
+    const result = trustedReplay(level, { collectedStars: [0, 1, 2] });
+    assert(result.ok && result.result.stars === 3);
+  });
+  test("Trusted replay: Fly event invalidates even after Fly is turned off", () => {
+    const level = baseLevel({ levelType: "exit" });
+    assert(!trustedReplay(level, { integrityEvents: [[100, "fly"]] }).ok);
+  });
+  test("Trusted replay: developer event invalidates even after cheat is turned off", () => {
+    const level = baseLevel({ levelType: "exit" });
+    assert(!trustedReplay(level, { integrityEvents: [[100, "developer"]] }).ok);
+  });
+  test("Trusted replay: exact immutable version is required", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.levelVersion = 4;
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: changed level snapshot is rejected", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    level.name = "Changed after evidence";
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: Survival duration is derived from terminal evidence", () => {
+    const level = baseLevel({ levelType: "survival" });
+    const evidence = replayEvidence(level, { terminalKind: "death" });
+    evidence.seconds = .001;
+    const result = trustedReplay(level, { evidence });
+    assert(result.ok && result.result.seconds === evidence.terminal.atMs / 1000);
+  });
+  test("Trusted replay: Survival must end with a recorded death", () => {
+    const level = baseLevel({ levelType: "survival" });
+    assert(!trustedReplay(level, { terminalKind: "exit" }).ok);
+  });
+  test("Trusted replay: Rewind and Echo input bits remain recordable", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.inputEvents = [[0, 511]];
+    evidence.checkpoints.forEach(checkpoint => { checkpoint[5] = 511; });
+    evidence.actions.unshift([100, "echo-record"], [150, "echo-stop"], [200, "echo-create"]);
+    assert(trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: impossible motion without matching input is rejected", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.inputEvents = [[0, 0]];
+    evidence.checkpoints.forEach(checkpoint => { checkpoint[5] = 0; });
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: malformed and oversized streams fail safely", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.inputEvents = Array.from({ length: 20001 }, (_, index) => [index, index % 2]);
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
 
   const failed = results.filter(result => !result.passed);
   document.querySelector("#results").textContent = JSON.stringify({
