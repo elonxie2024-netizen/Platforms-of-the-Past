@@ -33,6 +33,13 @@ try {
   foreach ($failure in $result.failures) { Write-Host "FAIL: $($failure.name) - $($failure.error)" -ForegroundColor Red }
   if ($result.failed -gt 0) { throw "$($result.failed) of $($result.total) browser regression tests failed." }
   Write-Host "Browser rules and serialization: $($result.passed)/$($result.total) passed" -ForegroundColor Green
+  if ($result.measurements) {
+    Write-Host ("Replay bytes: Exit {0}->{1}, Exit+Stars {2}->{3}, Survival 1h {4}->{5}" -f `
+      $result.measurements.exit.expanded, $result.measurements.exit.compact,
+      $result.measurements.exitStars.expanded, $result.measurements.exitStars.compact,
+      $result.measurements.survivalOneHour.expanded, $result.measurements.survivalOneHour.compact) -ForegroundColor Cyan
+  }
+
   $mainPage = Join-Path $repoRoot 'index.html'
   $mainUri = 'file:///' + (($mainPage -replace '\\', '/') -replace ' ', '%20')
   $mainStdoutPath = Join-Path $profile 'game-stdout.txt'
@@ -46,7 +53,7 @@ try {
     -WindowStyle Hidden -RedirectStandardOutput $mainStdoutPath -RedirectStandardError $mainStderrPath
   if ($mainProcess.ExitCode -ne 0) { throw "The game smoke test exited with code $($mainProcess.ExitCode)." }
   $mainDom = Get-Content -LiteralPath $mainStdoutPath -Raw
-  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.35.1')) {
+  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.35.2')) {
     throw 'The complete game did not initialize with the current verification and level-data scripts.'
   }
   Write-Host 'Complete game initialization: 1/1 passed' -ForegroundColor Green
@@ -60,6 +67,9 @@ try {
   $edgeVerifier = Get-Content -LiteralPath (Join-Path $repoRoot 'supabase\functions\verify-custom-run\index.ts') -Raw
   $supabaseConfig = Get-Content -LiteralPath (Join-Path $repoRoot 'supabase\config.toml') -Raw
   $trustedSql = $sql.Substring($sql.IndexOf('-- v0.35.0:'))
+  $listStart = $trustedSql.LastIndexOf('create function public.list_custom_level_runs')
+  $listEnd = $trustedSql.IndexOf('create or replace function public.record_custom_level_completion', $listStart)
+  $listSql = $trustedSql.Substring($listStart, $listEnd - $listStart)
   $contracts = [ordered]@{}
   $contracts['SQL accepts exactly three level types'] = $sql.Contains("level_type in ('exit', 'exit-stars', 'survival')")
   $contracts['SQL creates monotonically increasing immutable versions'] = $sql.Contains('coalesce(max(history.version), 0) + 1')
@@ -91,12 +101,18 @@ try {
   $contracts['Verifier binds exact level digest and version'] = $validator.Contains('levelDigest(levelData) !== evidence.levelDigest') -and $validator.Contains('Number(evidence.levelVersion) !== Number(levelVersion)')
   $contracts['Verifier rejects integrity events'] = $validator.Contains('if (flyEver || cheatEver) return fail')
   $contracts['Replay storage and streams are bounded'] = $validator.Contains('MAX_BYTES = 1500000') -and $validator.Contains('MAX_INPUT_EVENTS = 20000')
+  $contracts['Compact replay has a smaller independent byte cap'] = $validator.Contains('FORMAT = "POTP-RUN-3"') -and $validator.Contains('MAX_COMPACT_BYTES = 650000') -and $trustedSql.Contains("replay_format = 'POTP-RUN-3' then 650000")
+  $contracts['Compact replay delta-encodes and decodes streams'] = $validator.Contains('function encodeTimedPairs') -and $validator.Contains('function decodeTimedPairs') -and $validator.Contains('function encodeReplay') -and $validator.Contains('function decodeReplay')
+  $contracts['Client preflights replay byte limits'] = $account.Contains('serializedBytes(run.replayData || {}) > replayLimit')
+  $contracts['Leaderboard listing never selects replay evidence'] = -not $listSql.Contains('run.*') -and -not $listSql.Contains('replay_data')
+  $contracts['Run intake and finalization return metadata instead of replay rows'] = ([regex]::Matches($trustedSql, 'returns jsonb').Count -ge 3) -and $trustedSql.Contains("'id', result.id, 'validation_state', result.validation_state")
+  $contracts['Replay byte size is observable without loading evidence'] = $trustedSql.Contains('replay_bytes integer generated always as')
   $contracts['Verifier rejects zero-time checkpoint teleporting'] = $validator.Contains('time <= previousTime')
   $contracts['Verifier anchors terminal claims to the final checkpoint'] = $validator.Contains('checkpoints[checkpoints.length - 1][0] !== terminal.atMs') -and $validator.Contains('terminal.x - terminalCheckpoint[1]')
   $contracts['Verifier audits Rewind and Echo state order'] = $validator.Contains('Forward-time input requires an active rewind preview') -and $validator.Contains('Replay Echo actions are out of sequence')
   $contracts['Verifier rejects impossible upward velocity'] = $validator.Contains('Replay contains an impossible upward velocity')
   $contracts['Database bounds each replay stream before storage'] = $trustedSql.Contains("jsonb_array_length(p_replay_data -> 'checkpoints') not between 1 and 14450")
-  $contracts['Database finalizer rechecks derived evidence'] = $trustedSql.Contains("verifier <> 'potp-replay-v2'") -and $trustedSql.Contains("run.replay_data #>> '{terminal,atMs}'") -and $trustedSql.Contains('derived_stars > available_stars')
+  $contracts['Database finalizer rechecks derived evidence'] = $trustedSql.Contains("verifier <> 'potp-replay-v3'") -and $trustedSql.Contains("run.replay_data #>> '{terminal,atMs}'") -and $trustedSql.Contains('derived_stars > available_stars')
   $contracts['Published death restart starts fresh evidence'] = $game.Contains('if (publishedLevelActive) resetPublishedRunEvidence()')
   $contracts['Published retries use attempt-relative replay time'] = $game.Contains('startedAt: null') -and $game.Contains('function currentPublishedEvidenceTime()') -and $game.Contains('levelTime - publishedRunEvidence.startedAt')
   $contracts['Edge verifier holds the service-role boundary'] = $edgeVerifier.Contains('SUPABASE_SERVICE_ROLE_KEY') -and $edgeVerifier.Contains('finalize_custom_level_run_verification')

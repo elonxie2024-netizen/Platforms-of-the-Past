@@ -101,7 +101,7 @@
     const name = cleanDisplayName(displayName);
     if (!name) throw new Error("Choose a display name first.");
     const handle = cleanUsername(username);
-    if (!handle) throw new Error("Choose a username using 3–24 lowercase letters, numbers, or hyphens.");
+    if (!handle) throw new Error("Choose a username using 3â€“24 lowercase letters, numbers, or hyphens.");
     const { data, error } = await requireClient().auth.signUp({
       email: email.trim(),
       password,
@@ -164,7 +164,7 @@
     const name = cleanDisplayName(displayName);
     if (!name) throw new Error("Choose a display name first.");
     const handle = cleanUsername(username);
-    if (!handle) throw new Error("Choose a username using 3–24 lowercase letters, numbers, or hyphens.");
+    if (!handle) throw new Error("Choose a username using 3â€“24 lowercase letters, numbers, or hyphens.");
     const { data, error } = await requireClient()
       .from("player_profiles")
       .update({ display_name: name, username: handle, updated_at: new Date().toISOString() })
@@ -369,11 +369,6 @@
 
   async function submitCustomLevelRun(run) {
     const activeClient = requireClient();
-    const replayTools = window.PlatformsReplayValidator;
-    const replayLimit = run.replayData?.format === replayTools?.FORMAT ? replayTools.MAX_COMPACT_BYTES : replayTools?.MAX_BYTES;
-    if (!replayTools || replayTools.serializedBytes(run.replayData || {}) > replayLimit) {
-      throw new Error("Replay evidence exceeded the competitive storage limit.");
-    }
     const { data, error } = await activeClient.rpc("enqueue_custom_level_run", {
       p_run_ticket: run.runTicket,
       p_level_id: run.levelId,
@@ -481,3 +476,4 @@
     isAvailable: () => Boolean(client)
   };
 })();
+

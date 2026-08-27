@@ -1,11 +1,9 @@
 "use strict";
 
 (() => {
-  const FORMAT = "POTP-RUN-3";
-  const LEGACY_FORMAT = "POTP-RUN-2";
-  const VERIFIER_VERSION = "potp-replay-v3";
+  const FORMAT = "POTP-RUN-2";
+  const VERIFIER_VERSION = "potp-replay-v2";
   const MAX_BYTES = 1500000;
-  const MAX_COMPACT_BYTES = 650000;
   const MAX_DURATION_MS = 3600000;
   const MAX_INPUT_EVENTS = 20000;
   const MAX_CHECKPOINTS = 14450;
@@ -20,98 +18,6 @@
 
   function timestamp(value) {
     return Number.isInteger(value) && value >= 0 && value <= MAX_DURATION_MS;
-  }
-
-  function serializedBytes(value) {
-    const json = JSON.stringify(value);
-    return typeof TextEncoder === "function" ? new TextEncoder().encode(json).byteLength : unescape(encodeURIComponent(json)).length;
-  }
-
-  function encodeTimedPairs(events) {
-    const encoded = [];
-    let previousTime = 0;
-    for (const event of events || []) {
-      encoded.push(event[0] - previousTime, event[1]);
-      previousTime = event[0];
-    }
-    return encoded;
-  }
-
-  function decodeTimedPairs(encoded) {
-    if (!Array.isArray(encoded) || encoded.length % 2 !== 0) throw new Error("Malformed compact event stream");
-    const events = [];
-    let time = 0;
-    for (let index = 0; index < encoded.length; index += 2) {
-      if (!timestamp(encoded[index])) throw new Error("Malformed compact event time");
-      time += encoded[index];
-      if (!timestamp(time)) throw new Error("Compact event time exceeds the run limit");
-      events.push([time, encoded[index + 1]]);
-    }
-    return events;
-  }
-
-  function encodeReplay(evidence) {
-    if (!evidence || evidence.format !== LEGACY_FORMAT) throw new Error("Only expanded replay evidence can be compacted");
-    const checkpoints = [];
-    const world = [];
-    let previousTime = 0;
-    (evidence.checkpoints || []).forEach((checkpoint, index) => {
-      checkpoints.push(checkpoint[0] - previousTime, checkpoint[1], checkpoint[2], checkpoint[3], checkpoint[4], checkpoint[5]);
-      previousTime = checkpoint[0];
-      if (Array.isArray(checkpoint[6]) && checkpoint[6].length) world.push([index, checkpoint[6]]);
-    });
-    return {
-      format: FORMAT,
-      v: evidence.gameVersion,
-      l: [evidence.levelId, evidence.levelVersion, evidence.runTicket, evidence.levelDigest],
-      n: evidence.sampleIntervalMs,
-      s: [evidence.initialState?.x, evidence.initialState?.y, evidence.initialState?.objectCount, evidence.initialState?.objects || []],
-      i: encodeTimedPairs(evidence.inputEvents),
-      c: checkpoints,
-      w: world,
-      a: encodeTimedPairs(evidence.actions),
-      g: encodeTimedPairs(evidence.integrityEvents),
-      z: [evidence.terminal?.kind, evidence.terminal?.atMs, evidence.terminal?.x, evidence.terminal?.y, evidence.terminal?.reason ?? null],
-      q: evidence.truncated === true
-    };
-  }
-
-  function decodeReplay(evidence) {
-    if (evidence?.format === LEGACY_FORMAT) return evidence;
-    const compactKeys = new Set(["format", "v", "l", "n", "s", "i", "c", "w", "a", "g", "z", "q"]);
-    if (evidence && Object.keys(evidence).some(key => !compactKeys.has(key))) throw new Error("Unsupported compact replay property");
-    if (evidence?.format !== FORMAT || !Array.isArray(evidence.l) || evidence.l.length !== 4 ||
-        !Array.isArray(evidence.s) || evidence.s.length !== 4 || !Array.isArray(evidence.c) || evidence.c.length % 6 !== 0 ||
-        !Array.isArray(evidence.w) || !Array.isArray(evidence.z) || evidence.z.length !== 5) throw new Error("Malformed compact replay evidence");
-    const checkpoints = [];
-    let time = 0;
-    for (let index = 0; index < evidence.c.length; index += 6) {
-      const delta = evidence.c[index];
-      if (!timestamp(delta)) throw new Error("Malformed compact checkpoint time");
-      time += delta;
-      if (!timestamp(time)) throw new Error("Compact checkpoint time exceeds the run limit");
-      checkpoints.push([time, evidence.c[index + 1], evidence.c[index + 2], evidence.c[index + 3], evidence.c[index + 4], evidence.c[index + 5], []]);
-    }
-    let previousWorldIndex = -1;
-    for (const frame of evidence.w) {
-      if (!Array.isArray(frame) || frame.length !== 2 || !Number.isInteger(frame[0]) || frame[0] <= previousWorldIndex ||
-          frame[0] < 0 || frame[0] >= checkpoints.length || !Array.isArray(frame[1]) || !frame[1].length) {
-        throw new Error("Malformed compact world-state stream");
-      }
-      checkpoints[frame[0]][6] = frame[1];
-      previousWorldIndex = frame[0];
-    }
-    return {
-      format: LEGACY_FORMAT,
-      gameVersion: evidence.v,
-      sampleIntervalMs: evidence.n,
-      levelId: evidence.l[0], levelVersion: evidence.l[1], runTicket: evidence.l[2], levelDigest: evidence.l[3],
-      initialState: { x: evidence.s[0], y: evidence.s[1], objectCount: evidence.s[2], objects: evidence.s[3] },
-      inputEvents: decodeTimedPairs(evidence.i), checkpoints,
-      actions: decodeTimedPairs(evidence.a), integrityEvents: decodeTimedPairs(evidence.g),
-      terminal: { kind: evidence.z[0], atMs: evidence.z[1], x: evidence.z[2], y: evidence.z[3], reason: evidence.z[4] },
-      truncated: evidence.q === true
-    };
   }
 
   function stableStringify(value) {
@@ -185,11 +91,8 @@
   function validateReplay({ evidence, levelData, levelId, levelVersion, runTicket, issuedAtMs, receivedAtMs }) {
     try {
       if (!evidence || typeof evidence !== "object" || Array.isArray(evidence)) return fail("Invalid replay evidence");
-      const byteLimit = evidence.format === FORMAT ? MAX_COMPACT_BYTES : MAX_BYTES;
-      if (serializedBytes(evidence) > byteLimit) return fail("Replay evidence is oversized");
-      evidence = decodeReplay(evidence);
-      if (evidence.format !== LEGACY_FORMAT) return fail("Unsupported replay format");
-      if (evidence.sampleIntervalMs !== 250) return fail("Unsupported replay checkpoint interval");
+      if (JSON.stringify(evidence).length > MAX_BYTES) return fail("Replay evidence is oversized");
+      if (evidence.format !== FORMAT) return fail("Unsupported replay format");
       if (evidence.levelId !== levelId || Number(evidence.levelVersion) !== Number(levelVersion) || evidence.runTicket !== runTicket) {
         return fail("Replay belongs to another ticket or published version");
       }
@@ -368,9 +271,6 @@
     }
   }
 
-  globalThis.PlatformsReplayValidator = Object.freeze({
-    FORMAT, LEGACY_FORMAT, VERIFIER_VERSION, MAX_BYTES, MAX_COMPACT_BYTES, MAX_DURATION_MS,
-    MAX_INPUT_EVENTS, MAX_CHECKPOINTS, MAX_ACTIONS, MAX_INTEGRITY_EVENTS,
-    serializedBytes, levelDigest, encodeReplay, decodeReplay, validateReplay
-  });
+  globalThis.PlatformsReplayValidator = Object.freeze({ FORMAT, VERIFIER_VERSION, MAX_BYTES, levelDigest, validateReplay });
 })();
+

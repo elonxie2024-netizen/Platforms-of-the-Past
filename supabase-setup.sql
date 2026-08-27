@@ -14,7 +14,7 @@ create table if not exists public.leaderboard_rulesets (
 
 insert into public.leaderboard_rulesets (id, label, accepted_versions)
 values
-  ('crate-jump-collision-v1', 'Version 0.24.1 to 0.35.1', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1', 'v0.28.2', 'v0.29.0', 'v0.29.1', 'v0.30.0', 'v0.30.1', 'v0.30.2', 'v0.30.3', 'v0.31.0', 'v0.31.1', 'v0.32.0', 'v0.32.1', 'v0.33.0', 'v0.33.1', 'v0.33.2', 'v0.33.3', 'v0.34.0', 'v0.34.1', 'v0.34.2', 'v0.35.0', 'v0.35.1']),
+  ('crate-jump-collision-v1', 'Version 0.24.1 to 0.35.2', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1', 'v0.28.2', 'v0.29.0', 'v0.29.1', 'v0.30.0', 'v0.30.1', 'v0.30.2', 'v0.30.3', 'v0.31.0', 'v0.31.1', 'v0.32.0', 'v0.32.1', 'v0.33.0', 'v0.33.1', 'v0.33.2', 'v0.33.3', 'v0.34.0', 'v0.34.1', 'v0.34.2', 'v0.35.0', 'v0.35.1', 'v0.35.2']),
   ('crate-platform-collision-v1', 'Version 0.23.2 to 0.24.0', array['v0.23.2', 'v0.24.0']),
   ('history-forge-gate-v1', 'Version 0.23.1 to 0.23.1', array['v0.23.1']),
   ('crate-gravity-v1', 'Version 0.23.0 to 0.23.0', array['v0.23.0']),
@@ -1521,7 +1521,8 @@ create function public.list_custom_level_runs(p_level_id uuid, p_level_version i
 returns table (run_id uuid, user_id uuid, runner_name text, seconds numeric, stars smallint, ranking_status text, status_reason text, display_rank bigint, created_at timestamptz)
 language sql security definer set search_path = '' stable as $$
   with ordered as (
-    select run.*,
+    select run.id, run.user_id, run.runner_name, run.seconds, run.stars, run.ranking_status,
+      run.status_reason, run.created_at, run.level_type,
       sum(case when run.ranking_status in ('valid', 'restored') then 1 else 0 end) over (
         order by case when run.level_type = 'survival' then run.seconds end desc,
           case when run.level_type <> 'survival' then run.seconds end asc, run.created_at, run.id
@@ -1691,6 +1692,8 @@ alter table public.custom_level_runs
   add column if not exists validation_started_at timestamptz;
 alter table public.custom_level_runs
   add column if not exists verified_at timestamptz;
+alter table public.custom_level_runs
+  add column if not exists replay_bytes integer generated always as (octet_length(replay_data::text)) stored;
 alter table public.custom_level_completions
   add column if not exists verified_run_id uuid references public.custom_level_runs(id) on delete set null;
 alter table public.custom_level_runs
@@ -1699,6 +1702,10 @@ alter table public.custom_level_runs
   add constraint custom_level_runs_validation_state_check
   check (validation_state in ('legacy', 'pending', 'processing', 'trusted', 'rejected'));
 alter table public.custom_level_runs alter column validation_state set default 'pending';
+
+create index if not exists custom_level_runs_listing_v2_idx
+  on public.custom_level_runs (level_id, level_version, seconds, created_at, id)
+  include (user_id, runner_name, stars, ranking_status, status_reason, level_type, validation_state, verifier_version);
 
 -- Rows created before v0.35.0 remain available as historical evidence, but cannot
 -- acquire a trusted rank or verify a version without a new server-validated replay.
@@ -1719,13 +1726,14 @@ create function public.enqueue_custom_level_run(
   p_replay_data jsonb,
   p_strategy_fingerprint text default null
 )
-returns public.custom_level_runs
+returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   current_user_id uuid := (select auth.uid());
   ticket public.custom_level_run_tickets;
   status_row public.published_custom_level_status;
   clean_name text;
+  replay_format text;
   terminal_ms numeric;
   result public.custom_level_runs;
 begin
@@ -1747,23 +1755,53 @@ begin
   if status_row.level_id is null then raise exception 'Published level status is unavailable'; end if;
 
   if jsonb_typeof(p_replay_data) <> 'object' then raise exception 'Invalid replay evidence'; end if;
-  if p_replay_data ->> 'format' <> 'POTP-RUN-2'
-     or octet_length(p_replay_data::text) > 1500000 then raise exception 'Invalid or oversized replay evidence'; end if;
-  if p_replay_data ->> 'runTicket' is distinct from p_run_ticket::text
-     or p_replay_data ->> 'levelId' is distinct from p_level_id::text
-     or coalesce((p_replay_data ->> 'levelVersion')::integer, 0) <> p_level_version then
-    raise exception 'Replay evidence belongs to another ticket or version';
+  replay_format := p_replay_data ->> 'format';
+  if replay_format not in ('POTP-RUN-2', 'POTP-RUN-3')
+     or octet_length(p_replay_data::text) > case when replay_format = 'POTP-RUN-3' then 650000 else 1500000 end then
+    raise exception 'Invalid or oversized replay evidence';
   end if;
-  if jsonb_typeof(p_replay_data -> 'inputEvents') <> 'array'
-     or jsonb_typeof(p_replay_data -> 'checkpoints') <> 'array'
-     or jsonb_typeof(p_replay_data -> 'actions') <> 'array'
-     or jsonb_typeof(p_replay_data -> 'integrityEvents') <> 'array'
-     or jsonb_typeof(p_replay_data -> 'terminal') <> 'object' then raise exception 'Replay evidence is incomplete'; end if;
-  if jsonb_array_length(p_replay_data -> 'inputEvents') not between 1 and 20000
-     or jsonb_array_length(p_replay_data -> 'checkpoints') not between 1 and 14450
-     or jsonb_array_length(p_replay_data -> 'actions') > 10000
-     or jsonb_array_length(p_replay_data -> 'integrityEvents') > 64 then raise exception 'Replay stream length is invalid'; end if;
-  terminal_ms := (p_replay_data #>> '{terminal,atMs}')::numeric;
+  if replay_format = 'POTP-RUN-3' then
+    if exists (
+      select 1 from jsonb_object_keys(p_replay_data) compact_key
+      where compact_key not in ('format', 'v', 'l', 'n', 's', 'i', 'c', 'w', 'a', 'g', 'z', 'q')
+    ) then raise exception 'Replay evidence contains unsupported properties'; end if;
+    if jsonb_typeof(p_replay_data -> 'l') <> 'array' or jsonb_array_length(p_replay_data -> 'l') <> 4
+       or p_replay_data #>> '{l,2}' is distinct from p_run_ticket::text
+       or p_replay_data #>> '{l,0}' is distinct from p_level_id::text
+       or coalesce((p_replay_data #>> '{l,1}')::integer, 0) <> p_level_version then
+      raise exception 'Replay evidence belongs to another ticket or version';
+    end if;
+    if jsonb_typeof(p_replay_data -> 'i') <> 'array' or jsonb_typeof(p_replay_data -> 'c') <> 'array'
+       or jsonb_typeof(p_replay_data -> 'w') <> 'array' or jsonb_typeof(p_replay_data -> 'a') <> 'array'
+       or jsonb_typeof(p_replay_data -> 'g') <> 'array' or jsonb_typeof(p_replay_data -> 'z') <> 'array'
+       or jsonb_array_length(p_replay_data -> 'z') <> 5 then raise exception 'Replay evidence is incomplete'; end if;
+    if jsonb_array_length(p_replay_data -> 'i') not between 2 and 40000
+       or mod(jsonb_array_length(p_replay_data -> 'i'), 2) <> 0
+       or jsonb_array_length(p_replay_data -> 'c') not between 6 and 86700
+       or mod(jsonb_array_length(p_replay_data -> 'c'), 6) <> 0
+       or jsonb_array_length(p_replay_data -> 'w') > 14450
+       or jsonb_array_length(p_replay_data -> 'a') > 20000 or mod(jsonb_array_length(p_replay_data -> 'a'), 2) <> 0
+       or jsonb_array_length(p_replay_data -> 'g') > 128 or mod(jsonb_array_length(p_replay_data -> 'g'), 2) <> 0 then
+      raise exception 'Replay stream length is invalid';
+    end if;
+    terminal_ms := (p_replay_data #>> '{z,1}')::numeric;
+  else
+    if p_replay_data ->> 'runTicket' is distinct from p_run_ticket::text
+       or p_replay_data ->> 'levelId' is distinct from p_level_id::text
+       or coalesce((p_replay_data ->> 'levelVersion')::integer, 0) <> p_level_version then
+      raise exception 'Replay evidence belongs to another ticket or version';
+    end if;
+    if jsonb_typeof(p_replay_data -> 'inputEvents') <> 'array'
+       or jsonb_typeof(p_replay_data -> 'checkpoints') <> 'array'
+       or jsonb_typeof(p_replay_data -> 'actions') <> 'array'
+       or jsonb_typeof(p_replay_data -> 'integrityEvents') <> 'array'
+       or jsonb_typeof(p_replay_data -> 'terminal') <> 'object' then raise exception 'Replay evidence is incomplete'; end if;
+    if jsonb_array_length(p_replay_data -> 'inputEvents') not between 1 and 20000
+       or jsonb_array_length(p_replay_data -> 'checkpoints') not between 1 and 14450
+       or jsonb_array_length(p_replay_data -> 'actions') > 10000
+       or jsonb_array_length(p_replay_data -> 'integrityEvents') > 64 then raise exception 'Replay stream length is invalid'; end if;
+    terminal_ms := (p_replay_data #>> '{terminal,atMs}')::numeric;
+  end if;
   if terminal_ms is null or terminal_ms <= 0 or terminal_ms > 3600000 then raise exception 'Replay duration is invalid'; end if;
 
   if current_user_id is not null then
@@ -1785,7 +1823,12 @@ begin
       then p_strategy_fingerprint else null end,
     'invalidated', 'Pending trusted replay verification', 'pending'
   ) returning * into result;
-  return result;
+  return jsonb_build_object(
+    'id', result.id, 'validation_state', result.validation_state,
+    'ranking_status', result.ranking_status, 'status_reason', result.status_reason,
+    'verifier_version', result.verifier_version, 'seconds', result.seconds,
+    'stars', result.stars, 'reached_exit', result.reached_exit
+  );
 exception when invalid_text_representation or numeric_value_out_of_range then
   raise exception 'Replay evidence is malformed';
 end;
@@ -1793,7 +1836,7 @@ $$;
 
 drop function if exists public.claim_custom_level_run_verification(uuid);
 create function public.claim_custom_level_run_verification(p_run_id uuid)
-returns public.custom_level_runs
+returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   run public.custom_level_runs;
@@ -1859,13 +1902,14 @@ begin
     derived_exit := coalesce((p_validation_result ->> 'reachedExit')::boolean, false);
     derived_fly := coalesce((p_validation_result ->> 'flyEver')::boolean, false);
     derived_cheat := coalesce((p_validation_result ->> 'cheatEver')::boolean, false);
-    -- v0.35.1: the database independently rechecks the verifier's derived result.
-    if verifier <> 'potp-replay-v2'
+    -- v0.35.2: the database independently checks the current compact verifier's derived result.
+    if verifier <> 'potp-replay-v3'
        or not coalesce((p_validation_result ->> 'completed')::boolean, false)
        or snapshot is null or status_row.level_id is null
        or derived_seconds is null or derived_stars is null
        or derived_seconds <= 0 or derived_seconds > 3600 or derived_stars < 0 or derived_stars > available_stars
-       or abs(derived_seconds - ((run.replay_data #>> '{terminal,atMs}')::numeric / 1000)) > 0.001
+       or abs(derived_seconds - ((case when run.replay_data ->> 'format' = 'POTP-RUN-3'
+         then run.replay_data #>> '{z,1}' else run.replay_data #>> '{terminal,atMs}' end)::numeric / 1000)) > 0.001
        or derived_fly or derived_cheat
        or p_validation_result ->> 'levelType' is distinct from run.level_type
        or (run.level_type <> 'survival' and not derived_exit)
@@ -1908,12 +1952,22 @@ begin
       set verification_status = 'verified', verified_run_id = result.id, updated_at = now()
       where level_id = run.level_id and level_version = run.level_version;
   end if;
-  return result;
+  return jsonb_build_object(
+    'id', result.id, 'validation_state', result.validation_state,
+    'ranking_status', result.ranking_status, 'status_reason', result.status_reason,
+    'verifier_version', result.verifier_version, 'seconds', result.seconds,
+    'stars', result.stars, 'reached_exit', result.reached_exit
+  );
 exception when invalid_text_representation or numeric_value_out_of_range then
   update public.custom_level_runs set validation_state = 'rejected', ranking_status = 'invalidated',
     status_reason = 'Trusted verifier returned malformed results', verified_at = clock_timestamp()
     where id = p_run_id returning * into result;
-  return result;
+  return jsonb_build_object(
+    'id', result.id, 'validation_state', result.validation_state,
+    'ranking_status', result.ranking_status, 'status_reason', result.status_reason,
+    'verifier_version', result.verifier_version, 'seconds', result.seconds,
+    'stars', result.stars, 'reached_exit', result.reached_exit
+  );
 end;
 $$;
 
@@ -1928,7 +1982,8 @@ returns table (
 )
 language sql security definer set search_path = '' stable as $$
   with ordered as (
-    select run.*,
+    select run.id, run.user_id, run.runner_name, run.seconds, run.stars, run.ranking_status,
+      run.status_reason, run.created_at, run.level_type, run.validation_state, run.verifier_version,
       sum(case when run.validation_state = 'trusted' and run.ranking_status in ('valid', 'restored') then 1 else 0 end) over (
         order by case when run.level_type = 'survival' then run.seconds end desc,
           case when run.level_type <> 'survival' then run.seconds end asc, run.created_at, run.id
@@ -1954,7 +2009,7 @@ returns public.custom_level_completions
 language plpgsql security definer set search_path = '' as $$
 declare
   current_user_id uuid := (select auth.uid());
-  accepted_run public.custom_level_runs;
+  accepted_run record;
   snapshot jsonb;
   snapshot_name text;
   star_count integer := 0;
@@ -1963,7 +2018,8 @@ declare
 begin
   if current_user_id is null then raise exception 'Authentication required'; end if;
   if p_deaths is null or p_deaths < 0 or p_deaths > 100000 then raise exception 'Invalid death count'; end if;
-  select * into accepted_run from public.custom_level_runs run
+  select run.id, run.level_id, run.level_version, run.seconds, run.stars into accepted_run
+  from public.custom_level_runs run
   where run.id = p_run_id and run.user_id = current_user_id and run.level_type <> 'survival'
     and run.validation_state = 'trusted' and run.ranking_status in ('valid', 'restored');
   if accepted_run.id is null then raise exception 'A trusted replay completion is required'; end if;
@@ -2003,11 +2059,13 @@ returns public.survival_exploit_reports
 language plpgsql security definer set search_path = '' as $$
 declare
   current_user_id uuid := (select auth.uid());
-  target public.custom_level_runs;
+  target record;
   result public.survival_exploit_reports;
 begin
   if current_user_id is null then raise exception 'Authentication required'; end if;
-  select * into target from public.custom_level_runs
+  select run.id, run.level_id, run.level_version, run.strategy_fingerprint,
+    run.fly_ever, run.cheat_ever, run.status_reason into target
+  from public.custom_level_runs run
     where id = p_run_id and level_type = 'survival' and validation_state = 'trusted';
   if target.id is null or target.strategy_fingerprint is null then
     raise exception 'Trusted Survival run evidence is unavailable';

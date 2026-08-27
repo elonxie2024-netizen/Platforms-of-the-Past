@@ -5,6 +5,7 @@
   const levels = window.PlatformsLevelData;
   const replayVerifier = window.PlatformsReplayValidator;
   const results = [];
+  const measurements = {};
 
   function test(name, callback) {
     try {
@@ -70,8 +71,8 @@
     }
     points.push(terminalPoint);
     return {
-      format: replayVerifier.FORMAT,
-      gameVersion: "v0.35.1",
+      format: replayVerifier.LEGACY_FORMAT,
+      gameVersion: "v0.35.2",
       sampleIntervalMs: 250,
       levelId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       levelVersion: 3,
@@ -98,7 +99,7 @@
 
   function trustedReplay(level, overrides = {}) {
     const evidence = overrides.evidence || replayEvidence(level, overrides);
-    const terminalAt = evidence.terminal?.atMs ?? 0;
+    const terminalAt = evidence.terminal?.atMs ?? evidence.z?.[1] ?? 0;
     return replayVerifier.validateReplay({
       evidence,
       levelData: level,
@@ -108,6 +109,25 @@
       issuedAtMs: 1000,
       receivedAtMs: 1000 + terminalAt + 1000
     });
+  }
+
+  function longSurvivalEvidence(durationMs = replayVerifier.MAX_DURATION_MS, worldIntervalMs = 2000) {
+    const level = baseLevel({ levelType: "survival" });
+    const evidence = replayEvidence(level, { terminalKind: "death" });
+    evidence.inputEvents = [[0, 0]];
+    evidence.checkpoints = [];
+    for (let time = 0; time <= durationMs; time += 250) {
+      evidence.checkpoints.push([
+        time, level.spawn.x, level.spawn.y, 0, 0, 0,
+        time % worldIntervalMs === 0 ? [[0, 0, 490, 0]] : []
+      ]);
+    }
+    if (evidence.checkpoints[evidence.checkpoints.length - 1][0] !== durationMs) {
+      evidence.checkpoints.push([durationMs, level.spawn.x, level.spawn.y, 0, 0, 0, [[0, 0, 490, 0]]]);
+    }
+    evidence.actions = [[durationMs, "death:hazard"]];
+    evidence.terminal = { kind: "death", atMs: durationMs, x: level.spawn.x, y: level.spawn.y, reason: "hazard" };
+    return { level, evidence };
   }
 
   function verify(run) {
@@ -509,11 +529,63 @@
     evidence.padding = "x".repeat(replayVerifier.MAX_BYTES + 1);
     assert(!trustedReplay(level, { evidence }).ok);
   });
+  test("Compact replay: Exit round-trips and validates identically", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const expanded = replayEvidence(level);
+    const compact = replayVerifier.encodeReplay(expanded);
+    const decoded = replayVerifier.decodeReplay(compact);
+    equal(decoded.checkpoints, expanded.checkpoints);
+    equal(decoded.inputEvents, expanded.inputEvents);
+    assert(trustedReplay(level, { evidence: compact }).ok);
+    measurements.exit = { expanded: replayVerifier.serializedBytes(expanded), compact: replayVerifier.serializedBytes(compact) };
+    assert(measurements.exit.compact < measurements.exit.expanded * .8);
+  });
+  test("Compact replay: unsupported properties are rejected instead of stored", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const compact = replayVerifier.encodeReplay(replayEvidence(level));
+    compact.padding = "unused";
+    assert(!trustedReplay(level, { evidence: compact }).ok);
+  });
+  test("Compact replay: Exit + Required Stars preserves collection evidence", () => {
+    const level = baseLevel({ levelType: "exit-stars", requiredStars: 2 });
+    const expanded = replayEvidence(level, { collectedStars: [0, 1] });
+    const compact = replayVerifier.encodeReplay(expanded);
+    const result = trustedReplay(level, { evidence: compact });
+    assert(result.ok && result.result.stars === 2);
+    measurements.exitStars = { expanded: replayVerifier.serializedBytes(expanded), compact: replayVerifier.serializedBytes(compact) };
+  });
+  test("Compact replay: one-hour Survival remains bounded and valid", () => {
+    const { level, evidence } = longSurvivalEvidence();
+    const compact = replayVerifier.encodeReplay(evidence);
+    const bytes = replayVerifier.serializedBytes(compact);
+    measurements.survivalOneHour = { expanded: replayVerifier.serializedBytes(evidence), compact: bytes };
+    assert(bytes <= replayVerifier.MAX_COMPACT_BYTES, `One-hour compact replay used ${bytes} bytes`);
+    const result = trustedReplay(level, { evidence: compact });
+    assert(result.ok && result.result.seconds === 3600);
+  });
+  test("Compact replay: duration beyond one hour is rejected", () => {
+    const { level, evidence } = longSurvivalEvidence(replayVerifier.MAX_DURATION_MS + 250);
+    const compact = replayVerifier.encodeReplay(evidence);
+    assert(!trustedReplay(level, { evidence: compact }).ok);
+  });
+  test("Compact replay: dense maximum evidence cannot exceed its byte cap", () => {
+    const { level, evidence } = longSurvivalEvidence(replayVerifier.MAX_DURATION_MS, 250);
+    evidence.actions = [
+      ...Array.from({ length: 9999 }, (_, index) => [Math.floor(index * (replayVerifier.MAX_DURATION_MS - 1) / 9999), "interact"]),
+      [replayVerifier.MAX_DURATION_MS, "death:hazard"]
+    ];
+    const compact = replayVerifier.encodeReplay(evidence);
+    const bytes = replayVerifier.serializedBytes(compact);
+    assert(bytes > replayVerifier.MAX_COMPACT_BYTES);
+    assert(!trustedReplay(level, { evidence: compact }).ok);
+  });
+
   const failed = results.filter(result => !result.passed);
   document.querySelector("#results").textContent = JSON.stringify({
     passed: results.length - failed.length,
     failed: failed.length,
     total: results.length,
-    failures: failed
+    failures: failed,
+    measurements
   });
 })();
