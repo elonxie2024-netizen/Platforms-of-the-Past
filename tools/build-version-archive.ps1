@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $releases = [ordered]@{
+  'v0.35.0' = 'ARCHIVED'
   'v0.34.2' = 'ARCHIVED'
   'v0.34.1' = 'b53f165'
   'v0.34.0' = '65e59a9'
@@ -152,7 +153,7 @@ foreach ($release in $releases.GetEnumerator()) {
   }
   New-Item -ItemType Directory -Force -Path $releaseRoot | Out-Null
   $releaseFiles = @('index.html', 'styles.css', 'game.js')
-  foreach ($optionalFile in @('verification-rules.js', 'level-data.js', 'account.js', 'editor.css', 'editor.js')) {
+  foreach ($optionalFile in @('verification-rules.js', 'level-data.js', 'account.js', 'editor.css', 'editor.js', 'supabase/functions/_shared/replay-validator.js')) {
     if ($release.Value -eq 'WORKTREE') {
       if (Test-Path -LiteralPath (Join-Path $repoRoot $optionalFile)) { $releaseFiles += $optionalFile }
     } else {
@@ -182,9 +183,12 @@ foreach ($release in $releases.GetEnumerator()) {
       $content = $content.Replace('src="level-data.js', 'src="./level-data.js')
       $content = $content.Replace('src="account.js', 'src="./account.js')
       $content = $content.Replace('src="editor.js', 'src="./editor.js')
+      $content = $content.Replace('src="supabase/functions/_shared/replay-validator.js', 'src="./supabase/functions/_shared/replay-validator.js')
       $content = $content.Replace('src="game.js', 'src="./game.js')
     }
-    [IO.File]::WriteAllText((Join-Path $releaseRoot $file), $content + "`n", [Text.UTF8Encoding]::new($false))
+    $outputPath = Join-Path $releaseRoot $file
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $outputPath) | Out-Null
+    [IO.File]::WriteAllText($outputPath, $content + "`n", [Text.UTF8Encoding]::new($false))
   }
 
   $generatedGame = Get-Content -LiteralPath (Join-Path $releaseRoot 'game.js') -Raw
@@ -206,6 +210,9 @@ foreach ($release in $releases.GetEnumerator()) {
   }
   if ($generatedIndex.Contains('verification-rules.js') -and -not (Test-Path -LiteralPath (Join-Path $releaseRoot 'verification-rules.js'))) {
     throw "Archived verification-rules script is missing in $($release.Key)."
+  }
+  if ($generatedIndex.Contains('replay-validator.js') -and -not (Test-Path -LiteralPath (Join-Path $releaseRoot 'supabase/functions/_shared/replay-validator.js'))) {
+    throw "Archived replay-validator script is missing in $($release.Key)."
   }
   if ($generatedGame.Contains('`assets/')) {
     throw "Archived template-literal asset path is invalid in $($release.Key)."

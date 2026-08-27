@@ -14,7 +14,7 @@ create table if not exists public.leaderboard_rulesets (
 
 insert into public.leaderboard_rulesets (id, label, accepted_versions)
 values
-  ('crate-jump-collision-v1', 'Version 0.24.1 to 0.35.0', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1', 'v0.28.2', 'v0.29.0', 'v0.29.1', 'v0.30.0', 'v0.30.1', 'v0.30.2', 'v0.30.3', 'v0.31.0', 'v0.31.1', 'v0.32.0', 'v0.32.1', 'v0.33.0', 'v0.33.1', 'v0.33.2', 'v0.33.3', 'v0.34.0', 'v0.34.1', 'v0.34.2', 'v0.35.0']),
+  ('crate-jump-collision-v1', 'Version 0.24.1 to 0.35.1', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1', 'v0.28.2', 'v0.29.0', 'v0.29.1', 'v0.30.0', 'v0.30.1', 'v0.30.2', 'v0.30.3', 'v0.31.0', 'v0.31.1', 'v0.32.0', 'v0.32.1', 'v0.33.0', 'v0.33.1', 'v0.33.2', 'v0.33.3', 'v0.34.0', 'v0.34.1', 'v0.34.2', 'v0.35.0', 'v0.35.1']),
   ('crate-platform-collision-v1', 'Version 0.23.2 to 0.24.0', array['v0.23.2', 'v0.24.0']),
   ('history-forge-gate-v1', 'Version 0.23.1 to 0.23.1', array['v0.23.1']),
   ('crate-gravity-v1', 'Version 0.23.0 to 0.23.0', array['v0.23.0']),
@@ -1746,8 +1746,8 @@ begin
     where level_id = p_level_id and level_version = p_level_version;
   if status_row.level_id is null then raise exception 'Published level status is unavailable'; end if;
 
-  if jsonb_typeof(p_replay_data) <> 'object'
-     or p_replay_data ->> 'format' <> 'POTP-RUN-2'
+  if jsonb_typeof(p_replay_data) <> 'object' then raise exception 'Invalid replay evidence'; end if;
+  if p_replay_data ->> 'format' <> 'POTP-RUN-2'
      or octet_length(p_replay_data::text) > 1500000 then raise exception 'Invalid or oversized replay evidence'; end if;
   if p_replay_data ->> 'runTicket' is distinct from p_run_ticket::text
      or p_replay_data ->> 'levelId' is distinct from p_level_id::text
@@ -1759,6 +1759,10 @@ begin
      or jsonb_typeof(p_replay_data -> 'actions') <> 'array'
      or jsonb_typeof(p_replay_data -> 'integrityEvents') <> 'array'
      or jsonb_typeof(p_replay_data -> 'terminal') <> 'object' then raise exception 'Replay evidence is incomplete'; end if;
+  if jsonb_array_length(p_replay_data -> 'inputEvents') not between 1 and 20000
+     or jsonb_array_length(p_replay_data -> 'checkpoints') not between 1 and 14450
+     or jsonb_array_length(p_replay_data -> 'actions') > 10000
+     or jsonb_array_length(p_replay_data -> 'integrityEvents') > 64 then raise exception 'Replay stream length is invalid'; end if;
   terminal_ms := (p_replay_data #>> '{terminal,atMs}')::numeric;
   if terminal_ms is null or terminal_ms <= 0 or terminal_ms > 3600000 then raise exception 'Replay duration is invalid'; end if;
 
@@ -1789,7 +1793,7 @@ $$;
 
 drop function if exists public.claim_custom_level_run_verification(uuid);
 create function public.claim_custom_level_run_verification(p_run_id uuid)
-returns jsonb
+returns public.custom_level_runs
 language plpgsql security definer set search_path = '' as $$
 declare
   run public.custom_level_runs;
@@ -1822,11 +1826,13 @@ $$;
 
 drop function if exists public.finalize_custom_level_run_verification(uuid, jsonb);
 create function public.finalize_custom_level_run_verification(p_run_id uuid, p_validation_result jsonb)
-returns public.custom_level_runs
+returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   run public.custom_level_runs;
   status_row public.published_custom_level_status;
+  snapshot jsonb;
+  available_stars integer := 0;
   accepted boolean := coalesce((p_validation_result ->> 'accepted')::boolean, false);
   derived_seconds numeric;
   derived_stars integer;
@@ -1841,6 +1847,10 @@ begin
   if run.id is null then raise exception 'Pending replay is unavailable'; end if;
   select * into status_row from public.published_custom_level_status
     where level_id = run.level_id and level_version = run.level_version;
+  select history.level_data into snapshot from public.published_custom_level_versions history
+    where history.level_id = run.level_id and history.version = run.level_version;
+  select count(*) filter (where object ->> 'type' in ('star', 'enemy'))::integer into available_stars
+    from jsonb_array_elements(coalesce(snapshot -> 'objects', '[]'::jsonb)) object;
   verifier := left(coalesce(p_validation_result ->> 'verifierVersion', 'unknown'), 80);
 
   if accepted then
@@ -1849,7 +1859,13 @@ begin
     derived_exit := coalesce((p_validation_result ->> 'reachedExit')::boolean, false);
     derived_fly := coalesce((p_validation_result ->> 'flyEver')::boolean, false);
     derived_cheat := coalesce((p_validation_result ->> 'cheatEver')::boolean, false);
-    if derived_seconds <= 0 or derived_seconds > 3600 or derived_stars < 0
+    -- v0.35.1: the database independently rechecks the verifier's derived result.
+    if verifier <> 'potp-replay-v2'
+       or not coalesce((p_validation_result ->> 'completed')::boolean, false)
+       or snapshot is null or status_row.level_id is null
+       or derived_seconds is null or derived_stars is null
+       or derived_seconds <= 0 or derived_seconds > 3600 or derived_stars < 0 or derived_stars > available_stars
+       or abs(derived_seconds - ((run.replay_data #>> '{terminal,atMs}')::numeric / 1000)) > 0.001
        or derived_fly or derived_cheat
        or p_validation_result ->> 'levelType' is distinct from run.level_type
        or (run.level_type <> 'survival' and not derived_exit)

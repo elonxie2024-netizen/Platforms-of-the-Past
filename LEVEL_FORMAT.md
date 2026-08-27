@@ -286,6 +286,10 @@ Existing pre-v0.35.0 rows are retained with `validation_state = 'legacy'`. They 
 
 This architecture prevents a browser from directly writing a trusted result or turning fabricated scalar RPC fields into a rank. The evidence itself still originates in an untrusted browser. The server independently validates and derives the result, but this release does not claim cryptographic attestation or a complete authoritative re-simulation of every physics frame; that would require moving the complete game simulation into controlled server execution.
 
+Version 0.35.1 adversarially audits this boundary. Checkpoint time must now advance strictly, every terminal is anchored to the final checkpoint and matching coordinates, millisecond timestamps must be integers, and movement and upward velocities use tighter level-aware limits. Object-state IDs and values are validated against the immutable snapshot. Rewind cannot appear in a level that disables it, forward-time input cannot occur outside an active rewind preview, and Echo actions must follow the legal record → stop → create → destroy state sequence. Exit evidence is reset after an in-level death so separate attempts cannot be spliced together.
+
+Database intake now bounds every stream before storing it. The service-role-only finalizer accepts only `potp-replay-v2` results and independently rechecks completion, terminal-derived duration, available-star bounds, immutable level type, Required Stars, exit state, and integrity results. The Edge trigger accepts only a small request containing a structurally valid run UUID; the replay itself remains in protected database storage. These checks reject the confirmed manual-forgery classes while preserving the v0.35.0 limitation: browser-originated evidence is not cryptographic attestation or a complete authoritative server physics simulation.
+
 ## Automated regression tests
 
 Version 0.34.2 adds a dependency-free test harness under `tests/`. Run it from PowerShell at the repository root:

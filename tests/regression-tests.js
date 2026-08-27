@@ -38,13 +38,13 @@
       name: "Regression Level",
       width: 960,
       spawn: { x: 40, y: 430 },
-      exit: { id: "level-exit", x: 880, y: 400, width: 34, height: 90 },
+      exit: { id: "level-exit", x: 700, y: 400, width: 34, height: 90 },
       settings: { music: "level1", ...settings },
       objects: [
         { id: "ground", type: "platform", x: 0, y: 490, width: 960, height: 80, material: "grass" },
-        { id: "star-1", type: "star", x: 200, y: 430 },
-        { id: "star-2", type: "star", x: 500, y: 430 },
-        { id: "star-3", type: "star", x: 760, y: 430 }
+        { id: "star-1", type: "star", x: 205, y: 430 },
+        { id: "star-2", type: "star", x: 370, y: 430 },
+        { id: "star-3", type: "star", x: 535, y: 430 }
       ]
     };
   }
@@ -52,13 +52,13 @@
   function replayEvidence(level, options = {}) {
     const ticket = "11111111-1111-4111-8111-111111111111";
     const collectedStars = options.collectedStars || [];
-    const terminalAt = Math.max(1000, 250 + collectedStars.length * 250);
+    const terminalAt = 3000;
     const terminalKind = options.terminalKind || (level.settings.levelType === "survival" ? "death" : "exit");
     const terminalPoint = terminalKind === "exit"
       ? [terminalAt, level.exit.x, level.exit.y, 300, 0, 2, []]
       : [terminalAt, level.spawn.x + 100, level.spawn.y, 0, 0, 2, []];
     const stars = level.objects.filter(object => object.type === "star");
-    const collectedAt = new Map(collectedStars.map((index, order) => [250 + order * 250, stars[index]]));
+    const collectedAt = new Map(collectedStars.map(index => [(index + 1) * 750, stars[index]]));
     const points = [[0, level.spawn.x, level.spawn.y, 0, 0, 2, []]];
     for (let time = 250; time < terminalAt; time += 250) {
       const star = collectedAt.get(time);
@@ -71,16 +71,26 @@
     points.push(terminalPoint);
     return {
       format: replayVerifier.FORMAT,
-      gameVersion: "v0.35.0",
+      gameVersion: "v0.35.1",
       sampleIntervalMs: 250,
       levelId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       levelVersion: 3,
       runTicket: ticket,
       levelDigest: replayVerifier.levelDigest(level),
-      initialState: { x: level.spawn.x, y: level.spawn.y, objectCount: level.objects.length, objects: [] },
+      initialState: {
+        x: level.spawn.x, y: level.spawn.y,
+        objectCount: level.objects.filter(object => [
+          "platform", "floatingPlatform", "crate", "breakableBlock", "movingPlatform",
+          "controlledPlatform", "rewindPlatform", "movingObstacle", "enemy"
+        ].includes(object.type)).length,
+        objects: []
+      },
       inputEvents: [[0, 2]],
       checkpoints: points,
-      actions: collectedStars.map((index, order) => [250 + order * 250, `star:${index}`]),
+      actions: [
+        ...collectedStars.map(index => [(index + 1) * 750, `star:${index}`]),
+        ...(terminalKind === "death" ? [[terminalAt, "death:hazard"]] : [])
+      ],
       integrityEvents: options.integrityEvents || [],
       terminal: { kind: terminalKind, atMs: terminalAt, x: terminalPoint[1], y: terminalPoint[2], reason: terminalKind === "death" ? "hazard" : undefined }
     };
@@ -88,14 +98,15 @@
 
   function trustedReplay(level, overrides = {}) {
     const evidence = overrides.evidence || replayEvidence(level, overrides);
+    const terminalAt = evidence.terminal?.atMs ?? 0;
     return replayVerifier.validateReplay({
       evidence,
       levelData: level,
-      levelId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-      levelVersion: 3,
-      runTicket: "11111111-1111-4111-8111-111111111111",
+      levelId: overrides.levelId || "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      levelVersion: overrides.levelVersion || 3,
+      runTicket: overrides.runTicket || "11111111-1111-4111-8111-111111111111",
       issuedAtMs: 1000,
-      receivedAtMs: 1000 + evidence.terminal.atMs + 1000
+      receivedAtMs: 1000 + terminalAt + 1000
     });
   }
 
@@ -242,7 +253,7 @@
 
   test("Trusted replay: valid Exit derives completion", () => {
     const result = trustedReplay(baseLevel({ levelType: "exit" }));
-    assert(result.ok && result.result.reachedExit && result.result.seconds === 1);
+    assert(result.ok && result.result.reachedExit && result.result.seconds === 3);
   });
   test("Trusted replay: fabricated reached_exit claim cannot replace exit evidence", () => {
     const level = baseLevel({ levelType: "exit" });
@@ -250,6 +261,14 @@
     evidence.reached_exit = true;
     evidence.terminal.kind = "death";
     assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: every scalar client claim loses to derived evidence", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    Object.assign(evidence, { seconds: .001, stars: 999, reached_exit: false, fly_ever: true, cheat_ever: true });
+    const result = trustedReplay(level, { evidence });
+    assert(result.ok && result.result.seconds === 3 && result.result.stars === 0 && result.result.reachedExit);
+    assert(!result.result.flyEver && !result.result.cheatEver);
   });
   test("Trusted replay: fabricated stars without positional collection evidence fail", () => {
     const level = baseLevel({ levelType: "exit-stars", requiredStars: 2 });
@@ -292,6 +311,28 @@
     level.name = "Changed after evidence";
     assert(!trustedReplay(level, { evidence }).ok);
   });
+  test("Trusted replay: altered evidence digest is rejected", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.levelDigest = "00000000";
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: altered initial object count is rejected", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.initialState.objectCount += 1;
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: stale level ID is rejected", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    assert(!trustedReplay(level, { evidence, levelId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" }).ok);
+  });
+  test("Trusted replay: evidence cannot be replayed with another ticket", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    assert(!trustedReplay(level, { evidence, runTicket: "22222222-2222-4222-8222-222222222222" }).ok);
+  });
   test("Trusted replay: Survival duration is derived from terminal evidence", () => {
     const level = baseLevel({ levelType: "survival" });
     const evidence = replayEvidence(level, { terminalKind: "death" });
@@ -303,13 +344,139 @@
     const level = baseLevel({ levelType: "survival" });
     assert(!trustedReplay(level, { terminalKind: "exit" }).ok);
   });
+  test("Trusted replay: Survival requires a terminal death action", () => {
+    const level = baseLevel({ levelType: "survival" });
+    const evidence = replayEvidence(level, { terminalKind: "death" });
+    evidence.actions = [];
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: claimed Survival time cannot exceed checkpoint evidence", () => {
+    const level = baseLevel({ levelType: "survival" });
+    const evidence = replayEvidence(level, { terminalKind: "death" });
+    evidence.terminal.atMs += 1000;
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
   test("Trusted replay: Rewind and Echo input bits remain recordable", () => {
-    const level = baseLevel({ levelType: "exit" });
+    const level = baseLevel({ levelType: "exit", rewind: { enabled: true }, echo: { enabled: true } });
     const evidence = replayEvidence(level);
-    evidence.inputEvents = [[0, 511]];
-    evidence.checkpoints.forEach(checkpoint => { checkpoint[5] = 511; });
+    evidence.inputEvents = [[0, 63]];
+    evidence.checkpoints.forEach(checkpoint => { checkpoint[5] = 63; });
     evidence.actions.unshift([100, "echo-record"], [150, "echo-stop"], [200, "echo-create"]);
     assert(trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: forward-time input without Rewind is rejected", () => {
+    const level = baseLevel({ levelType: "exit", rewind: { enabled: true } });
+    const evidence = replayEvidence(level);
+    evidence.inputEvents = [[0, 34]];
+    evidence.checkpoints.forEach(checkpoint => { checkpoint[5] = 34; });
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: Rewind input is rejected when the level disables Rewind", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.inputEvents = [[0, 18]];
+    evidence.checkpoints.forEach(checkpoint => { checkpoint[5] = 18; });
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: Echo actions must follow record-preview-create order", () => {
+    const level = baseLevel({ levelType: "exit", echo: { enabled: true } });
+    const evidence = replayEvidence(level);
+    evidence.actions = [[100, "echo-create"]];
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: replacing an active Echo with a new recording is legal", () => {
+    const level = baseLevel({ levelType: "exit", echo: { enabled: true } });
+    const evidence = replayEvidence(level);
+    evidence.actions = [
+      [100, "echo-record"], [200, "echo-stop"], [300, "echo-create"],
+      [400, "echo-record"], [500, "echo-stop"], [600, "echo-create"]
+    ];
+    assert(trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: Echo actions are rejected when Echo is disabled", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.actions = [[100, "echo-record"]];
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: same-timestamp checkpoint teleport is rejected", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.checkpoints.splice(1, 0, [0, 90, level.spawn.y, 200, 0, 2, []]);
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: compressed timestamps cannot conceal impossible speed", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.checkpoints.forEach((checkpoint, index) => { checkpoint[0] = index; });
+    evidence.terminal.atMs = evidence.checkpoints.length - 1;
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: fractional timestamps are rejected", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.checkpoints[1][0] = 250.5;
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: impossible jump velocity is rejected", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.checkpoints[2][4] = -1000;
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: a recorded tap jump may end before the next checkpoint", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.inputEvents = [[0, 2], [300, 6], [340, 2]];
+    evidence.checkpoints[2][4] = -650;
+    assert(trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: impossible star position is rejected", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.actions = [[750, "star:2"]];
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: duplicate star actions do not inflate the total", () => {
+    const level = baseLevel({ levelType: "exit-stars", requiredStars: 2 });
+    const evidence = replayEvidence(level, { collectedStars: [0] });
+    evidence.actions.push([750, "star:0"]);
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: exit claim must match final position", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    const final = evidence.checkpoints[evidence.checkpoints.length - 1];
+    final[1] = level.spawn.x;
+    evidence.terminal.x = level.spawn.x;
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: terminal coordinates cannot differ from the final checkpoint", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.terminal.x -= 10;
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: invalid object-state IDs are rejected", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.checkpoints[1][6] = [["e999", 0, 0, 1]];
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: death-to-restart teleport cannot share one attempt", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.actions = [[1200, "death:spike"]];
+    evidence.checkpoints[6][1] = level.spawn.x;
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: collision cheat remains invalid after being disabled", () => {
+    const level = baseLevel({ levelType: "exit" });
+    assert(!trustedReplay(level, { integrityEvents: [[100, "collision"]] }).ok);
+  });
+  test("Trusted replay: invincibility remains invalid after being disabled", () => {
+    const level = baseLevel({ levelType: "exit" });
+    assert(!trustedReplay(level, { integrityEvents: [[100, "invincibility"]] }).ok);
   });
   test("Trusted replay: impossible motion without matching input is rejected", () => {
     const level = baseLevel({ levelType: "exit" });
@@ -324,7 +491,24 @@
     evidence.inputEvents = Array.from({ length: 20001 }, (_, index) => [index, index % 2]);
     assert(!trustedReplay(level, { evidence }).ok);
   });
-
+  test("Trusted replay: truncated evidence is rejected", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.truncated = true;
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: malformed checkpoint state is rejected safely", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.checkpoints[1] = [250, "NaN", 430, 0, 0, 2, []];
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
+  test("Trusted replay: byte-size limit rejects oversized payloads", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.padding = "x".repeat(replayVerifier.MAX_BYTES + 1);
+    assert(!trustedReplay(level, { evidence }).ok);
+  });
   const failed = results.filter(result => !result.passed);
   document.querySelector("#results").textContent = JSON.stringify({
     passed: results.length - failed.length,

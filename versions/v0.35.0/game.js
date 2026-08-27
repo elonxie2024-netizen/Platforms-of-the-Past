@@ -173,7 +173,6 @@ const profileDisplayName = document.querySelector("#profileDisplayName");
 const profileUsername = document.querySelector("#profileUsername");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.35.1", commit: "Pending commit", date: "2026-08-26", message: "Audit and harden replay verification", description: "Adversarially audited the trusted replay boundary and closed timestamp-compression, same-time checkpoint teleport, terminal mismatch, impossible jump-velocity, invalid object-state, illegal Rewind input, and out-of-order Echo-action bypasses. Published Exit attempts now discard evidence after death and restart instead of joining separate attempts. The Edge trigger rejects malformed and oversized requests earlier, database intake bounds every replay stream, and service-only finalization independently rechecks the replay duration, available stars, completion state, and current verifier version. Added exploit regressions for altered payloads, fabricated claims, wrong tickets and versions, impossible movement and collections, sticky cheats, Rewind/Echo sequencing, death boundaries, truncation, malformed states, and byte limits." },
   { version: "v0.35.0", commit: "Pending commit", date: "2026-08-26", message: "Add trusted replay verification", description: "Replaced the client-trusted custom-level result RPC with a two-stage replay pipeline. Public browsers can only enqueue bounded POTP-RUN-2 evidence as pending; a private Supabase Edge Function loads the exact immutable published snapshot, validates timestamped inputs, Rewind and Echo actions, checkpoints, star positions, terminal state, server time, and sticky integrity events, then derives the result through service-role-only database functions. Legacy runs remain visible but unranked, only trusted runs can verify or rank, malformed and inconsistent evidence is rejected, and the regression suite now covers forged scalar claims and the complete trust boundary." },
   { version: "v0.34.2", commit: "Pending commit", date: "2026-08-26", message: "Add automated regression tests", description: "Added a dependency-free automated regression suite covering all three custom-level types, unknown and legacy type handling, Exit and Required Stars verification, sticky Fly and developer-cheat invalidation, immutable published versions, version-specific verification, Survival ordering and rank gaps, reversible review voting, and JSON/save-code round trips. A shared pure-rules module now keeps testable level-type, verification, publishing, ranking, and review behavior explicit. The suite also fixed validation so Required Stars is accepted only for Exit + Required Stars while preserving legacy inference." },
   { version: "v0.34.1", commit: "Pending commit", date: "2026-08-26", message: "Harden custom-level verification", description: "Audited all three published custom-level types and hardened exact-version verification. Every run now starts with a one-use server ticket bound to its immutable level version and current guest or account session. The server cross-checks bounded replay checkpoints, collection events, exit overlap, elapsed time, immutable star limits, and permanent Fly/developer-cheat flags before granting verification or rank; profile clear records now derive their time and stars only from an accepted server run. Exit + Required Stars accepts the required count or more, Survival remains longest-time-first, and disputed or invalidated rows stay visible but gray and unranked. Survival review states are clearly labeled, restoration remains stable as votes change, and restored strategies recalculate ranks without deleting runs." },
@@ -1211,7 +1210,7 @@ let publishedSurvivalEnding = false;
 
 function resetPublishedRunEvidence() {
   publishedRunEvidence = publishedLevelActive ? {
-    startedAt: null, samples: [], inputEvents: [[0, publishedInputMask()]], actions: [], integrityEvents: [],
+    startedAt: performance.now(), samples: [], inputEvents: [[0, publishedInputMask()]], actions: [], integrityEvents: [],
     initialState: null, terminal: null, lastInputMask: publishedInputMask(), flyEver: Boolean(flightEnabled),
     cheatEver: Boolean(flightEnabled || collisionDisabled || invincibilityEnabled),
     lastSampleAt: -1, lastReviewPollAt: 0, ended: false
@@ -1224,18 +1223,11 @@ function resetPublishedRunEvidence() {
   runIntegrityWarning.textContent = "";
 }
 
-function currentPublishedEvidenceTime() {
-  const levelTime = currentLevelTime();
-  if (!publishedRunEvidence) return levelTime;
-  if (!Number.isFinite(publishedRunEvidence.startedAt)) publishedRunEvidence.startedAt = levelTime;
-  return Math.max(0, levelTime - publishedRunEvidence.startedAt);
-}
-
 function markPublishedCheatUsed(fly = false, kind = fly ? "fly" : "developer") {
   if (!publishedRunEvidence) return;
   publishedRunEvidence.cheatEver = true;
   if (fly) publishedRunEvidence.flyEver = true;
-  const atMs = Math.round(currentPublishedEvidenceTime() * 1000);
+  const atMs = Math.round(currentLevelTime() * 1000);
   if (!publishedRunEvidence.integrityEvents.some(event => event[1] === kind)) {
     publishedRunEvidence.integrityEvents.push([atMs, kind]);
   }
@@ -1244,7 +1236,7 @@ function markPublishedCheatUsed(fly = false, kind = fly ? "fly" : "developer") {
 function recordPublishedAction(action) {
   if (!publishedRunEvidence || publishedRunEvidence.ended) return;
   if (/^(star|enemy-star):/.test(action)) recordPublishedRunState(true);
-  publishedRunEvidence.actions.push([Math.round(currentPublishedEvidenceTime() * 1000), action]);
+  publishedRunEvidence.actions.push([Math.round(currentLevelTime() * 1000), action]);
 }
 
 function publishedInputMask() {
@@ -1256,13 +1248,13 @@ function recordPublishedInputTransition() {
   if (!publishedRunEvidence || publishedRunEvidence.ended) return;
   const mask = publishedInputMask();
   if (mask === publishedRunEvidence.lastInputMask) return;
-  publishedRunEvidence.inputEvents.push([Math.round(currentPublishedEvidenceTime() * 1000), mask]);
+  publishedRunEvidence.inputEvents.push([Math.round(currentLevelTime() * 1000), mask]);
   publishedRunEvidence.lastInputMask = mask;
 }
 
 function recordPublishedRunState(force = false) {
   if (!publishedRunEvidence || publishedRunEvidence.ended || !publishedLevelActive) return;
-  const elapsed = currentPublishedEvidenceTime();
+  const elapsed = currentLevelTime();
   recordPublishedInputTransition();
   const inputMask = publishedInputMask();
   if (!force && elapsed - publishedRunEvidence.lastSampleAt < .25) return;
@@ -1293,13 +1285,10 @@ function recordPublishedRunState(force = false) {
   if (publishedRunEvidence.initialState && !publishedRunEvidence.initialState.objects) {
     publishedRunEvidence.initialState.objects = objects.map(state => [...state]);
   }
-  const sample = [
+  publishedRunEvidence.samples.push([
     Math.round(elapsed * 1000), Math.round(player.x * 10) / 10, Math.round(player.y * 10) / 10,
     Math.round(player.vx), Math.round(player.vy), inputMask, objects
-  ];
-  const lastSample = publishedRunEvidence.samples[publishedRunEvidence.samples.length - 1];
-  if (lastSample?.[0] === sample[0]) publishedRunEvidence.samples[publishedRunEvidence.samples.length - 1] = sample;
-  else publishedRunEvidence.samples.push(sample);
+  ]);
   if (publishedRunEvidence.samples.length > 14450) publishedRunEvidence.samples.length = 14450;
   if (currentLevel().levelType === "survival" && elapsed - publishedRunEvidence.lastReviewPollAt >= 10) {
     publishedRunEvidence.lastReviewPollAt = elapsed;
@@ -1520,7 +1509,7 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.35.1";
+const GAME_VERSION = "v0.35.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
@@ -1528,7 +1517,7 @@ const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const ACCOUNT_PREFERENCES_STORAGE_PREFIX = "platforms-past-account-preferences-v1:";
 const LEGACY_SHARED_PREFERENCE_KEYS = ["platforms-volume", "platforms-audio-mix-v1", "platforms-display-size"];
 const LEADERBOARD_RULESETS = [
-  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.35.1" },
+  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.35.0" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1571,7 +1560,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.35.1", "v0.35.0", "v0.34.2", "v0.34.1", "v0.34.0",
+  "v0.35.0", "v0.34.2", "v0.34.1", "v0.34.0",
   "v0.33.3", "v0.33.2", "v0.33.1", "v0.33.0", "v0.32.1", "v0.32.0", "v0.31.1", "v0.31.0", "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
@@ -1848,7 +1837,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1867,7 +1856,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -2087,11 +2076,11 @@ function startSpikeDeath(hazardId = null) {
   clearEchoState();
   deaths++;
   if (hazardId) recordHazardDeath(hazardId);
-  if (publishedRunEvidence && currentLevel().levelType === "survival" && !publishedRunEvidence.terminal) {
+  if (publishedRunEvidence && !publishedRunEvidence.terminal) {
     recordPublishedRunState(true);
     recordPublishedAction(`death:${hazardId || "unknown"}`);
     publishedRunEvidence.terminal = {
-      kind: "death", atMs: Math.round(currentPublishedEvidenceTime() * 1000),
+      kind: "death", atMs: Math.round(currentLevelTime() * 1000),
       x: Math.round(player.x * 10) / 10, y: Math.round(player.y * 10) / 10,
       reason: hazardId || "unknown"
     };
@@ -2841,7 +2830,7 @@ function recordPublishedLevelClear() {
   const clearDeaths = Math.max(0, deaths - context.startingDeaths);
   recordPublishedRunState(true);
   publishedRunEvidence.terminal = {
-    kind: "exit", atMs: Math.round(currentPublishedEvidenceTime() * 1000),
+    kind: "exit", atMs: Math.round(currentLevelTime() * 1000),
     x: Math.round(player.x * 10) / 10, y: Math.round(player.y * 10) / 10
   };
   const evidence = publishedReplayData();
@@ -2868,7 +2857,7 @@ function finishPublishedSurvivalRun() {
   if (!publishedLevelActive || currentLevel().levelType !== "survival" ||
       !publishedLevelContext || !publishedRunEvidence || publishedRunEvidence.ended) return false;
   const context = { ...publishedLevelContext };
-  const seconds = Math.max(.001, (publishedRunEvidence.terminal?.atMs || Math.round(currentPublishedEvidenceTime() * 1000)) / 1000);
+  const seconds = Math.max(.001, (publishedRunEvidence.terminal?.atMs || Math.round(currentLevelTime() * 1000)) / 1000);
   if (!publishedRunEvidence.terminal) {
     publishedRunEvidence.terminal = {
       kind: "death", atMs: Math.round(seconds * 1000),
@@ -4162,7 +4151,7 @@ async function openCustomLevelDetails(levelId, returnTo = "community") {
   } catch {
     if (request !== customLevelDetailsRequest) return;
     customLevelDetailsTitle.textContent = "Level unavailable";
-    customLevelDetailsMeta.textContent = "This level is unavailable, unpublished, or the v0.35.1 database setup has not been run.";
+    customLevelDetailsMeta.textContent = "This level is unavailable, unpublished, or the v0.35.0 database setup has not been run.";
   }
 }
 
@@ -4315,7 +4304,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -6617,7 +6606,6 @@ function update(dt) {
     if (deathTimer === 0) {
       if (publishedSurvivalEnding && finishPublishedSurvivalRun()) return;
       resetPlayer(false);
-      if (publishedLevelActive) resetPublishedRunEvidence();
     }
     return;
   }

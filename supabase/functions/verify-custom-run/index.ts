@@ -30,9 +30,15 @@ Deno.serve(async request => {
   if (!acceptsPublishableKey(request)) return response({ error: "A valid publishable key is required" }, 401);
 
   try {
-    const body = await request.json();
+    const declaredLength = Number(request.headers.get("content-length") || 0);
+    if (declaredLength > 4096) return response({ error: "Request is oversized" }, 413);
+    const rawBody = await request.text();
+    if (rawBody.length > 4096) return response({ error: "Request is oversized" }, 413);
+    const body = JSON.parse(rawBody);
     const runId = String(body?.runId || "");
-    if (!/^[a-f0-9-]{36}$/i.test(runId)) return response({ error: "Invalid run ID" }, 400);
+    if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(runId)) {
+      return response({ error: "Invalid run ID" }, 400);
+    }
 
     const service = createClient(
       Deno.env.get("SUPABASE_URL")!,
