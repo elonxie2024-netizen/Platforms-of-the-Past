@@ -72,7 +72,7 @@
     points.push(terminalPoint);
     return {
       format: replayVerifier.LEGACY_FORMAT,
-      gameVersion: "v0.36.1",
+      gameVersion: "v0.36.2",
       sampleIntervalMs: 250,
       levelId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       levelVersion: 3,

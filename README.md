@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.36.1`
+**Current version:** `v0.36.2`
 
 ## How it works
 
@@ -49,6 +49,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 **Inspect published levels before playing.** Community Levels and creator profiles now open a public detail screen with creator attribution, level type, objective, immutable version, verification status, the signed-in player's best trusted result, and a per-version leaderboard. Exit levels rank fastest trusted completions; Survival ranks longest trusted runs while keeping disputed and invalidated strategies visible but unranked. The full level snapshot is downloaded only after Play is selected, and existing direct-play links still launch immediately.
 
 **Trust what the detail screen shows.** Version 0.36.1 rechecks the current immutable publication before Play and asks the player to review fresh details if the creator has published a newer version. Level metadata and Play remain available when leaderboard or Survival-review requests fail, with separate loading, retry, and empty states. Long names and leaderboard rows remain readable at both display sizes.
+
+**Run the complete cloud setup safely.** Version 0.36.2 fixes the trusted-replay size condition so the idempotent Supabase setup executes correctly without changing its replay limits or verification rules.
 
 **Play past versions.** Open Versions from the main menu to launch any archived release build in a new tab.
 

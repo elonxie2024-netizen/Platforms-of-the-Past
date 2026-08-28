@@ -53,7 +53,7 @@ try {
     -WindowStyle Hidden -RedirectStandardOutput $mainStdoutPath -RedirectStandardError $mainStderrPath
   if ($mainProcess.ExitCode -ne 0) { throw "The game smoke test exited with code $($mainProcess.ExitCode)." }
   $mainDom = Get-Content -LiteralPath $mainStdoutPath -Raw
-  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.36.1')) {
+  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.36.2')) {
     throw 'The complete game did not initialize with the current verification and level-data scripts.'
   }
   Write-Host 'Complete game initialization: 1/1 passed' -ForegroundColor Green
@@ -106,6 +106,7 @@ try {
   $contracts['Verifier rejects integrity events'] = $validator.Contains('if (flyEver || cheatEver) return fail')
   $contracts['Replay storage and streams are bounded'] = $validator.Contains('MAX_BYTES = 1500000') -and $validator.Contains('MAX_INPUT_EVENTS = 20000')
   $contracts['Compact replay has a smaller independent byte cap'] = $validator.Contains('FORMAT = "POTP-RUN-3"') -and $validator.Contains('MAX_COMPACT_BYTES = 650000') -and $trustedSql.Contains("replay_format = 'POTP-RUN-3' then 650000")
+  $contracts['Replay size CASE is unambiguous inside PLpgSQL IF'] = $trustedSql.Contains("octet_length(p_replay_data::text) > (`r`n       case when replay_format = 'POTP-RUN-3' then 650000 else 1500000 end`r`n     ) then") -or $trustedSql.Contains("octet_length(p_replay_data::text) > (`n       case when replay_format = 'POTP-RUN-3' then 650000 else 1500000 end`n     ) then")
   $contracts['Compact replay delta-encodes and decodes streams'] = $validator.Contains('function encodeTimedPairs') -and $validator.Contains('function decodeTimedPairs') -and $validator.Contains('function encodeReplay') -and $validator.Contains('function decodeReplay')
   $contracts['Client preflights replay byte limits'] = $account.Contains('serializedBytes(run.replayData || {}) > replayLimit')
   $contracts['Leaderboard listing never selects replay evidence'] = -not $listSql.Contains('run.*') -and -not $listSql.Contains('replay_data')

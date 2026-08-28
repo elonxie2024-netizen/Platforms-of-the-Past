@@ -178,7 +178,6 @@ const profileDisplayName = document.querySelector("#profileDisplayName");
 const profileUsername = document.querySelector("#profileUsername");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.36.2", commit: "Pending commit", date: "2026-08-28", message: "Fix Supabase replay setup", description: "Fixed an ambiguous inline CASE expression in the idempotent Supabase setup that PostgreSQL could reject while creating the trusted replay intake function. The replay size limits and validation behavior are unchanged; the complete setup file now runs through that condition correctly." },
   { version: "v0.36.1", commit: "Pending commit", date: "2026-08-28", message: "Audit published level details", description: "Audited Community Levels, creator-profile navigation, direct links, guest and signed-in views, all published level types and verification states, empty and failed leaderboard loads, stale publications, long names, and display scaling. Detail pages now recheck the current immutable version before Play and stop for review when a creator has republished; the editor also enforces that expected version during the final snapshot load. Metadata remains usable when rankings or Survival reviews fail, loading and retry states are clearer, and long leaderboard identities fit cleanly without changing trusted ranking or dispute rules." },
   { version: "v0.36.0", commit: "Pending commit", date: "2026-08-27", message: "Add published level details and per-level leaderboards", description: "Added a dedicated metadata-only detail screen before community gameplay from both Community Levels and creator profiles. It shows creator attribution, level type, Required Stars, immutable published version, verification or ranked status, objective, the signed-in player's best trusted result, and an exact-version leaderboard. Exit boards rank fastest trusted completions, Survival boards rank longest trusted runs, disputed and invalidated Survival strategies remain visible as gray unranked rows, and pending, processing, rejected, and legacy evidence is excluded. Full level snapshots still load only after Play, while existing direct-play links remain unchanged." },
   { version: "v0.35.2", commit: "Pending commit", date: "2026-08-27", message: "Optimize replay storage and performance", description: "Added the compact POTP-RUN-3 evidence format without weakening the trusted validator or invalidating historical POTP-RUN-2 runs. Timestamp streams are delta-encoded, player checkpoints are flattened, and nonempty world snapshots are stored sparsely instead of repeating empty arrays. Compact evidence has a 650 KB hard limit, all streams and one-hour Survival duration remain bounded in both the browser and database, and oversized runs are rejected before upload. Leaderboard queries now project metadata explicitly without selecting replay payloads, replay byte counts are stored as generated metadata, and a covering listing index reduces long-term query work. Regression fixtures measure Exit, Required Stars, one-hour Survival, dense maximum-size evidence, backward compatibility, and lazy query shape." },
@@ -1535,7 +1534,7 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.36.2";
+const GAME_VERSION = "v0.36.1";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
@@ -1543,7 +1542,7 @@ const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const ACCOUNT_PREFERENCES_STORAGE_PREFIX = "platforms-past-account-preferences-v1:";
 const LEGACY_SHARED_PREFERENCE_KEYS = ["platforms-volume", "platforms-audio-mix-v1", "platforms-display-size"];
 const LEADERBOARD_RULESETS = [
-  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.36.2" },
+  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.36.1" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1586,7 +1585,7 @@ const LEADERBOARD_RULESETS = [
 ];
 const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.36.2", "v0.36.1", "v0.36.0", "v0.35.2", "v0.35.1", "v0.35.0", "v0.34.2", "v0.34.1", "v0.34.0",
+  "v0.36.1", "v0.36.0", "v0.35.2", "v0.35.1", "v0.35.0", "v0.34.2", "v0.34.1", "v0.34.0",
   "v0.33.3", "v0.33.2", "v0.33.1", "v0.33.0", "v0.32.1", "v0.32.0", "v0.31.1", "v0.31.0", "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
@@ -1864,7 +1863,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1883,7 +1882,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -4406,7 +4405,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
