@@ -302,6 +302,8 @@ Version 0.36.0 adds `get_published_custom_level_details(level_id)`, a metadata-o
 
 `list_custom_level_runs(level_id, level_version, ...)` now serves a leaderboard only when that exact version is the currently published immutable version. It includes only rows with `validation_state = 'trusted'`. Exit and Exit + Required Stars sort ascending by time; Survival sorts descending. Trusted disputed or invalidated Survival runs remain in score order with no display rank and do not consume a rank, while restored runs re-enter ranking normally. Pending, processing, rejected, and legacy rows are excluded. Community and profile listings remain metadata-only, and the existing `get_published_custom_level` snapshot RPC is called only when Play—or an existing direct-play URL—actually starts the level.
 
+Version 0.36.1 adds a client-side version preflight before detail-screen Play and an independent expected-version check during the full snapshot load. If a creator republishes while a detail page is open, the player is shown the new metadata and must review it before starting; the displayed leaderboard and played snapshot therefore cannot silently refer to different versions. Metadata, gameplay, leaderboard, and Survival-review requests also have independent loading and failure states, so a ranking outage does not make an otherwise available published level appear unpublished.
+
 ## Automated regression tests
 
 Version 0.34.2 adds a dependency-free test harness under `tests/`. Run it from PowerShell at the repository root:

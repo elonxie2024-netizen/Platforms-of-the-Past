@@ -53,7 +53,7 @@ try {
     -WindowStyle Hidden -RedirectStandardOutput $mainStdoutPath -RedirectStandardError $mainStderrPath
   if ($mainProcess.ExitCode -ne 0) { throw "The game smoke test exited with code $($mainProcess.ExitCode)." }
   $mainDom = Get-Content -LiteralPath $mainStdoutPath -Raw
-  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.36.0')) {
+  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.36.1')) {
     throw 'The complete game did not initialize with the current verification and level-data scripts.'
   }
   Write-Host 'Complete game initialization: 1/1 passed' -ForegroundColor Green
@@ -63,6 +63,8 @@ try {
   $levelData = Get-Content -LiteralPath (Join-Path $repoRoot 'level-data.js') -Raw
   $index = Get-Content -LiteralPath (Join-Path $repoRoot 'index.html') -Raw
   $account = Get-Content -LiteralPath (Join-Path $repoRoot 'account.js') -Raw
+  $editor = Get-Content -LiteralPath (Join-Path $repoRoot 'editor.js') -Raw
+  $styles = Get-Content -LiteralPath (Join-Path $repoRoot 'styles.css') -Raw
   $validator = Get-Content -LiteralPath (Join-Path $repoRoot 'supabase\functions\_shared\replay-validator.js') -Raw
   $edgeVerifier = Get-Content -LiteralPath (Join-Path $repoRoot 'supabase\functions\verify-custom-run\index.ts') -Raw
   $supabaseConfig = Get-Content -LiteralPath (Join-Path $repoRoot 'supabase\config.toml') -Raw
@@ -115,6 +117,13 @@ try {
   $contracts['Personal best uses only trusted valid or restored runs'] = $detailsSql.Contains("run.validation_state = 'trusted'") -and $detailsSql.Contains("run.ranking_status in ('valid', 'restored')") -and $detailsSql.Contains('ranked.user_id = (select auth.uid())')
   $contracts['Details are loaded before Community and profile gameplay'] = $game.Contains('openCustomLevelDetails(level.level_id, "profile")') -and $game.Contains('openCustomLevelDetails(entry.level_id, "community")') -and $account.Contains('get_published_custom_level_details')
   $contracts['Existing direct-play links still bypass the detail screen'] = $game.Contains('new URL(location.href).searchParams.get("level")') -and $game.Contains('openPublishedLevel(publicLevelId)')
+  $contracts['Detail Play rechecks stale publications before loading snapshots'] = $game.Contains('const latest = await window.PlatformsAccount.loadPublishedCustomLevelDetails(levelId)') -and $game.Contains('Review the new version before playing')
+  $contracts['Editor rejects a snapshot that changed after detail preflight'] = $editor.Contains('openPublishedLevel(levelId, expectedVersion = null)') -and $editor.Contains('Number(published.version) !== Number(expectedVersion)')
+  $contracts['Leaderboard and review failures remain isolated from level metadata'] = $game.Contains('Promise.allSettled') -and $game.Contains('Leaderboard unavailable. Refresh to try again; the level can still be played.') -and $game.Contains('Strategy reviews are temporarily unavailable.')
+  $contracts['Failed detail metadata can be retried without a loaded entry'] = $game.Contains('customLevelDetailsLevelId = levelId') -and $game.Contains('if (customLevelDetailsLevelId) openCustomLevelDetails')
+  $contracts['Detail navigation is stable while an exact-version Play load is in flight'] = $game.Contains('closeCustomLevelDetailsButton.disabled = true') -and $game.Contains('customLevelDetailsRefreshButton.disabled = true') -and $game.Contains('customLevelDetailsCreator.disabled = true')
+  $contracts['Published run status labels cover every trusted-pipeline state'] = $game.Contains('validationState === "pending"') -and $game.Contains('validationState === "processing"') -and $game.Contains('validationState === "rejected"') -and $game.Contains('validationState === "legacy"') -and $game.Contains('restored: "Restored"')
+  $contracts['Long published names and leaderboard identities cannot widen the detail panel'] = $styles.Contains('.custom-level-details-panel h2,') -and $styles.Contains('overflow-wrap: anywhere') -and $styles.Contains('.custom-level-run strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }')
   $contracts['Run intake and finalization return metadata instead of replay rows'] = ([regex]::Matches($trustedSql, 'returns jsonb').Count -ge 3) -and $trustedSql.Contains("'id', result.id, 'validation_state', result.validation_state")
   $contracts['Replay byte size is observable without loading evidence'] = $trustedSql.Contains('replay_bytes integer generated always as')
   $contracts['Verifier rejects zero-time checkpoint teleporting'] = $validator.Contains('time <= previousTime')

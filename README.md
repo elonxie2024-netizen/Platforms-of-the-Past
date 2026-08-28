@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.36.0`
+**Current version:** `v0.36.1`
 
 ## How it works
 
@@ -47,6 +47,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 **Store replay evidence efficiently.** Version 0.35.2 records new runs as compact `POTP-RUN-3` evidence: timestamps are delta-encoded, checkpoints are flattened, and nonempty world state is stored in a sparse stream. The trusted verifier expands it internally and applies the same rules, while historical `POTP-RUN-2` evidence remains supported. Compact runs are capped at 650 KB and one hour. Leaderboard and profile listings request metadata only; full replay data is loaded only by the private verifier when it claims one pending run.
 
 **Inspect published levels before playing.** Community Levels and creator profiles now open a public detail screen with creator attribution, level type, objective, immutable version, verification status, the signed-in player's best trusted result, and a per-version leaderboard. Exit levels rank fastest trusted completions; Survival ranks longest trusted runs while keeping disputed and invalidated strategies visible but unranked. The full level snapshot is downloaded only after Play is selected, and existing direct-play links still launch immediately.
+
+**Trust what the detail screen shows.** Version 0.36.1 rechecks the current immutable publication before Play and asks the player to review fresh details if the creator has published a newer version. Level metadata and Play remain available when leaderboard or Survival-review requests fail, with separate loading, retry, and empty states. Long names and leaderboard rows remain readable at both display sizes.
 
 **Play past versions.** Open Versions from the main menu to launch any archived release build in a new tab.
 
