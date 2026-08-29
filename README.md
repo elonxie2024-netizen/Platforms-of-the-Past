@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.37.0`
+**Current version:** `v0.37.1`
 
 ## How it works
 
@@ -54,6 +54,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Build full custom routes.** Version 0.37.0 lets Custom Runs combine any individual campaign levels, complete chapters, and optional gauntlets. Overlaps are deduplicated into canonical story order, the timer and eligibility remain continuous across chapter boundaries, and every normalized objective, route, constraint, and Time/Score/Stars metric receives its own addressable leaderboard without merging historical Classic Adventure records.
 
+**Compare every run three ways.** Version 0.37.1 makes Time, Score, and Stars different views of the same route-specific leaderboard. Publishing once adds the run to all three views, and choosing a metric in the builder only controls which ranking opens first.
+
 **Play past versions.** Open Versions from the main menu to launch any archived release build in a new tab.
 
 **Build on serialized levels.** The first level-data foundation represents gameplay as validated JSON-compatible objects with stable IDs and safe links. Four campaign levels now prove the format while the remaining levels continue through the legacy declarations. See [`LEVEL_FORMAT.md`](LEVEL_FORMAT.md) for the complete schema and development utilities.
@@ -66,7 +68,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Choose your route.** Play lets you choose Custom run or Roadmap. Custom run opens the challenge builder, while Roadmap separates the adventure into Introduction, Rewind, and Echo chapter pages where you can replay completed levels and your next unlocked challenge. Switch pages with the on-screen arrows or the Left and Right Arrow keys. Guest progress now survives refreshes; Restart session clears it, while signed-in account progress remains protected in the cloud.
 
-**Build a run.** Before starting, combine an objective, a constraint, a leaderboard metric, and a route containing individual levels, whole chapters, gauntlets, or any mixture. All Levels means the complete forty-level campaign; all gauntlets are a separate choice. Falls are not placed hazards and do not count. Equivalent selections normalize to the same canonical Time, Score, or Stars leaderboard.
+**Build a run.** Before starting, combine an objective, a constraint, a preferred leaderboard view, and a route containing individual levels, whole chapters, gauntlets, or any mixture. All Levels means the complete forty-level campaign; all gauntlets are a separate choice. Falls are not placed hazards and do not count. Equivalent selections normalize to the same canonical leaderboard, and Time, Score, and Stars are different rankings of its same published runs.
 
 **Change the past.** In the finished game, time travel will let you switch eras and reshape the level. A bridge that is broken in the present may still stand in the past, while a seed planted long ago could become a path through the future.
 

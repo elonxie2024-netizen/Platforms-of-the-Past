@@ -53,7 +53,7 @@ try {
     -WindowStyle Hidden -RedirectStandardOutput $mainStdoutPath -RedirectStandardError $mainStderrPath
   if ($mainProcess.ExitCode -ne 0) { throw "The game smoke test exited with code $($mainProcess.ExitCode)." }
   $mainDom = Get-Content -LiteralPath $mainStdoutPath -Raw
-  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.37.0')) {
+  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.37.1')) {
     throw 'The complete game did not initialize with the current verification and level-data scripts.'
   }
   Write-Host 'Complete game initialization: 1/1 passed' -ForegroundColor Green
@@ -142,7 +142,8 @@ try {
   $contracts['Client requests trusted verification after enqueue'] = $account.Contains('functions.invoke("verify-custom-run"')
   $contracts['All Levels is the complete forty-level campaign'] = $runRules.Contains('const CAMPAIGN_LEVEL_COUNT = 40') -and $runRules.Contains('All 40 campaign levels')
   $contracts['Custom routes normalize overlap and canonical order'] = $runRules.Contains('new Set') -and $runRules.Contains('canonicalOrder')
-  $contracts['Custom leaderboard identity includes route and metric'] = $runRules.Contains('`${runTypeId(normalized)}@${normalized.metric}`')
+  $contracts['Custom leaderboard identity normalizes objective route and constraint'] = $runRules.Contains('return runTypeId(config)')
+  $contracts['Leaderboard metric tabs sort the same run pool'] = -not $game.Contains('ranking_metric: `eq.${metric}`') -and $game.Contains('ranking_metric: "time"')
   $contracts['Configured routes cross chapter and gauntlet boundaries before special flows'] = $game.IndexOf('if (activeRunConfig) completeConfiguredRouteItem()') -lt $game.IndexOf('else if (currentLevel().gauntletId) finishGauntlet()')
   $contracts['Configured results preserve their exact compact route splits'] = $game.Contains('route: [...activeRunConfig.levels]') -and $game.Contains('const route = finishedRun?.route')
   $contracts['Custom boards are separate from historical classic boards'] = $sql.Contains("'full-custom-routes-v1'") -and $sql.Contains("leaderboard_id = 'crate-jump-collision-v1' and run_type_id = 'classic'")

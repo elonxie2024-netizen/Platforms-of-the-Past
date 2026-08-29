@@ -87,7 +87,8 @@
   }
 
   function leaderboardIdentity(config) {
-    return runTypeId(config);
+    const normalized = normalizeConfig(config);
+    return `${runTypeId(normalized)}@${normalized.metric}`;
   }
 
   function parseRunTypeId(value) {

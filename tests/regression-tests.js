@@ -73,7 +73,7 @@
     points.push(terminalPoint);
     return {
       format: replayVerifier.LEGACY_FORMAT,
-      gameVersion: "v0.37.0",
+      gameVersion: "v0.37.1",
       sampleIntervalMs: 250,
       levelId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       levelVersion: 3,
@@ -606,20 +606,24 @@
     const individuals = { ...chapter, levels: [9, 4, 0, 2, 1, 3, 5, 6, 7, 8, 4] };
     assert(runRules.leaderboardIdentity(chapter) === runRules.leaderboardIdentity(individuals));
   });
-  test("Custom routes: objective, route, constraint, and metric all distinguish boards", () => {
+  test("Custom routes: objective, route, and constraint distinguish boards", () => {
     const base = { objective: "specific", constraint: "none", metric: "time", levels: [1, 13, 36, 43] };
     const identities = new Set([
       runRules.leaderboardIdentity(base),
       runRules.leaderboardIdentity({ ...base, objective: "all-stars" }),
       runRules.leaderboardIdentity({ ...base, constraint: "no-stars" }),
-      runRules.leaderboardIdentity({ ...base, levels: [...base.levels, 20] }),
-      runRules.leaderboardIdentity({ ...base, metric: "score" })
+      runRules.leaderboardIdentity({ ...base, levels: [...base.levels, 20] })
     ]);
-    assert(identities.size === 5);
+    assert(identities.size === 4);
+  });
+  test("Custom routes: leaderboard metrics are views of the same board", () => {
+    const base = { objective: "specific", constraint: "none", metric: "time", levels: [1, 13, 36, 43] };
+    assert(runRules.leaderboardIdentity(base) === runRules.leaderboardIdentity({ ...base, metric: "score" }));
+    assert(runRules.leaderboardIdentity(base) === runRules.leaderboardIdentity({ ...base, metric: "stars" }));
   });
   test("Custom routes: canonical board identities are addressable and round-trip", () => {
     const config = { objective: "all-mechanics", constraint: "all-stars", metric: "stars", levels: [43, 0, 20, 40] };
-    const parsed = runRules.parseLeaderboardIdentity(runRules.leaderboardIdentity(config));
+    const parsed = runRules.parseLeaderboardIdentity(runRules.leaderboardIdentity(config), config.metric);
     equal(parsed, runRules.normalizeConfig(config));
   });
   test("Custom routes: completion is evaluated against every selected route item", () => {
