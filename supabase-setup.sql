@@ -14,7 +14,8 @@ create table if not exists public.leaderboard_rulesets (
 
 insert into public.leaderboard_rulesets (id, label, accepted_versions)
 values
-  ('crate-jump-collision-v1', 'Version 0.24.1 to 0.36.2', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1', 'v0.28.2', 'v0.29.0', 'v0.29.1', 'v0.30.0', 'v0.30.1', 'v0.30.2', 'v0.30.3', 'v0.31.0', 'v0.31.1', 'v0.32.0', 'v0.32.1', 'v0.33.0', 'v0.33.1', 'v0.33.2', 'v0.33.3', 'v0.34.0', 'v0.34.1', 'v0.34.2', 'v0.35.0', 'v0.35.1', 'v0.35.2', 'v0.36.0', 'v0.36.1', 'v0.36.2']),
+  ('full-custom-routes-v1', 'Custom Routes · Version 0.37.0', array['v0.37.0']),
+  ('crate-jump-collision-v1', 'Classic Adventure · Version 0.24.1 to 0.37.0', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1', 'v0.28.2', 'v0.29.0', 'v0.29.1', 'v0.30.0', 'v0.30.1', 'v0.30.2', 'v0.30.3', 'v0.31.0', 'v0.31.1', 'v0.32.0', 'v0.32.1', 'v0.33.0', 'v0.33.1', 'v0.33.2', 'v0.33.3', 'v0.34.0', 'v0.34.1', 'v0.34.2', 'v0.35.0', 'v0.35.1', 'v0.35.2', 'v0.36.0', 'v0.36.1', 'v0.36.2', 'v0.37.0']),
   ('crate-platform-collision-v1', 'Version 0.23.2 to 0.24.0', array['v0.23.2', 'v0.24.0']),
   ('history-forge-gate-v1', 'Version 0.23.1 to 0.23.1', array['v0.23.1']),
   ('crate-gravity-v1', 'Version 0.23.0 to 0.23.0', array['v0.23.0']),
@@ -88,7 +89,7 @@ create table if not exists public.leaderboard_scores (
   game_version text not null check (game_version ~ '^v[0-9]+\.[0-9]+\.[0-9]+$'),
   name text not null check (char_length(btrim(name)) between 1 and 24 and name !~ '[[:cntrl:]]'),
   seconds numeric(8,1) not null check (seconds between 1 and 36000),
-  stars smallint not null check (stars between 0 and 61),
+  stars smallint not null check (stars between 0 and 500),
   score numeric(8,1) generated always as (round(300 - seconds + stars * 2, 1)) stored,
   splits jsonb not null check (jsonb_typeof(splits) = 'array' and jsonb_array_length(splits) in (7, 8, 10)),
   run_type_id text not null default 'classic',
@@ -111,13 +112,13 @@ alter table public.leaderboard_scores
 alter table public.leaderboard_scores
   drop constraint if exists leaderboard_scores_stars_check;
 alter table public.leaderboard_scores
-  add constraint leaderboard_scores_stars_check check (stars between 0 and 61);
+  add constraint leaderboard_scores_stars_check check (stars between 0 and 500);
 
 alter table public.leaderboard_scores
   drop constraint if exists leaderboard_scores_splits_check;
 alter table public.leaderboard_scores
   add constraint leaderboard_scores_splits_check
-  check (jsonb_typeof(splits) = 'array' and jsonb_array_length(splits) between 1 and 10);
+  check (jsonb_typeof(splits) = 'array' and jsonb_array_length(splits) between 1 and 44);
 
 create index if not exists leaderboard_scores_rank_idx
   on public.leaderboard_scores (leaderboard_id, score desc, seconds asc, created_at asc);
@@ -250,6 +251,12 @@ create policy "Anyone can submit validated scores"
       where ruleset.id = leaderboard_id
         and ruleset.active
         and game_version = any(ruleset.accepted_versions)
+    )
+    and char_length(run_type_id) between 1 and 500
+    and (
+      game_version <> 'v0.37.0'
+      or (leaderboard_id = 'crate-jump-collision-v1' and run_type_id = 'classic')
+      or (leaderboard_id = 'full-custom-routes-v1' and run_type_id <> 'classic')
     )
     and (
       ((select auth.uid()) is null and user_id is null)

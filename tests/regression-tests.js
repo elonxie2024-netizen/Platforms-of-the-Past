@@ -4,6 +4,7 @@
   const rules = window.PlatformsVerificationRules;
   const levels = window.PlatformsLevelData;
   const replayVerifier = window.PlatformsReplayValidator;
+  const runRules = window.PlatformsRunRules;
   const results = [];
   const measurements = {};
 
@@ -72,7 +73,7 @@
     points.push(terminalPoint);
     return {
       format: replayVerifier.LEGACY_FORMAT,
-      gameVersion: "v0.36.2",
+      gameVersion: "v0.37.0",
       sampleIntervalMs: 250,
       levelId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       levelVersion: 3,
@@ -578,6 +579,79 @@
     const bytes = replayVerifier.serializedBytes(compact);
     assert(bytes > replayVerifier.MAX_COMPACT_BYTES);
     assert(!trustedReplay(level, { evidence: compact }).ok);
+  });
+
+  test("Custom routes: individual levels normalize into canonical order", () => {
+    equal(runRules.normalizeRoute([36, 1, 13]), [1, 13, 36]);
+  });
+  test("Custom routes: chapters expand to their ten campaign levels", () => {
+    equal(runRules.chapterLevels(2), [20, 21, 22, 23, 24, 25, 26, 27, 28, 29]);
+  });
+  test("Custom routes: gauntlets interleave after their canonical chapters", () => {
+    equal(runRules.normalizeRoute([43, 0, 40, 10, 9]), [0, 9, 40, 10, 43]);
+  });
+  test("Custom routes: overlapping chapter and level choices deduplicate", () => {
+    equal(runRules.normalizeRoute([...runRules.chapterLevels(1), 14, 14]), runRules.chapterLevels(1));
+  });
+  test("Custom routes: all levels means the full forty-level campaign", () => {
+    assert(runRules.ALL_CAMPAIGN_LEVELS.length === 40);
+    assert(runRules.routeSummary(runRules.ALL_CAMPAIGN_LEVELS) === "All 40 campaign levels");
+  });
+  test("Custom routes: gauntlets remain a separate explicit selection", () => {
+    assert(runRules.ALL_GAUNTLETS.length === 4);
+    assert(runRules.normalizeRoute([...runRules.ALL_CAMPAIGN_LEVELS, ...runRules.ALL_GAUNTLETS]).length === 44);
+  });
+  test("Custom routes: equivalent chapter and individual selection identities match", () => {
+    const chapter = { objective: "specific", constraint: "none", metric: "time", levels: runRules.chapterLevels(0) };
+    const individuals = { ...chapter, levels: [9, 4, 0, 2, 1, 3, 5, 6, 7, 8, 4] };
+    assert(runRules.leaderboardIdentity(chapter) === runRules.leaderboardIdentity(individuals));
+  });
+  test("Custom routes: objective, route, constraint, and metric all distinguish boards", () => {
+    const base = { objective: "specific", constraint: "none", metric: "time", levels: [1, 13, 36, 43] };
+    const identities = new Set([
+      runRules.leaderboardIdentity(base),
+      runRules.leaderboardIdentity({ ...base, objective: "all-stars" }),
+      runRules.leaderboardIdentity({ ...base, constraint: "no-stars" }),
+      runRules.leaderboardIdentity({ ...base, levels: [...base.levels, 20] }),
+      runRules.leaderboardIdentity({ ...base, metric: "score" })
+    ]);
+    assert(identities.size === 5);
+  });
+  test("Custom routes: canonical board identities are addressable and round-trip", () => {
+    const config = { objective: "all-mechanics", constraint: "all-stars", metric: "stars", levels: [43, 0, 20, 40] };
+    const parsed = runRules.parseLeaderboardIdentity(runRules.leaderboardIdentity(config));
+    equal(parsed, runRules.normalizeConfig(config));
+  });
+  test("Custom routes: completion is evaluated against every selected route item", () => {
+    const config = { objective: "complete-all", constraint: "none", metric: "time", levels: [9, 10, 19, 20, 29, 30, 39, 43] };
+    assert(runRules.evaluateRequirements({ config, completed: config.levels }).success);
+    assert(!runRules.evaluateRequirements({ config, completed: config.levels.slice(0, -1) }).success);
+  });
+  test("Custom routes: full campaign crosses every chapter boundary continuously", () => {
+    assert(runRules.nextRouteItem(runRules.ALL_CAMPAIGN_LEVELS, 9) === 10);
+    assert(runRules.nextRouteItem(runRules.ALL_CAMPAIGN_LEVELS, 19) === 20);
+    assert(runRules.nextRouteItem(runRules.ALL_CAMPAIGN_LEVELS, 29) === 30);
+    assert(runRules.nextRouteItem(runRules.ALL_CAMPAIGN_LEVELS, 39) === null);
+  });
+  test("Custom routes: selected gauntlets return to the canonical queue", () => {
+    const route = [...runRules.ALL_CAMPAIGN_LEVELS, ...runRules.ALL_GAUNTLETS];
+    assert(runRules.nextRouteItem(route, 9) === 40);
+    assert(runRules.nextRouteItem(route, 40) === 10);
+    assert(runRules.nextRouteItem(route, 19) === 41);
+    assert(runRules.nextRouteItem(route, 43) === null);
+  });
+  test("Custom routes: star, hazard, and mechanic rules use only route totals", () => {
+    const config = { objective: "all-stars", constraint: "all-hazards", metric: "time", levels: [1, 40] };
+    const failed = runRules.evaluateRequirements({ config, totalStars: 2, routeStarTotal: 3, completed: [1, 40], hazardsAvailable: ["spike", "lava"], hazardsSeen: ["spike"] });
+    assert(!failed.success && failed.missing.length === 2);
+    const passed = runRules.evaluateRequirements({ config, totalStars: 3, routeStarTotal: 3, completed: [40, 1], hazardsAvailable: ["spike", "lava"], hazardsSeen: ["lava", "spike"] });
+    assert(passed.success);
+  });
+  test("Custom routes: Time, Score, and Stars rankings use their own metrics", () => {
+    const runs = [{ id: "a", seconds: 8, stars: 1, score: 294 }, { id: "b", seconds: 10, stars: 4, score: 298 }];
+    assert(runRules.rankRuns(runs, "time")[0].id === "a");
+    assert(runRules.rankRuns(runs, "score")[0].id === "b");
+    assert(runRules.rankRuns(runs, "stars")[0].id === "b");
   });
 
   const failed = results.filter(result => !result.passed);

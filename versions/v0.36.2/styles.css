@@ -311,7 +311,7 @@ canvas {
   bottom: 48px;
   width: 44px;
   height: 44px;
-  background: url("assets/slime-player.svg") center / contain no-repeat;
+  background: url("../assets/slime-player.svg") center / contain no-repeat;
   filter: drop-shadow(0 6px 5px #17482b45);
   will-change: left, bottom, transform;
 }
@@ -806,46 +806,17 @@ canvas {
 
 .specific-level-choices {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  width: 100%;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+  padding-top: 4px;
 }
-.run-route-builder {
-  width: 100%;
-  margin: 0;
-  padding: 10px;
-  border: 1px solid #ffffff22;
-  border-radius: 16px;
-  color: #e9f5ff;
-  background: #07142b9c;
-  text-align: left;
-}
-.run-route-builder > legend { padding: 0 7px; color: #8de4ff; font-size: .78rem; font-weight: 950; text-transform: uppercase; }
-.run-route-builder > p { margin: 0 0 8px; color: #aac0d8; font-size: .68rem; }
-.run-route-presets { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-.run-route-presets label,
-.run-route-chapter {
-  border: 1px solid #ffffff1e;
-  border-radius: 11px;
-  background: #ffffff08;
-}
-.run-route-presets label,
-.run-route-chapter-toggle,
-.run-route-gauntlet { display: flex; align-items: center; gap: 7px; padding: 7px 9px; font-size: .72rem; font-weight: 900; cursor: pointer; }
-.run-route-presets label:has(input:checked),
-.run-route-chapter-toggle:has(input:checked) { background: #174467; }
-.run-route-chapter { overflow: hidden; }
-.run-route-levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 6px 8px; border-block: 1px solid #ffffff14; }
-.run-route-levels label { display: flex; justify-content: center; gap: 3px; padding: 5px 2px; border-radius: 7px; font-size: .66rem; cursor: pointer; }
-.run-route-levels label:has(input:checked), .run-route-gauntlet:has(input:checked) { color: #07172e; background: #8de4ff; }
-.specific-level-choices input { accent-color: #ffe05d; }
-.leaderboard-identity-form { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
-.leaderboard-identity-form label { min-width: 0; display: grid; gap: 4px; color: #b8cbe2; font-size: .7rem; text-align: left; }
-.leaderboard-identity-form input { min-width: 0; width: 100%; border: 1px solid #ffffff2c; border-radius: 9px; padding: 7px 9px; color: #eaf8ff; background: #07142b; }
-.leaderboard-identity-form button { padding: 8px 13px; }
+.specific-level-choices[hidden] { display: none; }
 
-@media (max-width: 700px) {
-  .specific-level-choices { grid-template-columns: 1fr; }
+.specific-level-choices label {
+  justify-content: center;
+  padding: 7px 4px;
+  font-size: .72rem;
+  font-weight: 900;
 }
 
 .run-setup-summary { min-height: 1.2em; color: #ffe98b; font-size: .78rem; font-weight: 750; }

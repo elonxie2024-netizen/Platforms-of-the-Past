@@ -53,7 +53,7 @@ try {
     -WindowStyle Hidden -RedirectStandardOutput $mainStdoutPath -RedirectStandardError $mainStderrPath
   if ($mainProcess.ExitCode -ne 0) { throw "The game smoke test exited with code $($mainProcess.ExitCode)." }
   $mainDom = Get-Content -LiteralPath $mainStdoutPath -Raw
-  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.36.2')) {
+  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.37.0')) {
     throw 'The complete game did not initialize with the current verification and level-data scripts.'
   }
   Write-Host 'Complete game initialization: 1/1 passed' -ForegroundColor Green
@@ -65,6 +65,7 @@ try {
   $account = Get-Content -LiteralPath (Join-Path $repoRoot 'account.js') -Raw
   $editor = Get-Content -LiteralPath (Join-Path $repoRoot 'editor.js') -Raw
   $styles = Get-Content -LiteralPath (Join-Path $repoRoot 'styles.css') -Raw
+  $runRules = Get-Content -LiteralPath (Join-Path $repoRoot 'run-rules.js') -Raw
   $validator = Get-Content -LiteralPath (Join-Path $repoRoot 'supabase\functions\_shared\replay-validator.js') -Raw
   $edgeVerifier = Get-Content -LiteralPath (Join-Path $repoRoot 'supabase\functions\verify-custom-run\index.ts') -Raw
   $supabaseConfig = Get-Content -LiteralPath (Join-Path $repoRoot 'supabase\config.toml') -Raw
@@ -139,6 +140,14 @@ try {
   $contracts['Public Edge trigger validates the publishable key itself'] = $supabaseConfig.Contains('verify_jwt = false') -and $edgeVerifier.Contains('acceptsPublishableKey(request)')
   $contracts['Edge trigger bounds and validates requests'] = $edgeVerifier.Contains('rawBody.length > 4096') -and $edgeVerifier.Contains('[1-5][a-f0-9]{3}')
   $contracts['Client requests trusted verification after enqueue'] = $account.Contains('functions.invoke("verify-custom-run"')
+  $contracts['All Levels is the complete forty-level campaign'] = $runRules.Contains('const CAMPAIGN_LEVEL_COUNT = 40') -and $runRules.Contains('All 40 campaign levels')
+  $contracts['Custom routes normalize overlap and canonical order'] = $runRules.Contains('new Set') -and $runRules.Contains('canonicalOrder')
+  $contracts['Custom leaderboard identity includes route and metric'] = $runRules.Contains('`${runTypeId(normalized)}@${normalized.metric}`')
+  $contracts['Configured routes cross chapter and gauntlet boundaries before special flows'] = $game.IndexOf('if (activeRunConfig) completeConfiguredRouteItem()') -lt $game.IndexOf('else if (currentLevel().gauntletId) finishGauntlet()')
+  $contracts['Configured results preserve their exact compact route splits'] = $game.Contains('route: [...activeRunConfig.levels]') -and $game.Contains('const route = finishedRun?.route')
+  $contracts['Custom boards are separate from historical classic boards'] = $sql.Contains("'full-custom-routes-v1'") -and $sql.Contains("leaderboard_id = 'crate-jump-collision-v1' and run_type_id = 'classic'")
+  $contracts['Database accepts the complete campaign plus four gauntlets'] = $sql.Contains('jsonb_array_length(splits) between 1 and 44')
+  $contracts['Arbitrary canonical boards are directly addressable'] = $index.Contains('leaderboardIdentityForm') -and $game.Contains('parseLeaderboardIdentity')
   $contractFailures = @($contracts.GetEnumerator() | Where-Object { -not $_.Value })
   foreach ($failure in $contractFailures) { Write-Host "FAIL: source contract - $($failure.Key)" -ForegroundColor Red }
   if ($contractFailures.Count -gt 0) { throw "$($contractFailures.Count) database/source contracts failed." }

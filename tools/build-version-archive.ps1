@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $releases = [ordered]@{
+  'v0.36.2' = '2bec4b0'
   'v0.36.1' = '006ab8a'
   'v0.36.0' = 'b7db5b0'
   'v0.35.2' = 'ARCHIVED'
@@ -157,7 +158,7 @@ foreach ($release in $releases.GetEnumerator()) {
   }
   New-Item -ItemType Directory -Force -Path $releaseRoot | Out-Null
   $releaseFiles = @('index.html', 'styles.css', 'game.js')
-  foreach ($optionalFile in @('verification-rules.js', 'level-data.js', 'account.js', 'editor.css', 'editor.js', 'supabase/functions/_shared/replay-validator.js')) {
+  foreach ($optionalFile in @('verification-rules.js', 'run-rules.js', 'level-data.js', 'account.js', 'editor.css', 'editor.js', 'supabase/functions/_shared/replay-validator.js')) {
     if ($release.Value -eq 'WORKTREE') {
       if (Test-Path -LiteralPath (Join-Path $repoRoot $optionalFile)) { $releaseFiles += $optionalFile }
     } else {

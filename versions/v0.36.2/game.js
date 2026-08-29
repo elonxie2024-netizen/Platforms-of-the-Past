@@ -146,8 +146,6 @@ const specificLevelChoices = document.querySelector("#specificLevelChoices");
 const runSetupSummary = document.querySelector("#runSetupSummary");
 const closeRunSetupButton = document.querySelector("#closeRunSetupButton");
 const leaderboardRunType = document.querySelector("#leaderboardRunType");
-const leaderboardIdentityForm = document.querySelector("#leaderboardIdentityForm");
-const leaderboardIdentityInput = document.querySelector("#leaderboardIdentityInput");
 const developerPanel = document.querySelector("#developerPanel");
 const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelButton");
 const flightToggleButton = document.querySelector("#flightToggleButton");
@@ -180,7 +178,6 @@ const profileDisplayName = document.querySelector("#profileDisplayName");
 const profileUsername = document.querySelector("#profileUsername");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.37.0", commit: "Pending commit", date: "2026-08-28", message: "Full custom run routes and leaderboards", description: "Expanded Custom Runs across all forty campaign levels and four optional gauntlets. The builder now supports individual levels, whole chapters, and gauntlets with overlap deduplication and canonical ordering. Configured runs stay continuous across chapter and gauntlet boundaries, calculate objectives and constraints from their exact route, and publish to normalized Time, Score, or Stars boards separate from historical Classic Adventure records." },
   { version: "v0.36.2", commit: "Pending commit", date: "2026-08-28", message: "Fix Supabase replay setup", description: "Fixed an ambiguous inline CASE expression in the idempotent Supabase setup that PostgreSQL could reject while creating the trusted replay intake function. The replay size limits and validation behavior are unchanged; the complete setup file now runs through that condition correctly." },
   { version: "v0.36.1", commit: "Pending commit", date: "2026-08-28", message: "Audit published level details", description: "Audited Community Levels, creator-profile navigation, direct links, guest and signed-in views, all published level types and verification states, empty and failed leaderboard loads, stale publications, long names, and display scaling. Detail pages now recheck the current immutable version before Play and stop for review when a creator has republished; the editor also enforces that expected version during the final snapshot load. Metadata remains usable when rankings or Survival reviews fail, loading and retry states are clearer, and long leaderboard identities fit cleanly without changing trusted ranking or dispute rules." },
   { version: "v0.36.0", commit: "Pending commit", date: "2026-08-27", message: "Add published level details and per-level leaderboards", description: "Added a dedicated metadata-only detail screen before community gameplay from both Community Levels and creator profiles. It shows creator attribution, level type, Required Stars, immutable published version, verification or ranked status, objective, the signed-in player's best trusted result, and an exact-version leaderboard. Exit boards rank fastest trusted completions, Survival boards rank longest trusted runs, disputed and invalidated Survival strategies remain visible as gray unranked rows, and pending, processing, rejected, and legacy evidence is excluded. Full level snapshots still load only after Play, while existing direct-play links remain unchanged." },
@@ -1538,7 +1535,7 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.37.0";
+const GAME_VERSION = "v0.36.2";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
@@ -1546,8 +1543,7 @@ const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const ACCOUNT_PREFERENCES_STORAGE_PREFIX = "platforms-past-account-preferences-v1:";
 const LEGACY_SHARED_PREFERENCE_KEYS = ["platforms-volume", "platforms-audio-mix-v1", "platforms-display-size"];
 const LEADERBOARD_RULESETS = [
-  { id: "full-custom-routes-v1", label: "Custom Routes · Version 0.37.0" },
-  { id: "crate-jump-collision-v1", label: "Classic Adventure · Version 0.24.1 to 0.37.0" },
+  { id: "crate-jump-collision-v1", label: "Version 0.24.1 to 0.36.2" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1588,11 +1584,9 @@ const LEADERBOARD_RULESETS = [
   { id: "pressure-plates-v1", label: "Version 0.10.0 to 0.10.0" },
   { id: "intro-seven-v1", label: "Version 0.6.2 to 0.9.2" }
 ];
-const CUSTOM_ROUTE_LEADERBOARD_ID = "full-custom-routes-v1";
-const CLASSIC_LEADERBOARD_ID = "crate-jump-collision-v1";
-const CURRENT_LEADERBOARD_ID = CUSTOM_ROUTE_LEADERBOARD_ID;
+const CURRENT_LEADERBOARD_ID = LEADERBOARD_RULESETS[0].id;
 const RELEASE_VERSIONS = [
-  "v0.37.0", "v0.36.2", "v0.36.1", "v0.36.0", "v0.35.2", "v0.35.1", "v0.35.0", "v0.34.2", "v0.34.1", "v0.34.0",
+  "v0.36.2", "v0.36.1", "v0.36.0", "v0.35.2", "v0.35.1", "v0.35.0", "v0.34.2", "v0.34.1", "v0.34.0",
   "v0.33.3", "v0.33.2", "v0.33.1", "v0.33.0", "v0.32.1", "v0.32.0", "v0.31.1", "v0.31.0", "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
@@ -1630,9 +1624,7 @@ let customLevelDetailsReturn = "community";
 let customLevelDetailsRequest = 0;
 let publicProfileReturn = "main";
 let publicProfileRequest = 0;
-const runRules = window.PlatformsRunRules;
-const ALL_CAMPAIGN_LEVELS = [...runRules.ALL_CAMPAIGN_LEVELS];
-const ALL_GAUNTLETS = [...runRules.ALL_GAUNTLETS];
+const ALL_INTRO_LEVELS = Array.from({ length: INTRO_LEVEL_COUNT }, (_, index) => index);
 const RUN_OBJECTIVE_LABELS = {
   "complete-all": "Complete all levels",
   specific: "Complete specific levels",
@@ -1647,7 +1639,7 @@ const RUN_CONSTRAINT_LABELS = {
   "all-hazards": "Every hazard",
   "all-mechanics": "Every mechanic"
 };
-let selectedRunConfig = { objective: "complete-all", constraint: "none", metric: "time", levels: [...ALL_CAMPAIGN_LEVELS] };
+let selectedRunConfig = { objective: "complete-all", constraint: "none", metric: "time", levels: [...ALL_INTRO_LEVELS] };
 let activeRunConfig = null;
 let runLevelQueue = [];
 let runQueuePosition = 0;
@@ -1872,7 +1864,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1891,7 +1883,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -3016,16 +3008,13 @@ function completeLevelSplit() {
 function renderSplitSummary() {
   splitList.replaceChildren();
   const resultSplits = finishedRun?.splits || levelSplits;
-  const route = finishedRun?.route || levels.map((_, index) => index);
-  route.forEach((levelIndex, splitIndex) => {
-    const level = levels[levelIndex];
-    const timeValue = finishedRun?.route ? resultSplits[splitIndex] : resultSplits[levelIndex];
-    if (!level || !Number.isFinite(timeValue)) return;
+  levels.forEach((level, index) => {
+    if (!Number.isFinite(resultSplits[index])) return;
     const item = document.createElement("li");
     const name = document.createElement("span");
-    name.textContent = `${level.gauntletId || levelIndex + 1}. ${level.name}`;
+    name.textContent = `${level.gauntletId || index + 1}. ${level.name}`;
     const time = document.createElement("strong");
-    time.textContent = formatRunTime(timeValue);
+    time.textContent = formatRunTime(resultSplits[index]);
     item.append(name, time);
     splitList.append(item);
   });
@@ -3224,7 +3213,7 @@ function restoreGuestProgress() {
   runStartLevel = 0;
   roadmapChapterIndex = 0;
   leaderboardMetric = "time";
-  selectedRunConfig = { objective: "complete-all", constraint: "none", metric: "time", levels: [...ALL_CAMPAIGN_LEVELS] };
+  selectedRunConfig = { objective: "complete-all", constraint: "none", metric: "time", levels: [...ALL_INTRO_LEVELS] };
   activeRunConfig = null;
   runLevelQueue = [];
   runQueuePosition = 0;
@@ -3404,12 +3393,13 @@ function resetRunProgress() {
 }
 
 function runTypeId(config) {
-  return runRules.runTypeId(config);
+  const levelsPart = config.levels.map((index) => index + 1).join("-");
+  return `${config.objective}:${levelsPart}:${config.constraint}`;
 }
 
 function runTypeLabel(config) {
-  const normalized = runRules.normalizeConfig(config);
-  return `${RUN_OBJECTIVE_LABELS[normalized.objective]} · ${runRules.routeSummary(normalized.levels)} · ${RUN_CONSTRAINT_LABELS[normalized.constraint]}`;
+  const levelDetail = config.objective === "specific" ? ` (${config.levels.map((index) => index + 1).join(", ")})` : "";
+  return `${RUN_OBJECTIVE_LABELS[config.objective]}${levelDetail} · ${RUN_CONSTRAINT_LABELS[config.constraint]}`;
 }
 
 function availableHazards(levelIndexes) {
@@ -3434,17 +3424,12 @@ function availableMechanics(levelIndexes) {
     if ((level.switches || []).length) mechanics.add("switch");
     if ((level.pressurePlates || []).length) mechanics.add("pressure-plate");
     if ((level.enemies || []).length) mechanics.add("enemy-stomp");
-    if (level.rewindChapter) mechanics.add("rewind");
-    if (level.rewindField) mechanics.add("rewind-field");
-    if (level.echoChapter) mechanics.add("echo");
   });
   return mechanics;
 }
 
 function routeStarTotal(levelIndexes) {
-  return runRules.normalizeRoute(levelIndexes).reduce((sum, index) =>
-    sum + (levels[index]?.stars || []).length + (levels[index]?.enemies || []).length, 0
-  );
+  return levelIndexes.reduce((sum, index) => sum + levels[index].stars.length + (levels[index].enemies || []).length, 0);
 }
 
 function recordMechanic(mechanic) {
@@ -3456,94 +3441,37 @@ function recordHazardDeath(hazard) {
 }
 
 function runRequirementStatus(config) {
-  return runRules.evaluateRequirements({
-    config,
-    totalStars,
-    routeStarTotal: routeStarTotal(config.levels),
-    completed: [...runProgress.completedLevels],
-    hazardsAvailable: [...availableHazards(config.levels)],
-    hazardsSeen: [...runProgress.hazardDeaths],
-    mechanicsAvailable: [...availableMechanics(config.levels)],
-    mechanicsUsed: [...runProgress.mechanics]
-  });
+  const missing = [];
+  const requiresStars = config.objective === "all-stars" || config.constraint === "all-stars";
+  const requiresHazards = config.objective === "all-hazards" || config.constraint === "all-hazards";
+  const requiresMechanics = config.objective === "all-mechanics" || config.constraint === "all-mechanics";
+  if (config.constraint === "no-stars" && totalStars > 0) missing.push("the no-stars constraint was broken");
+  if (requiresStars && totalStars < routeStarTotal(config.levels)) missing.push("not every star was collected");
+  if (requiresHazards) {
+    const unseen = [...availableHazards(config.levels)].filter((hazard) => !runProgress.hazardDeaths.has(hazard));
+    if (unseen.length) missing.push(`${unseen.length} placed ${unseen.length === 1 ? "hazard has" : "hazards have"} not defeated you`);
+  }
+  if (requiresMechanics) {
+    const unused = [...availableMechanics(config.levels)].filter((mechanic) => !runProgress.mechanics.has(mechanic));
+    if (unused.length) missing.push(`unused mechanics: ${unused.join(", ")}`);
+  }
+  const incomplete = config.levels.filter((index) => !runProgress.completedLevels.has(index));
+  if (incomplete.length) missing.push(`unfinished levels: ${incomplete.map((index) => index + 1).join(", ")}`);
+  return { success: missing.length === 0, missing };
 }
 
 function populateSpecificLevelChoices() {
   specificLevelChoices.replaceChildren();
-  const presetRow = document.createElement("div");
-  presetRow.className = "run-route-presets";
-  [["allCampaign", "All 40 Levels", true], ["allGauntlets", "All Gauntlets", false]].forEach(([name, text, checked]) => {
+  ALL_INTRO_LEVELS.forEach((levelIndex) => {
     const label = document.createElement("label");
-    const input = Object.assign(document.createElement("input"), { type: "checkbox", name, checked });
-    label.append(input, document.createTextNode(text));
-    presetRow.append(label);
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.name = "specificLevel";
+    input.value = String(levelIndex);
+    input.checked = levelIndex === 0;
+    label.append(input, document.createTextNode(String(levelIndex + 1)));
+    specificLevelChoices.append(label);
   });
-  specificLevelChoices.append(presetRow);
-  for (let chapter = 0; chapter < runRules.CHAPTER_COUNT; chapter++) {
-    const section = document.createElement("section");
-    section.className = "run-route-chapter";
-    const heading = document.createElement("label");
-    heading.className = "run-route-chapter-toggle";
-    const chapterInput = Object.assign(document.createElement("input"), {
-      type: "checkbox", name: "runChapter", value: String(chapter), checked: true
-    });
-    heading.append(chapterInput, document.createTextNode(`Chapter ${chapter + 1} - ${ROADMAP_CHAPTERS[chapter]}`));
-    const choices = document.createElement("div");
-    choices.className = "run-route-levels";
-    runRules.chapterLevels(chapter).forEach(levelIndex => {
-      const label = document.createElement("label");
-      const input = Object.assign(document.createElement("input"), {
-        type: "checkbox", name: "runLevel", value: String(levelIndex), checked: true
-      });
-      label.append(input, document.createTextNode(String(levelIndex + 1)));
-      choices.append(label);
-    });
-    const gauntletIndex = CAMPAIGN_LEVEL_COUNT + chapter;
-    const gauntletLabel = document.createElement("label");
-    gauntletLabel.className = "run-route-gauntlet";
-    const gauntletInput = Object.assign(document.createElement("input"), {
-      type: "checkbox", name: "runGauntlet", value: String(gauntletIndex)
-    });
-    gauntletLabel.append(gauntletInput, document.createTextNode(`G${chapter + 1} - ${levels[gauntletIndex].name}`));
-    section.append(heading, choices, gauntletLabel);
-    specificLevelChoices.append(section);
-  }
-  updateRouteGroupToggles();
-}
-
-function updateRouteGroupToggles() {
-  const selected = new Set([...specificLevelChoices.querySelectorAll('[name="runLevel"]:checked')].map(input => Number(input.value)));
-  specificLevelChoices.querySelectorAll('[name="runChapter"]').forEach(input => {
-    const chapter = runRules.chapterLevels(Number(input.value));
-    input.checked = chapter.every(index => selected.has(index));
-    input.indeterminate = !input.checked && chapter.some(index => selected.has(index));
-  });
-  const allCampaign = specificLevelChoices.querySelector('[name="allCampaign"]');
-  allCampaign.checked = ALL_CAMPAIGN_LEVELS.every(index => selected.has(index));
-  allCampaign.indeterminate = !allCampaign.checked && selected.size > 0;
-  const selectedGauntlets = new Set([...specificLevelChoices.querySelectorAll('[name="runGauntlet"]:checked')].map(input => Number(input.value)));
-  const allGauntlets = specificLevelChoices.querySelector('[name="allGauntlets"]');
-  allGauntlets.checked = ALL_GAUNTLETS.every(index => selectedGauntlets.has(index));
-  allGauntlets.indeterminate = !allGauntlets.checked && selectedGauntlets.size > 0;
-}
-
-function handleRouteSelectionChange(target) {
-  if (target.name === "allCampaign") {
-    specificLevelChoices.querySelectorAll('[name="runLevel"]').forEach(input => { input.checked = target.checked; });
-  } else if (target.name === "allGauntlets") {
-    specificLevelChoices.querySelectorAll('[name="runGauntlet"]').forEach(input => { input.checked = target.checked; });
-  } else if (target.name === "runChapter") {
-    const chapter = new Set(runRules.chapterLevels(Number(target.value)));
-    specificLevelChoices.querySelectorAll('[name="runLevel"]').forEach(input => {
-      if (chapter.has(Number(input.value))) input.checked = target.checked;
-    });
-  }
-  updateRouteGroupToggles();
-}
-
-function readSelectedRoute() {
-  return runRules.normalizeRoute([...specificLevelChoices.querySelectorAll('[name="runLevel"]:checked, [name="runGauntlet"]:checked')]
-    .map(input => Number(input.value)));
 }
 
 function readRunSetup() {
@@ -3551,17 +3479,19 @@ function readRunSetup() {
   const objective = String(data.get("runObjective") || "complete-all");
   const constraint = String(data.get("runConstraint") || "none");
   const metric = String(data.get("runMetric") || "time");
-  return { objective, constraint, metric, levels: readSelectedRoute() };
+  const specificLevels = data.getAll("specificLevel").map(Number).sort((a, b) => a - b);
+  const route = objective === "specific" ? specificLevels : [...ALL_INTRO_LEVELS];
+  return { objective, constraint, metric, levels: route };
 }
 
-function updateRunSetup(event) {
-  if (event?.target instanceof HTMLInputElement) handleRouteSelectionChange(event.target);
+function updateRunSetup() {
   const config = readRunSetup();
+  specificLevelChoices.hidden = config.objective !== "specific";
   if (config.levels.length === 0) {
-    runSetupSummary.textContent = "Choose at least one campaign level or gauntlet.";
+    runSetupSummary.textContent = "Choose at least one level.";
     return;
   }
-  runSetupSummary.textContent = `${runTypeLabel(config)} · Ranked by ${config.metric} · ${runRules.leaderboardIdentity(config)}`;
+  runSetupSummary.textContent = `${runTypeLabel(config)} · Ranked by ${config.metric}`;
 }
 
 function openPlayChoice() {
@@ -3767,10 +3697,9 @@ function startGauntletRun(index, preserveChapterReturn = false) {
 }
 
 function startConfiguredRun() {
-  let config;
-  try { config = runRules.normalizeConfig(readRunSetup()); }
-  catch (error) {
-    runSetupSummary.textContent = error.message;
+  const config = readRunSetup();
+  if (config.levels.length === 0) {
+    runSetupSummary.textContent = "Choose at least one level before starting.";
     return;
   }
   selectedRunConfig = config;
@@ -3861,26 +3790,17 @@ function leaderboardRunContext() {
   return { id: runTypeId(selectedRunConfig), label: runTypeLabel(selectedRunConfig) };
 }
 
-function addLeaderboardRunType(options, config) {
-  const normalized = runRules.normalizeConfig(config);
-  options.set(runTypeId(normalized), runTypeLabel(normalized));
-}
-
-function syncLeaderboardIdentity(selectRuleset = false) {
-  const context = leaderboardRunContext();
-  leaderboardIdentityInput.value = context.id === "classic" ? `classic@${leaderboardMetric}` : `${context.id}@${leaderboardMetric}`;
-  if (selectRuleset) leaderboardVersion.value = context.id === "classic" ? CLASSIC_LEADERBOARD_ID : CUSTOM_ROUTE_LEADERBOARD_ID;
-}
-
 function populateLeaderboardRunTypes() {
   const preferred = finishedRun?.runTypeId || (activeRunConfig ? runTypeId(activeRunConfig) : runTypeId(selectedRunConfig));
-  const options = new Map([["classic", "Classic adventure"]]);
-  ["complete-all", "all-stars", "all-hazards", "all-mechanics"].forEach(objective =>
-    addLeaderboardRunType(options, { objective, constraint: "none", metric: "time", levels: ALL_CAMPAIGN_LEVELS })
-  );
-  addLeaderboardRunType(options, { objective: "complete-all", constraint: "none", metric: "time", levels: [...ALL_CAMPAIGN_LEVELS, ...ALL_GAUNTLETS] });
-  addLeaderboardRunType(options, { objective: "specific", constraint: "none", metric: "time", levels: ALL_GAUNTLETS });
-  [selectedRunConfig, activeRunConfig].filter(Boolean).forEach(config => addLeaderboardRunType(options, config));
+  const configs = [];
+  ["complete-all", "all-stars", "all-hazards", "all-mechanics"].forEach((objective) => {
+    Object.keys(RUN_CONSTRAINT_LABELS).forEach((constraint) => {
+      configs.push({ objective, constraint, metric: "time", levels: [...ALL_INTRO_LEVELS] });
+    });
+  });
+  if (selectedRunConfig.objective === "specific") configs.push(selectedRunConfig);
+  if (activeRunConfig?.objective === "specific") configs.push(activeRunConfig);
+  const options = new Map(configs.map((config) => [runTypeId(config), runTypeLabel(config)]));
   if (finishedRun?.runTypeId) options.set(finishedRun.runTypeId, finishedRun.runTypeLabel);
   leaderboardRunType.replaceChildren();
   options.forEach((label, id) => {
@@ -3890,27 +3810,6 @@ function populateLeaderboardRunTypes() {
     leaderboardRunType.append(option);
   });
   if (options.has(preferred)) leaderboardRunType.value = preferred;
-  syncLeaderboardIdentity(true);
-}
-
-function viewLeaderboardIdentity(event) {
-  event.preventDefault();
-  try {
-    const parsed = runRules.parseLeaderboardIdentity(leaderboardIdentityInput.value, leaderboardMetric);
-    selectLeaderboardMetric(parsed.metric, false);
-    const id = parsed.classic ? "classic" : runTypeId(parsed);
-    if (![...leaderboardRunType.options].some(option => option.value === id)) {
-      const option = document.createElement("option");
-      option.value = id;
-      option.textContent = parsed.classic ? "Classic adventure" : runTypeLabel(parsed);
-      leaderboardRunType.append(option);
-    }
-    leaderboardRunType.value = id;
-    syncLeaderboardIdentity(true);
-    refreshLeaderboard();
-  } catch (error) {
-    leaderboardNote.textContent = error.message;
-  }
 }
 
 async function refreshLeaderboard() {
@@ -3945,7 +3844,6 @@ function selectLeaderboardMetric(metric, shouldRefresh = true) {
     button.setAttribute("aria-selected", String(selected));
     button.tabIndex = selected ? 0 : -1;
   });
-  syncLeaderboardIdentity();
   if (shouldRefresh) refreshLeaderboard();
 }
 
@@ -3964,7 +3862,6 @@ function openLeaderboard(source) {
   leaderboardReturn = source;
   populateLeaderboardRunTypes();
   selectLeaderboardMetric(finishedRun?.metric || activeRunConfig?.metric || selectedRunConfig.metric || "time", false);
-  syncLeaderboardIdentity();
   if (source === "pause") pauseMenu.hidden = true;
   else {
     settingsPanel.hidden = true;
@@ -4509,7 +4406,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -4645,7 +4542,7 @@ async function publishFinishedRun() {
       method: "POST",
       headers: leaderboardHeaders(true),
       body: JSON.stringify({
-        leaderboard_id: finishedRun.runTypeId === "classic" ? CLASSIC_LEADERBOARD_ID : CUSTOM_ROUTE_LEADERBOARD_ID,
+        leaderboard_id: CURRENT_LEADERBOARD_ID,
         game_version: GAME_VERSION,
         name,
         seconds: finishedRun.seconds,
@@ -4702,7 +4599,6 @@ function prepareAdventureResults() {
     scoreSummary.textContent = `${baseSummary} · ${requirement.success ? "Challenge complete" : "Challenge failed"}`;
     finishedRun = {
       seconds, stars: totalStars, score: finalScore, splits: resultSplits,
-      route: [...activeRunConfig.levels],
       eligible: requirement.success && resultSplits.every(Number.isFinite),
       metric: activeRunConfig.metric,
       runTypeId: runTypeId(activeRunConfig),
@@ -4747,8 +4643,8 @@ function showRunResults() {
   quitButton.disabled = true;
   Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
   pressed.jump = false;
-  continueButton.hidden = Boolean(activeRunConfig);
-  introGauntletButton.hidden = Boolean(activeRunConfig);
+  continueButton.hidden = Boolean(activeRunConfig && !runProgress.completedLevels.has(INTRO_LEVEL_COUNT - 1));
+  introGauntletButton.hidden = continueButton.hidden;
   if (finishedRun.eligible) runNameInput.focus();
   else if (!continueButton.hidden) continueButton.focus();
   else victoryQuitButton.focus();
@@ -5064,23 +4960,6 @@ function levelUsesRewindField() {
     (!editorPlaytestActive && currentLevel().rewindChapter && levelIndex >= 14));
 }
 
-function completeConfiguredRouteItem() {
-  completeLevelSplit();
-  runProgress.completedLevels.add(levelIndex);
-  if (currentLevel().gauntletId) {
-    completedGauntlets.add(currentLevel().gauntletId);
-    persistProgress();
-  } else {
-    unlockThrough(levelIndex + 1);
-  }
-  runQueuePosition++;
-  if (runQueuePosition >= runLevelQueue.length) showRunResults();
-  else {
-    nextLevelIndex = runLevelQueue[runQueuePosition];
-    levelTransition = .65;
-  }
-}
-
 function rewindFieldAnchor() {
   const offset = currentLevel().rewindFieldOffset || 0;
   return {
@@ -5117,12 +4996,10 @@ function beginTimelinePreview() {
 }
 
 function commitTimelinePreview() {
-  let committed = false;
   previewedTimelineObjects().forEach((platform) => {
     platform.timelinePreview = false;
     const cursor = Math.max(0, Math.min(platform.previewCursor, platform.previewLatest));
     if (cursor < platform.previewLatest) {
-      committed = true;
       platform.timelinePlayback = platform.motionHistory.slice(cursor, platform.previewLatest).reverse();
       platform.motionHistory = platform.motionHistory.slice(0, cursor + 1);
       platform.motionLastRecordedAt = platform.motionHistory[platform.motionHistory.length - 1].time;
@@ -5132,10 +5009,6 @@ function commitTimelinePreview() {
   });
   rewindFieldPreview = null;
   input.forwardTime = false;
-  if (committed) {
-    recordMechanic("rewind");
-    if (levelUsesRewindField()) recordMechanic("rewind-field");
-  }
 }
 
 function cancelTimelinePreview() {
@@ -5214,7 +5087,6 @@ function createEchoFromPreview() {
     cursor: 0
   };
   echoPreview = null;
-  recordMechanic("echo");
   playSfx("rewind-release");
   return true;
 }
@@ -5663,12 +5535,7 @@ levelEditorButton.addEventListener("click", () => window.PlatformsEditor?.open()
 editorReturnButton.addEventListener("click", () => returnFromEditorPlaytest("Returned from playtest. Your draft and editor view were preserved."));
 closeVersionsButton.addEventListener("click", closeVersions);
 leaderboardVersion.addEventListener("change", refreshLeaderboard);
-leaderboardRunType.addEventListener("change", () => {
-  const useCurrentRuleset = leaderboardRunType.value === "classic" || leaderboardVersion.value === CLASSIC_LEADERBOARD_ID;
-  syncLeaderboardIdentity(useCurrentRuleset);
-  refreshLeaderboard();
-});
-leaderboardIdentityForm.addEventListener("submit", viewLeaderboardIdentity);
+leaderboardRunType.addEventListener("change", refreshLeaderboard);
 leaderboardMetricButtons.forEach(button => {
   button.addEventListener("click", () => selectLeaderboardMetric(button.dataset.leaderboardMetric));
 });
@@ -6988,8 +6855,20 @@ function update(dt) {
       completeChapter(chapterEndIndex);
       unlockThrough(levelIndex + 1);
     }
-    if (activeRunConfig) completeConfiguredRouteItem();
-    else if (currentLevel().gauntletId) finishGauntlet();
+    if (currentLevel().gauntletId) {
+      finishGauntlet();
+    }
+    else if (activeRunConfig) {
+      completeLevelSplit();
+      runProgress.completedLevels.add(levelIndex);
+      unlockThrough(levelIndex + 1);
+      runQueuePosition++;
+      if (runQueuePosition >= runLevelQueue.length) showRunResults();
+      else {
+        nextLevelIndex = runLevelQueue[runQueuePosition];
+        levelTransition = .65;
+      }
+    }
     else if (currentLevel().rewindChapter || currentLevel().echoChapter) {
       if (levelIndex === 19) showEchoChapterResults();
       else if (levelIndex === 29) showConvergenceChapterResults();
