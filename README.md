@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.37.1`
+**Current version:** `v0.37.2`
 
 ## How it works
 
@@ -55,6 +55,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 **Build full custom routes.** Version 0.37.0 lets Custom Runs combine any individual campaign levels, complete chapters, and optional gauntlets. Overlaps are deduplicated into canonical story order, the timer and eligibility remain continuous across chapter boundaries, and every normalized objective, route, constraint, and Time/Score/Stars metric receives its own addressable leaderboard without merging historical Classic Adventure records.
 
 **Compare every run three ways.** Version 0.37.1 makes Time, Score, and Stars different views of the same route-specific leaderboard. Publishing once adds the run to all three views, and choosing a metric in the builder only controls which ranking opens first.
+
+**Find the right leaderboard naturally.** Version 0.37.2 replaces internal board codes with readable route and challenge names, separates current/recent boards from common presets, and provides expandable exact-route details for shortened mixed-route labels. Normal players never need to copy, paste, or understand a normalized board ID.
 
 **Play past versions.** Open Versions from the main menu to launch any archived release build in a new tab.
 

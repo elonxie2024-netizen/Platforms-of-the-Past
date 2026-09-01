@@ -73,7 +73,7 @@
     points.push(terminalPoint);
     return {
       format: replayVerifier.LEGACY_FORMAT,
-      gameVersion: "v0.37.1",
+      gameVersion: "v0.37.2",
       sampleIntervalMs: 250,
       levelId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       levelVersion: 3,
@@ -656,6 +656,32 @@
     assert(runRules.rankRuns(runs, "time")[0].id === "a");
     assert(runRules.rankRuns(runs, "score")[0].id === "b");
     assert(runRules.rankRuns(runs, "stars")[0].id === "b");
+  });
+  test("Leaderboard labels: common routes use familiar names", () => {
+    equal(runRules.boardLabel({ objective: "complete-all", constraint: "none", metric: "time", levels: runRules.chapterLevels(0) }), "Chapter 1 · Any%");
+    equal(runRules.boardLabel({ objective: "complete-all", constraint: "none", metric: "time", levels: runRules.ALL_CAMPAIGN_LEVELS }), "Full Campaign · Any%");
+  });
+  test("Leaderboard labels: chapter ranges and constraints are readable", () => {
+    const route = [...runRules.chapterLevels(1), ...runRules.chapterLevels(2), ...runRules.chapterLevels(3)];
+    equal(runRules.boardLabel({ objective: "complete-all", constraint: "no-stars", metric: "time", levels: route }), "Chapters 2–4 · No Stars");
+  });
+  test("Leaderboard labels: short level lists remain exact", () => {
+    equal(runRules.boardLabel({ objective: "all-stars", constraint: "none", metric: "time", levels: [2, 7, 26] }), "Levels 3, 8, 27 · All Stars");
+  });
+  test("Leaderboard labels: chapters and gauntlets combine naturally", () => {
+    equal(runRules.boardLabel({ objective: "all-mechanics", constraint: "none", metric: "time", levels: [...runRules.chapterLevels(1), 41] }), "Chapter 2 + G2 · Every Mechanic");
+    equal(runRules.boardLabel({ objective: "complete-all", constraint: "none", metric: "time", levels: [...runRules.ALL_CAMPAIGN_LEVELS, ...runRules.ALL_GAUNTLETS] }), "Full Campaign + All Gauntlets · Any%");
+  });
+  test("Leaderboard labels: long mixed routes summarize cleanly and retain details", () => {
+    const route = [...runRules.chapterLevels(0), 10, 11, 12, 13, 14, 15, 42];
+    equal(runRules.humanRouteLabel(route), "Chapter 1 + 6 Levels + G3");
+    assert(runRules.routeContents(route).includes("Chapter 1 (Levels 1–10)"));
+    assert(runRules.routeContents(route).includes("11, 12, 13, 14, 15, 16"));
+    assert(runRules.routeContents(route).includes("G3"));
+  });
+  test("Leaderboard labels: large chapter and gauntlet mixes use compact counts", () => {
+    const route = [...runRules.chapterLevels(0), ...runRules.chapterLevels(1), ...runRules.chapterLevels(2), 40, 41];
+    equal(runRules.humanRouteLabel(route), "3 Chapters + 2 Gauntlets");
   });
 
   const failed = results.filter(result => !result.passed);

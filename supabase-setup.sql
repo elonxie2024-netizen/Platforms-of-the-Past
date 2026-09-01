@@ -14,8 +14,8 @@ create table if not exists public.leaderboard_rulesets (
 
 insert into public.leaderboard_rulesets (id, label, accepted_versions)
 values
-  ('full-custom-routes-v1', 'Custom Routes · Version 0.37.0 to 0.37.1', array['v0.37.0', 'v0.37.1']),
-  ('crate-jump-collision-v1', 'Classic Adventure · Version 0.24.1 to 0.37.1', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1', 'v0.28.2', 'v0.29.0', 'v0.29.1', 'v0.30.0', 'v0.30.1', 'v0.30.2', 'v0.30.3', 'v0.31.0', 'v0.31.1', 'v0.32.0', 'v0.32.1', 'v0.33.0', 'v0.33.1', 'v0.33.2', 'v0.33.3', 'v0.34.0', 'v0.34.1', 'v0.34.2', 'v0.35.0', 'v0.35.1', 'v0.35.2', 'v0.36.0', 'v0.36.1', 'v0.36.2', 'v0.37.0', 'v0.37.1']),
+  ('full-custom-routes-v1', 'Custom Routes · Version 0.37.0 to 0.37.2', array['v0.37.0', 'v0.37.1', 'v0.37.2']),
+  ('crate-jump-collision-v1', 'Classic Adventure · Version 0.24.1 to 0.37.2', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1', 'v0.28.2', 'v0.29.0', 'v0.29.1', 'v0.30.0', 'v0.30.1', 'v0.30.2', 'v0.30.3', 'v0.31.0', 'v0.31.1', 'v0.32.0', 'v0.32.1', 'v0.33.0', 'v0.33.1', 'v0.33.2', 'v0.33.3', 'v0.34.0', 'v0.34.1', 'v0.34.2', 'v0.35.0', 'v0.35.1', 'v0.35.2', 'v0.36.0', 'v0.36.1', 'v0.36.2', 'v0.37.0', 'v0.37.1', 'v0.37.2']),
   ('crate-platform-collision-v1', 'Version 0.23.2 to 0.24.0', array['v0.23.2', 'v0.24.0']),
   ('history-forge-gate-v1', 'Version 0.23.1 to 0.23.1', array['v0.23.1']),
   ('crate-gravity-v1', 'Version 0.23.0 to 0.23.0', array['v0.23.0']),
@@ -257,7 +257,7 @@ create policy "Anyone can submit validated scores"
     )
     and char_length(run_type_id) between 1 and 500
     and (
-      game_version not in ('v0.37.0', 'v0.37.1')
+      game_version not in ('v0.37.0', 'v0.37.1', 'v0.37.2')
       or (leaderboard_id = 'crate-jump-collision-v1' and run_type_id = 'classic')
       or (leaderboard_id = 'full-custom-routes-v1' and run_type_id <> 'classic')
     )

@@ -146,8 +146,8 @@ const specificLevelChoices = document.querySelector("#specificLevelChoices");
 const runSetupSummary = document.querySelector("#runSetupSummary");
 const closeRunSetupButton = document.querySelector("#closeRunSetupButton");
 const leaderboardRunType = document.querySelector("#leaderboardRunType");
-const leaderboardRouteDetails = document.querySelector("#leaderboardRouteDetails");
-const leaderboardRouteContents = document.querySelector("#leaderboardRouteContents");
+const leaderboardIdentityForm = document.querySelector("#leaderboardIdentityForm");
+const leaderboardIdentityInput = document.querySelector("#leaderboardIdentityInput");
 const developerPanel = document.querySelector("#developerPanel");
 const closeDeveloperPanelButton = document.querySelector("#closeDeveloperPanelButton");
 const flightToggleButton = document.querySelector("#flightToggleButton");
@@ -180,7 +180,6 @@ const profileDisplayName = document.querySelector("#profileDisplayName");
 const profileUsername = document.querySelector("#profileUsername");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.37.2", commit: "Pending commit", date: "2026-08-31", message: "Human-friendly leaderboard UX", description: "Replaced player-facing board codes with concise names such as Chapter 1 · Any%, Full Campaign · Any%, and readable mixed-route summaries. The leaderboard now groups the current and recently viewed boards separately from common presets, keeps Time, Score, and Stars as simple views of the same runs, and offers an expandable exact-route description when a compact label omits individual levels. Internal normalized board IDs and historical Classic Adventure separation remain unchanged." },
   { version: "v0.37.1", commit: "Pending commit", date: "2026-08-28", message: "Share runs across leaderboard metrics", description: "Made every published run count in all three leaderboard views. Time, Score, and Stars now sort the same route-specific run pool instead of separating submissions by the metric chosen before the run. The builder's metric choice only selects which view opens first, and historical stored runs remain visible in every view." },
   { version: "v0.37.0", commit: "Pending commit", date: "2026-08-28", message: "Full custom run routes and leaderboards", description: "Expanded Custom Runs across all forty campaign levels and four optional gauntlets. The builder now supports individual levels, whole chapters, and gauntlets with overlap deduplication and canonical ordering. Configured runs stay continuous across chapter and gauntlet boundaries, calculate objectives and constraints from their exact route, and publish to normalized Time, Score, or Stars boards separate from historical Classic Adventure records." },
   { version: "v0.36.2", commit: "Pending commit", date: "2026-08-28", message: "Fix Supabase replay setup", description: "Fixed an ambiguous inline CASE expression in the idempotent Supabase setup that PostgreSQL could reject while creating the trusted replay intake function. The replay size limits and validation behavior are unchanged; the complete setup file now runs through that condition correctly." },
@@ -1535,13 +1534,12 @@ let paused = false;
 let timerWasRunningBeforePause = false;
 let levelTimerWasRunningBeforePause = false;
 let leaderboardReturn = "main";
-const recentLeaderboardBoards = [];
 let changelogReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.37.2";
+const GAME_VERSION = "v0.37.1";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
@@ -1549,8 +1547,8 @@ const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const ACCOUNT_PREFERENCES_STORAGE_PREFIX = "platforms-past-account-preferences-v1:";
 const LEGACY_SHARED_PREFERENCE_KEYS = ["platforms-volume", "platforms-audio-mix-v1", "platforms-display-size"];
 const LEADERBOARD_RULESETS = [
-  { id: "full-custom-routes-v1", label: "Custom Routes · Version 0.37.0 to 0.37.2" },
-  { id: "crate-jump-collision-v1", label: "Classic Adventure · Version 0.24.1 to 0.37.2" },
+  { id: "full-custom-routes-v1", label: "Custom Routes · Version 0.37.0 to 0.37.1" },
+  { id: "crate-jump-collision-v1", label: "Classic Adventure · Version 0.24.1 to 0.37.1" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1595,7 +1593,7 @@ const CUSTOM_ROUTE_LEADERBOARD_ID = "full-custom-routes-v1";
 const CLASSIC_LEADERBOARD_ID = "crate-jump-collision-v1";
 const CURRENT_LEADERBOARD_ID = CUSTOM_ROUTE_LEADERBOARD_ID;
 const RELEASE_VERSIONS = [
-  "v0.37.2", "v0.37.1", "v0.37.0", "v0.36.2", "v0.36.1", "v0.36.0", "v0.35.2", "v0.35.1", "v0.35.0", "v0.34.2", "v0.34.1", "v0.34.0",
+  "v0.37.1", "v0.37.0", "v0.36.2", "v0.36.1", "v0.36.0", "v0.35.2", "v0.35.1", "v0.35.0", "v0.34.2", "v0.34.1", "v0.34.0",
   "v0.33.3", "v0.33.2", "v0.33.1", "v0.33.0", "v0.32.1", "v0.32.0", "v0.31.1", "v0.31.0", "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
   "v0.14.5", "v0.14.4", "v0.14.3", "v0.14.2", "v0.14.1", "v0.14.0", "v0.13.2", "v0.13.1", "v0.13.0", "v0.12.0", "v0.11.7", "v0.11.6", "v0.11.5", "v0.11.4", "v0.11.3", "v0.11.2", "v0.11.1", "v0.11.0", "v0.10.4", "v0.10.3", "v0.10.2", "v0.10.1", "v0.10.0", "v0.9.2", "v0.9.1", "v0.9.0", "v0.8.3", "v0.8.1", "v0.8.0", "v0.7.6", "v0.7.5", "v0.7.4", "v0.7.2", "v0.7.1", "v0.7.0",
@@ -1875,7 +1873,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1894,7 +1892,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -3410,7 +3408,8 @@ function runTypeId(config) {
 }
 
 function runTypeLabel(config) {
-  return runRules.boardLabel(config);
+  const normalized = runRules.normalizeConfig(config);
+  return `${RUN_OBJECTIVE_LABELS[normalized.objective]} · ${runRules.routeSummary(normalized.levels)} · ${RUN_CONSTRAINT_LABELS[normalized.constraint]}`;
 }
 
 function availableHazards(levelIndexes) {
@@ -3562,7 +3561,7 @@ function updateRunSetup(event) {
     runSetupSummary.textContent = "Choose at least one campaign level or gauntlet.";
     return;
   }
-  runSetupSummary.textContent = `${runTypeLabel(config)} · Opens the ${config.metric} view`;
+  runSetupSummary.textContent = `${runTypeLabel(config)} · Opens ${config.metric} view · ${runRules.leaderboardIdentity(config)}`;
 }
 
 function openPlayChoice() {
@@ -3857,7 +3856,7 @@ function renderLeaderboard() {
 
 function leaderboardRunContext() {
   const option = leaderboardRunType.selectedOptions[0];
-  if (option) return { id: option.value, label: option.dataset.boardLabel || option.textContent };
+  if (option) return { id: option.value, label: option.textContent };
   if (finishedRun?.runTypeId) return { id: finishedRun.runTypeId, label: finishedRun.runTypeLabel };
   return { id: runTypeId(selectedRunConfig), label: runTypeLabel(selectedRunConfig) };
 }
@@ -3867,63 +3866,51 @@ function addLeaderboardRunType(options, config) {
   options.set(runTypeId(normalized), runTypeLabel(normalized));
 }
 
-function rememberLeaderboardBoard(id, label) {
-  if (!id || !label) return;
-  const existing = recentLeaderboardBoards.findIndex(board => board.id === id);
-  if (existing >= 0) recentLeaderboardBoards.splice(existing, 1);
-  recentLeaderboardBoards.unshift({ id, label });
-  recentLeaderboardBoards.length = Math.min(recentLeaderboardBoards.length, 6);
-}
-
-function updateLeaderboardRouteDetails(selectRuleset = false) {
+function syncLeaderboardIdentity(selectRuleset = false) {
   const context = leaderboardRunContext();
+  leaderboardIdentityInput.value = context.id;
   if (selectRuleset) leaderboardVersion.value = context.id === "classic" ? CLASSIC_LEADERBOARD_ID : CUSTOM_ROUTE_LEADERBOARD_ID;
-  if (context.id === "classic") {
-    leaderboardRouteContents.textContent = "The original ten-level story run used by historical Classic Adventure records.";
-    return;
-  }
-  try {
-    const config = runRules.parseRunTypeId(context.id);
-    leaderboardRouteContents.textContent = `${runRules.routeContents(config.levels)}. Challenge: ${runRules.challengeLabel(config)}.`;
-  } catch {
-    leaderboardRouteContents.textContent = "Route details are unavailable for this historical board.";
-  }
 }
 
 function populateLeaderboardRunTypes() {
   const preferred = finishedRun?.runTypeId || (activeRunConfig ? runTypeId(activeRunConfig) : runTypeId(selectedRunConfig));
-  const current = new Map();
-  [selectedRunConfig, activeRunConfig].filter(Boolean).forEach(config => addLeaderboardRunType(current, config));
-  if (finishedRun?.runTypeId) current.set(finishedRun.runTypeId, finishedRun.runTypeLabel);
-  recentLeaderboardBoards.forEach(board => current.set(board.id, board.label));
-  const common = new Map([["classic", "Classic Adventure"]]);
-  for (let chapter = 0; chapter < runRules.CHAPTER_COUNT; chapter++) {
-    addLeaderboardRunType(common, { objective: "complete-all", constraint: "none", metric: "time", levels: runRules.chapterLevels(chapter) });
-  }
+  const options = new Map([["classic", "Classic adventure"]]);
   ["complete-all", "all-stars", "all-hazards", "all-mechanics"].forEach(objective =>
-    addLeaderboardRunType(common, { objective, constraint: "none", metric: "time", levels: ALL_CAMPAIGN_LEVELS })
+    addLeaderboardRunType(options, { objective, constraint: "none", metric: "time", levels: ALL_CAMPAIGN_LEVELS })
   );
-  addLeaderboardRunType(common, { objective: "complete-all", constraint: "none", metric: "time", levels: [...ALL_CAMPAIGN_LEVELS, ...ALL_GAUNTLETS] });
-  addLeaderboardRunType(common, { objective: "specific", constraint: "none", metric: "time", levels: ALL_GAUNTLETS });
+  addLeaderboardRunType(options, { objective: "complete-all", constraint: "none", metric: "time", levels: [...ALL_CAMPAIGN_LEVELS, ...ALL_GAUNTLETS] });
+  addLeaderboardRunType(options, { objective: "specific", constraint: "none", metric: "time", levels: ALL_GAUNTLETS });
+  [selectedRunConfig, activeRunConfig].filter(Boolean).forEach(config => addLeaderboardRunType(options, config));
+  if (finishedRun?.runTypeId) options.set(finishedRun.runTypeId, finishedRun.runTypeLabel);
   leaderboardRunType.replaceChildren();
-  const appendGroup = (label, entries) => {
-    if (!entries.size) return;
-    const group = document.createElement("optgroup");
-    group.label = label;
-    entries.forEach((boardLabel, id) => {
+  options.forEach((label, id) => {
+    const option = document.createElement("option");
+    option.value = id;
+    option.textContent = label;
+    leaderboardRunType.append(option);
+  });
+  if (options.has(preferred)) leaderboardRunType.value = preferred;
+  syncLeaderboardIdentity(true);
+}
+
+function viewLeaderboardIdentity(event) {
+  event.preventDefault();
+  try {
+    const parsed = runRules.parseLeaderboardIdentity(leaderboardIdentityInput.value, leaderboardMetric);
+    selectLeaderboardMetric(parsed.metric, false);
+    const id = parsed.classic ? "classic" : runTypeId(parsed);
+    if (![...leaderboardRunType.options].some(option => option.value === id)) {
       const option = document.createElement("option");
       option.value = id;
-      option.textContent = boardLabel;
-      option.dataset.boardLabel = boardLabel;
-      group.append(option);
-    });
-    leaderboardRunType.append(group);
-  };
-  appendGroup("Current and recent", current);
-  const commonOnly = new Map([...common].filter(([id]) => !current.has(id)));
-  appendGroup("Common boards", commonOnly);
-  if ([...leaderboardRunType.options].some(option => option.value === preferred)) leaderboardRunType.value = preferred;
-  updateLeaderboardRouteDetails(true);
+      option.textContent = parsed.classic ? "Classic adventure" : runTypeLabel(parsed);
+      leaderboardRunType.append(option);
+    }
+    leaderboardRunType.value = id;
+    syncLeaderboardIdentity(true);
+    refreshLeaderboard();
+  } catch (error) {
+    leaderboardNote.textContent = error.message;
+  }
 }
 
 async function refreshLeaderboard() {
@@ -3941,7 +3928,7 @@ async function refreshLeaderboard() {
       stars: "Ranked by most stars collected.",
       score: "Ranked by highest total score."
     };
-    leaderboardNote.textContent = `${metricDescriptions[leaderboardMetric]} The tabs rank the same published runs; boards split only by route and gameplay changes.`;
+    leaderboardNote.textContent = `${metricDescriptions[leaderboardMetric]} The tabs rank the same published runs; boards split only by route and gameplay ruleset.`;
     renderLeaderboard();
   } catch {
     if (request !== leaderboardRequest) return;
@@ -3958,7 +3945,7 @@ function selectLeaderboardMetric(metric, shouldRefresh = true) {
     button.setAttribute("aria-selected", String(selected));
     button.tabIndex = selected ? 0 : -1;
   });
-  updateLeaderboardRouteDetails();
+  syncLeaderboardIdentity();
   if (shouldRefresh) refreshLeaderboard();
 }
 
@@ -3977,10 +3964,7 @@ function openLeaderboard(source) {
   leaderboardReturn = source;
   populateLeaderboardRunTypes();
   selectLeaderboardMetric(finishedRun?.metric || activeRunConfig?.metric || selectedRunConfig.metric || "time", false);
-  updateLeaderboardRouteDetails();
-  leaderboardRouteDetails.open = false;
-  const context = leaderboardRunContext();
-  rememberLeaderboardBoard(context.id, context.label);
+  syncLeaderboardIdentity();
   if (source === "pause") pauseMenu.hidden = true;
   else {
     settingsPanel.hidden = true;
@@ -4525,7 +4509,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -4751,7 +4735,6 @@ function prepareAdventureResults() {
 function showRunResults() {
   finishRunTimer();
   prepareAdventureResults();
-  if (finishedRun?.runTypeId) rememberLeaderboardBoard(finishedRun.runTypeId, finishedRun.runTypeLabel);
   won = true;
   message.hidden = false;
   introSplitSummary.hidden = false;
@@ -5682,11 +5665,10 @@ closeVersionsButton.addEventListener("click", closeVersions);
 leaderboardVersion.addEventListener("change", refreshLeaderboard);
 leaderboardRunType.addEventListener("change", () => {
   const useCurrentRuleset = leaderboardRunType.value === "classic" || leaderboardVersion.value === CLASSIC_LEADERBOARD_ID;
-  updateLeaderboardRouteDetails(useCurrentRuleset);
-  const context = leaderboardRunContext();
-  rememberLeaderboardBoard(context.id, context.label);
+  syncLeaderboardIdentity(useCurrentRuleset);
   refreshLeaderboard();
 });
+leaderboardIdentityForm.addEventListener("submit", viewLeaderboardIdentity);
 leaderboardMetricButtons.forEach(button => {
   button.addEventListener("click", () => selectLeaderboardMetric(button.dataset.leaderboardMetric));
 });

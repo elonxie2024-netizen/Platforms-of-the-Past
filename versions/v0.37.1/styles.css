@@ -311,7 +311,7 @@ canvas {
   bottom: 48px;
   width: 44px;
   height: 44px;
-  background: url("assets/slime-player.svg") center / contain no-repeat;
+  background: url("../assets/slime-player.svg") center / contain no-repeat;
   filter: drop-shadow(0 6px 5px #17482b45);
   will-change: left, bottom, transform;
 }
@@ -839,9 +839,10 @@ canvas {
 .run-route-levels label { display: flex; justify-content: center; gap: 3px; padding: 5px 2px; border-radius: 7px; font-size: .66rem; cursor: pointer; }
 .run-route-levels label:has(input:checked), .run-route-gauntlet:has(input:checked) { color: #07172e; background: #8de4ff; }
 .specific-level-choices input { accent-color: #ffe05d; }
-.leaderboard-route-details { width: 100%; border: 1px solid #ffffff20; border-radius: 11px; color: #b8cbe2; background: #07142b99; text-align: left; }
-.leaderboard-route-details summary { padding: 8px 11px; color: #8de4ff; font-size: .72rem; font-weight: 850; cursor: pointer; }
-.leaderboard-route-details p { margin: 0; padding: 0 11px 10px; color: #d8e8f7; font-size: .7rem; line-height: 1.4; overflow-wrap: anywhere; }
+.leaderboard-identity-form { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
+.leaderboard-identity-form label { min-width: 0; display: grid; gap: 4px; color: #b8cbe2; font-size: .7rem; text-align: left; }
+.leaderboard-identity-form input { min-width: 0; width: 100%; border: 1px solid #ffffff2c; border-radius: 9px; padding: 7px 9px; color: #eaf8ff; background: #07142b; }
+.leaderboard-identity-form button { padding: 8px 13px; }
 
 @media (max-width: 700px) {
   .specific-level-choices { grid-template-columns: 1fr; }

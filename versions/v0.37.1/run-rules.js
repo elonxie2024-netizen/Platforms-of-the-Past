@@ -9,12 +9,6 @@
   const OBJECTIVES = Object.freeze(["complete-all", "specific", "all-stars", "all-hazards", "all-mechanics"]);
   const CONSTRAINTS = Object.freeze(["none", "no-stars", "all-stars", "all-hazards", "all-mechanics"]);
   const METRICS = Object.freeze(["time", "score", "stars"]);
-  const CHALLENGE_LABELS = Object.freeze({
-    "all-stars": "All Stars",
-    "all-hazards": "Every Hazard",
-    "all-mechanics": "Every Mechanic",
-    "no-stars": "No Stars"
-  });
   const ALL_CAMPAIGN_LEVELS = Object.freeze(Array.from({ length: CAMPAIGN_LEVEL_COUNT }, (_, index) => index));
   const ALL_GAUNTLETS = Object.freeze(Array.from({ length: GAUNTLET_COUNT }, (_, index) => CAMPAIGN_LEVEL_COUNT + index));
 
@@ -70,77 +64,6 @@
       if (selected.has(gauntlet)) parts.push(routeToken(gauntlet));
     }
     return parts.join(", ") || "No route selected";
-  }
-
-  function contiguousRange(values) {
-    return values.length > 1 && values.every((value, index) => index === 0 || value === values[index - 1] + 1);
-  }
-
-  function humanRouteParts(route) {
-    const normalized = normalizeRoute(route);
-    const selected = new Set(normalized);
-    const chapters = [];
-    for (let chapter = 0; chapter < CHAPTER_COUNT; chapter++) {
-      if (chapterLevels(chapter).every(index => selected.has(index))) chapters.push(chapter + 1);
-    }
-    const coveredLevels = new Set(chapters.flatMap(chapter => chapterLevels(chapter - 1)));
-    const levels = normalized.filter(index => index < CAMPAIGN_LEVEL_COUNT && !coveredLevels.has(index)).map(index => index + 1);
-    const gauntlets = normalized.filter(index => index >= CAMPAIGN_LEVEL_COUNT).map(index => `G${index - CAMPAIGN_LEVEL_COUNT + 1}`);
-    return { normalized, chapters, levels, gauntlets };
-  }
-
-  function humanRouteLabel(route) {
-    const { normalized, chapters, levels, gauntlets } = humanRouteParts(route);
-    if (!normalized.length) return "No Route";
-    if (chapters.length === 4 && !levels.length) {
-      return gauntlets.length === 4 ? "Full Campaign + All Gauntlets"
-        : `Full Campaign${gauntlets.length ? ` + ${gauntlets.join(" + ")}` : ""}`;
-    }
-    const parts = [];
-    if (chapters.length === 1) parts.push(`Chapter ${chapters[0]}`);
-    else if (chapters.length > 1) {
-      parts.push(chapters.length >= 3 && (levels.length || gauntlets.length)
-        ? `${chapters.length} Chapters`
-        : contiguousRange(chapters)
-        ? `Chapters ${chapters[0]}–${chapters.at(-1)}`
-        : `${chapters.length} Chapters`);
-    }
-    if (levels.length) {
-      parts.push(levels.length <= 3
-        ? `Level${levels.length === 1 ? "" : "s"} ${levels.join(", ")}`
-        : `${levels.length} Levels`);
-    }
-    if (gauntlets.length === 4) parts.push("All Gauntlets");
-    else if (gauntlets.length === 2 && chapters.length >= 3) parts.push("2 Gauntlets");
-    else if (gauntlets.length <= 2) parts.push(...gauntlets);
-    else if (gauntlets.length) parts.push(`${gauntlets.length} Gauntlets`);
-    return parts.join(" + ");
-  }
-
-  function challengeLabel(config = {}) {
-    const normalized = normalizeConfig(config);
-    const labels = [];
-    if (normalized.objective === "specific") labels.push("Selected Route");
-    else if (normalized.objective !== "complete-all") {
-      labels.push(CHALLENGE_LABELS[normalized.objective]);
-    }
-    if (normalized.constraint !== "none") labels.push(CHALLENGE_LABELS[normalized.constraint]);
-    const unique = [...new Set(labels.filter(Boolean))];
-    return unique.length ? unique.join(" + ") : "Any%";
-  }
-
-  function boardLabel(config) {
-    const normalized = normalizeConfig(config);
-    return `${humanRouteLabel(normalized.levels)} · ${challengeLabel(normalized)}`;
-  }
-
-  function routeContents(route) {
-    const { normalized, chapters, levels, gauntlets } = humanRouteParts(route);
-    if (!normalized.length) return "No levels selected.";
-    const parts = chapters.map(chapter => `Chapter ${chapter} (Levels ${(chapter - 1) * CHAPTER_SIZE + 1}–${chapter * CHAPTER_SIZE})`);
-    if (levels.length) parts.push(`Individual level${levels.length === 1 ? "" : "s"}: ${levels.join(", ")}`);
-    if (gauntlets.length) parts.push(`Gauntlet${gauntlets.length === 1 ? "" : "s"}: ${gauntlets.join(", ")}`);
-    return parts.join("; ");
   }
 
   function nextRouteItem(route, currentIndex) {
@@ -226,8 +149,7 @@
   window.PlatformsRunRules = Object.freeze({
     CAMPAIGN_LEVEL_COUNT, CHAPTER_SIZE, CHAPTER_COUNT, GAUNTLET_COUNT,
     OBJECTIVES, CONSTRAINTS, METRICS, ALL_CAMPAIGN_LEVELS, ALL_GAUNTLETS,
-    chapterLevels, normalizeRoute, routeToken, routeIndex, routeKey, routeSummary,
-    humanRouteLabel, challengeLabel, boardLabel, routeContents, nextRouteItem,
+    chapterLevels, normalizeRoute, routeToken, routeIndex, routeKey, routeSummary, nextRouteItem,
     normalizeConfig, runTypeId, leaderboardIdentity, parseRunTypeId,
     parseLeaderboardIdentity, evaluateRequirements, rankRuns
   });

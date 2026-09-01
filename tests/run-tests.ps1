@@ -53,7 +53,7 @@ try {
     -WindowStyle Hidden -RedirectStandardOutput $mainStdoutPath -RedirectStandardError $mainStderrPath
   if ($mainProcess.ExitCode -ne 0) { throw "The game smoke test exited with code $($mainProcess.ExitCode)." }
   $mainDom = Get-Content -LiteralPath $mainStdoutPath -Raw
-  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.37.1')) {
+  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.37.2')) {
     throw 'The complete game did not initialize with the current verification and level-data scripts.'
   }
   Write-Host 'Complete game initialization: 1/1 passed' -ForegroundColor Green
@@ -148,7 +148,10 @@ try {
   $contracts['Configured results preserve their exact compact route splits'] = $game.Contains('route: [...activeRunConfig.levels]') -and $game.Contains('const route = finishedRun?.route')
   $contracts['Custom boards are separate from historical classic boards'] = $sql.Contains("'full-custom-routes-v1'") -and $sql.Contains("leaderboard_id = 'crate-jump-collision-v1' and run_type_id = 'classic'")
   $contracts['Database accepts the complete campaign plus four gauntlets'] = $sql.Contains('jsonb_array_length(splits) between 1 and 44')
-  $contracts['Arbitrary canonical boards are directly addressable'] = $index.Contains('leaderboardIdentityForm') -and $game.Contains('parseLeaderboardIdentity')
+  $contracts['Ordinary leaderboard navigation exposes no raw board IDs'] = -not $index.Contains('leaderboardIdentityForm') -and -not $index.Contains('Canonical board identity') -and -not $game.Contains('leaderboardIdentityInput')
+  $contracts['Leaderboard offers readable current recent and common boards'] = $game.Contains('Current and recent') -and $game.Contains('Common boards') -and $game.Contains('rememberLeaderboardBoard')
+  $contracts['Long board routes expose exact readable contents'] = $index.Contains('See this board''s exact route') -and $game.Contains('runRules.routeContents')
+  $contracts['Historical Classic Adventure boards remain selectable'] = $game.Contains('new Map([["classic", "Classic Adventure"]])')
   $contractFailures = @($contracts.GetEnumerator() | Where-Object { -not $_.Value })
   foreach ($failure in $contractFailures) { Write-Host "FAIL: source contract - $($failure.Key)" -ForegroundColor Red }
   if ($contractFailures.Count -gt 0) { throw "$($contractFailures.Count) database/source contracts failed." }

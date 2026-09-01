@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#11182d">
   <title>Platforms of the Past</title>
-  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=0.37.2">
-  <link rel="stylesheet" href="editor.css?v=0.37.2">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css?v=0.37.1">
+  <link rel="stylesheet" href="./editor.css?v=0.37.1">
 </head>
 <body>
   <main class="game-shell">
@@ -43,7 +43,7 @@
       <p id="runIntegrityWarning" class="run-integrity-warning" hidden aria-live="assertive"></p>
       <div id="mainMenu" class="main-menu">
         <div class="menu-panel">
-          <p class="menu-version">v0.37.2</p>
+          <p class="menu-version">v0.37.1</p>
           <h2>Platforms of the Past</h2>
           <div class="menu-stage" role="img" aria-label="A green slime endlessly jumping between two grassy platforms">
             <div class="menu-sun" aria-hidden="true"></div>
@@ -235,7 +235,7 @@
           </div>
           <fieldset class="run-route-builder">
             <legend>Selected Levels</legend>
-            <p>Choose campaign levels, whole chapters, and gauntlets. Overlaps are included once in the usual story order.</p>
+            <p>Choose campaign levels, whole chapters, and gauntlets. Overlaps are included once in canonical story order.</p>
             <div id="specificLevelChoices" class="specific-level-choices" aria-label="Selected campaign route"></div>
           </fieldset>
           <p id="runSetupSummary" class="run-setup-summary" aria-live="polite"></p>
@@ -280,16 +280,18 @@
         <div class="overlay-panel leaderboard-panel">
           <p class="eyebrow">Global records</p>
           <h2>Leaderboard</h2>
-          <label class="leaderboard-picker" for="leaderboardRunType">Board
+          <label class="leaderboard-picker" for="leaderboardRunType">Run type
             <select id="leaderboardRunType"></select>
           </label>
-          <label class="leaderboard-picker" for="leaderboardVersion">Game version
+          <label class="leaderboard-picker" for="leaderboardVersion">Gameplay version
             <select id="leaderboardVersion"></select>
           </label>
-          <details id="leaderboardRouteDetails" class="leaderboard-route-details">
-            <summary>See this board's exact route</summary>
-            <p id="leaderboardRouteContents"></p>
-          </details>
+          <form id="leaderboardIdentityForm" class="leaderboard-identity-form">
+            <label for="leaderboardIdentityInput">Canonical board identity
+              <input id="leaderboardIdentityInput" type="text" maxlength="520" autocomplete="off" spellcheck="false" placeholder="specific:1-2-G1:none">
+            </label>
+            <button type="submit">View</button>
+          </form>
           <div class="leaderboard-tabs" role="tablist" aria-label="Leaderboard ranking metric">
             <button type="button" role="tab" data-leaderboard-metric="stars" aria-selected="false">Stars</button>
             <button type="button" role="tab" data-leaderboard-metric="time" aria-selected="true" class="active">Time</button>
@@ -494,12 +496,12 @@
 
     <p class="instructions"><strong>Move</strong> A / D or arrows <span aria-hidden="true">&bull;</span> <strong>Jump</strong> W / Up / Space <span aria-hidden="true">&bull;</span> <strong>Interact</strong> E <span aria-hidden="true">&bull;</span> <strong>Pause</strong> P <span aria-hidden="true">&bull;</span> <strong>Restart level</strong> R <span aria-hidden="true">&bull;</span> <strong>Restart run</strong> T</p>
   </main>
-  <script src="supabase/functions/_shared/replay-validator.js?v=0.37.2"></script>
-  <script src="verification-rules.js?v=0.37.2"></script>
-  <script src="level-data.js?v=0.37.2"></script>
-  <script src="run-rules.js?v=0.37.2"></script>
-  <script src="account.js?v=0.37.2"></script>
-  <script src="editor.js?v=0.37.2"></script>
-  <script src="game.js?v=0.37.2"></script>
+  <script src="./supabase/functions/_shared/replay-validator.js?v=0.37.1"></script>
+  <script src="./verification-rules.js?v=0.37.1"></script>
+  <script src="./level-data.js?v=0.37.1"></script>
+  <script src="run-rules.js?v=0.37.1"></script>
+  <script src="./account.js?v=0.37.1"></script>
+  <script src="./editor.js?v=0.37.1"></script>
+  <script src="./game.js?v=0.37.1"></script>
 </body>
 </html>
