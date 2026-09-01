@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#11182d">
   <title>Platforms of the Past</title>
-  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=0.38.0">
-  <link rel="stylesheet" href="editor.css?v=0.38.0">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css?v=0.37.2">
+  <link rel="stylesheet" href="./editor.css?v=0.37.2">
 </head>
 <body>
   <main class="game-shell">
@@ -43,7 +43,7 @@
       <p id="runIntegrityWarning" class="run-integrity-warning" hidden aria-live="assertive"></p>
       <div id="mainMenu" class="main-menu">
         <div class="menu-panel">
-          <p class="menu-version">v0.38.0</p>
+          <p class="menu-version">v0.37.2</p>
           <h2>Platforms of the Past</h2>
           <div class="menu-stage" role="img" aria-label="A green slime endlessly jumping between two grassy platforms">
             <div class="menu-sun" aria-hidden="true"></div>
@@ -312,12 +312,10 @@
               <select id="communitySortSelect">
                 <option value="newest">Newest</option>
                 <option value="updated">Recently Updated</option>
-                <option value="favorites">Most Favorited</option>
               </select>
             </label>
             <button type="submit">Search</button>
           </form>
-          <button id="communityFavoritesButton" class="community-favorites-view" type="button" aria-pressed="false" hidden>My Favorites</button>
           <p id="communityLevelsNote" class="community-levels-note" aria-live="polite">Loading published levels...</p>
           <div id="communityLevelsList" class="community-levels-list"></div>
           <div class="community-levels-actions">
@@ -336,13 +334,11 @@
             <div><dt>Type</dt><dd id="customLevelDetailsType">—</dd></div>
             <div><dt>Version</dt><dd id="customLevelDetailsVersion">—</dd></div>
             <div><dt>Status</dt><dd id="customLevelDetailsStatus">—</dd></div>
-            <div><dt>Favorites</dt><dd id="customLevelDetailsFavorites">0</dd></div>
             <div class="custom-level-objective"><dt>Objective</dt><dd id="customLevelDetailsObjective">—</dd></div>
           </dl>
           <p id="customLevelPersonalBest" class="custom-level-personal-best"></p>
           <div class="custom-level-details-actions">
             <button id="customLevelDetailsPlayButton" type="button">Play</button>
-            <button id="customLevelDetailsFavoriteButton" type="button">Favorite</button>
             <button id="customLevelDetailsRefreshButton" type="button">Refresh</button>
           </div>
           <h3>Leaderboard</h3>
@@ -498,12 +494,12 @@
 
     <p class="instructions"><strong>Move</strong> A / D or arrows <span aria-hidden="true">&bull;</span> <strong>Jump</strong> W / Up / Space <span aria-hidden="true">&bull;</span> <strong>Interact</strong> E <span aria-hidden="true">&bull;</span> <strong>Pause</strong> P <span aria-hidden="true">&bull;</span> <strong>Restart level</strong> R <span aria-hidden="true">&bull;</span> <strong>Restart run</strong> T</p>
   </main>
-  <script src="supabase/functions/_shared/replay-validator.js?v=0.38.0"></script>
-  <script src="verification-rules.js?v=0.38.0"></script>
-  <script src="level-data.js?v=0.38.0"></script>
-  <script src="run-rules.js?v=0.38.0"></script>
-  <script src="account.js?v=0.38.0"></script>
-  <script src="editor.js?v=0.38.0"></script>
-  <script src="game.js?v=0.38.0"></script>
+  <script src="./supabase/functions/_shared/replay-validator.js?v=0.37.2"></script>
+  <script src="./verification-rules.js?v=0.37.2"></script>
+  <script src="./level-data.js?v=0.37.2"></script>
+  <script src="run-rules.js?v=0.37.2"></script>
+  <script src="./account.js?v=0.37.2"></script>
+  <script src="./editor.js?v=0.37.2"></script>
+  <script src="./game.js?v=0.37.2"></script>
 </body>
 </html>

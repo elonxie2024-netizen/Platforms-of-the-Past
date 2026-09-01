@@ -77,7 +77,6 @@ const communityLevelsMenu = document.querySelector("#communityLevelsMenu");
 const communitySearchForm = document.querySelector("#communitySearchForm");
 const communitySearchInput = document.querySelector("#communitySearchInput");
 const communitySortSelect = document.querySelector("#communitySortSelect");
-const communityFavoritesButton = document.querySelector("#communityFavoritesButton");
 const communityLevelsNote = document.querySelector("#communityLevelsNote");
 const communityLevelsList = document.querySelector("#communityLevelsList");
 const loadMoreCommunityLevelsButton = document.querySelector("#loadMoreCommunityLevelsButton");
@@ -89,11 +88,9 @@ const customLevelDetailsMeta = document.querySelector("#customLevelDetailsMeta")
 const customLevelDetailsType = document.querySelector("#customLevelDetailsType");
 const customLevelDetailsVersion = document.querySelector("#customLevelDetailsVersion");
 const customLevelDetailsStatus = document.querySelector("#customLevelDetailsStatus");
-const customLevelDetailsFavorites = document.querySelector("#customLevelDetailsFavorites");
 const customLevelDetailsObjective = document.querySelector("#customLevelDetailsObjective");
 const customLevelPersonalBest = document.querySelector("#customLevelPersonalBest");
 const customLevelDetailsPlayButton = document.querySelector("#customLevelDetailsPlayButton");
-const customLevelDetailsFavoriteButton = document.querySelector("#customLevelDetailsFavoriteButton");
 const customLevelDetailsRefreshButton = document.querySelector("#customLevelDetailsRefreshButton");
 const customLevelLeaderboardNote = document.querySelector("#customLevelLeaderboardNote");
 const customLevelLeaderboard = document.querySelector("#customLevelLeaderboard");
@@ -183,7 +180,6 @@ const profileDisplayName = document.querySelector("#profileDisplayName");
 const profileUsername = document.querySelector("#profileUsername");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.38.0", commit: "Pending commit", date: "2026-09-01", message: "Favorites and Community discovery", description: "Added private account Favorites for published custom levels, public aggregate favorite counts, a signed-in My Favorites view, and server-side Most Favorited sorting that remains compatible with search and pagination. Favorites stay attached to the stable level identity across publication versions, disappear from public views while a level is unpublished, and return when it is republished without exposing which accounts favorited it." },
   { version: "v0.37.2", commit: "Pending commit", date: "2026-08-31", message: "Human-friendly leaderboard UX", description: "Replaced player-facing board codes with concise names such as Chapter 1 · Any%, Full Campaign · Any%, and readable mixed-route summaries. The leaderboard now groups the current and recently viewed boards separately from common presets, keeps Time, Score, and Stars as simple views of the same runs, and offers an expandable exact-route description when a compact label omits individual levels. Internal normalized board IDs and historical Classic Adventure separation remain unchanged." },
   { version: "v0.37.1", commit: "Pending commit", date: "2026-08-28", message: "Share runs across leaderboard metrics", description: "Made every published run count in all three leaderboard views. Time, Score, and Stars now sort the same route-specific run pool instead of separating submissions by the metric chosen before the run. The builder's metric choice only selects which view opens first, and historical stored runs remain visible in every view." },
   { version: "v0.37.0", commit: "Pending commit", date: "2026-08-28", message: "Full custom run routes and leaderboards", description: "Expanded Custom Runs across all forty campaign levels and four optional gauntlets. The builder now supports individual levels, whole chapters, and gauntlets with overlap deduplication and canonical ordering. Configured runs stay continuous across chapter and gauntlet boundaries, calculate objectives and constraints from their exact route, and publish to normalized Time, Score, or Stars boards separate from historical Classic Adventure records." },
@@ -1545,7 +1541,7 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.38.0";
+const GAME_VERSION = "v0.37.2";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
@@ -1553,8 +1549,8 @@ const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const ACCOUNT_PREFERENCES_STORAGE_PREFIX = "platforms-past-account-preferences-v1:";
 const LEGACY_SHARED_PREFERENCE_KEYS = ["platforms-volume", "platforms-audio-mix-v1", "platforms-display-size"];
 const LEADERBOARD_RULESETS = [
-  { id: "full-custom-routes-v1", label: "Custom Routes · Version 0.37.0 to 0.38.0" },
-  { id: "crate-jump-collision-v1", label: "Classic Adventure · Version 0.24.1 to 0.38.0" },
+  { id: "full-custom-routes-v1", label: "Custom Routes · Version 0.37.0 to 0.37.2" },
+  { id: "crate-jump-collision-v1", label: "Classic Adventure · Version 0.24.1 to 0.37.2" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1599,7 +1595,6 @@ const CUSTOM_ROUTE_LEADERBOARD_ID = "full-custom-routes-v1";
 const CLASSIC_LEADERBOARD_ID = "crate-jump-collision-v1";
 const CURRENT_LEADERBOARD_ID = CUSTOM_ROUTE_LEADERBOARD_ID;
 const RELEASE_VERSIONS = [
-  "v0.38.0",
   "v0.37.2", "v0.37.1", "v0.37.0", "v0.36.2", "v0.36.1", "v0.36.0", "v0.35.2", "v0.35.1", "v0.35.0", "v0.34.2", "v0.34.1", "v0.34.0",
   "v0.33.3", "v0.33.2", "v0.33.1", "v0.33.0", "v0.32.1", "v0.32.0", "v0.31.1", "v0.31.0", "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
@@ -1632,8 +1627,6 @@ let communityLevelEntries = [];
 let communityLevelsRequest = 0;
 let communityLevelsLoading = false;
 let communityLevelsHasMore = false;
-let communityFavoritesOnly = false;
-let communityFavoritesAccountId = null;
 let customLevelDetailsEntry = null;
 let customLevelDetailsLevelId = null;
 let customLevelDetailsReturn = "community";
@@ -1882,7 +1875,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1901,7 +1894,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -3104,19 +3097,6 @@ function renderAccountState(message = "") {
   else if (!signedIn) accountNotice.textContent = "Account optional";
   else accountNotice.textContent = "Progress synced";
   applyLeaderboardIdentity();
-  updateCommunityFavoriteControls();
-}
-
-function updateCommunityFavoriteControls() {
-  const userId = accountSession?.user?.id || null;
-  const accountChanged = communityFavoritesAccountId !== userId;
-  communityFavoritesAccountId = userId;
-  if (!userId) communityFavoritesOnly = false;
-  communityFavoritesButton.hidden = !userId;
-  communityFavoritesButton.setAttribute("aria-pressed", String(communityFavoritesOnly));
-  communityFavoritesButton.textContent = communityFavoritesOnly ? "All Community Levels" : "My Favorites";
-  if (customLevelDetailsEntry) renderCustomLevelFavorite();
-  if (accountChanged && !communityLevelsMenu.hidden) loadCommunityLevels(true);
 }
 
 function showAccountMode(mode, message = "") {
@@ -4170,9 +4150,7 @@ function renderCommunityLevels() {
   if (!communityLevelEntries.length && !communityLevelsLoading) {
     const empty = document.createElement("p");
     empty.className = "community-levels-empty";
-    empty.textContent = communityFavoritesOnly
-      ? "No currently published favorites match this search."
-      : "No published community levels match this search.";
+    empty.textContent = "No published community levels match this search.";
     communityLevelsList.append(empty);
   }
 
@@ -4204,14 +4182,7 @@ function renderCommunityLevels() {
     inspect.type = "button";
     inspect.textContent = "Details";
     inspect.addEventListener("click", () => openCustomLevelDetails(entry.level_id, "community"));
-    const favorite = document.createElement("button");
-    favorite.type = "button";
-    favorite.className = `community-favorite-button${entry.is_favorited ? " active" : ""}`;
-    favorite.textContent = `${entry.is_favorited ? "★" : "☆"} ${Number(entry.favorite_count) || 0}`;
-    favorite.title = accountSession?.user ? (entry.is_favorited ? "Remove from My Favorites" : "Add to My Favorites") : "Sign in to favorite levels";
-    favorite.disabled = !accountSession?.user;
-    favorite.addEventListener("click", () => toggleCustomLevelFavorite(entry.level_id, !entry.is_favorited, favorite));
-    actions.append(favorite, inspect);
+    actions.append(inspect);
     card.append(details, actions);
     communityLevelsList.append(card);
   });
@@ -4234,16 +4205,15 @@ async function loadCommunityLevels(reset = false) {
       communitySearchInput.value,
       communitySortSelect.value,
       offset,
-      COMMUNITY_PAGE_SIZE + 1,
-      communityFavoritesOnly
+      COMMUNITY_PAGE_SIZE + 1
     );
     if (request !== communityLevelsRequest) return;
     communityLevelsHasMore = rows.length > COMMUNITY_PAGE_SIZE;
     const page = rows.slice(0, COMMUNITY_PAGE_SIZE);
     communityLevelEntries = reset ? page : [...communityLevelEntries, ...page];
     communityLevelsNote.textContent = communityLevelEntries.length
-      ? `Showing ${communityLevelEntries.length} ${communityFavoritesOnly ? "favorite" : "published"} level${communityLevelEntries.length === 1 ? "" : "s"}.`
-      : communityFavoritesOnly ? "You have no currently published favorite levels." : "No published levels found.";
+      ? `Showing ${communityLevelEntries.length} published level${communityLevelEntries.length === 1 ? "" : "s"}.`
+      : "No published levels found.";
   } catch (error) {
     if (request !== communityLevelsRequest) return;
     communityLevelsHasMore = false;
@@ -4256,33 +4226,6 @@ async function loadCommunityLevels(reset = false) {
   }
 }
 
-async function toggleCustomLevelFavorite(levelId, favorited, button) {
-  if (!accountSession?.user || !levelId || button?.disabled) return;
-  if (button) button.disabled = true;
-  try {
-    const result = await window.PlatformsAccount.setCustomLevelFavorite(levelId, favorited);
-    const count = Number(result?.favorite_count) || 0;
-    communityLevelEntries.forEach(entry => {
-      if (entry.level_id === levelId) {
-        entry.is_favorited = Boolean(result?.favorited);
-        entry.favorite_count = count;
-      }
-    });
-    if (customLevelDetailsEntry?.level_id === levelId) {
-      customLevelDetailsEntry.is_favorited = Boolean(result?.favorited);
-      customLevelDetailsEntry.favorite_count = count;
-      renderCustomLevelFavorite();
-    }
-    if (communityFavoritesOnly || communitySortSelect.value === "favorites") await loadCommunityLevels(true);
-    else renderCommunityLevels();
-  } catch (error) {
-    const message = window.PlatformsAccount?.friendlyError?.(error) || "That favorite could not be saved.";
-    if (!customLevelDetailsMenu.hidden) customLevelLeaderboardNote.textContent = message;
-    else communityLevelsNote.textContent = message;
-    if (button) button.disabled = false;
-  }
-}
-
 function openCommunityLevels() {
   settingsPanel.hidden = true;
   settingsButton.setAttribute("aria-expanded", "false");
@@ -4290,19 +4233,6 @@ function openCommunityLevels() {
   communityLevelsMenu.hidden = false;
   loadCommunityLevels(true);
   communitySearchInput.focus();
-}
-
-function renderCustomLevelFavorite() {
-  const entry = customLevelDetailsEntry;
-  const count = Number(entry?.favorite_count) || 0;
-  customLevelDetailsFavorites.textContent = `${count} favorite${count === 1 ? "" : "s"}`;
-  const signedIn = Boolean(accountSession?.user);
-  customLevelDetailsFavoriteButton.disabled = !signedIn || !entry;
-  customLevelDetailsFavoriteButton.classList.toggle("active", Boolean(entry?.is_favorited));
-  customLevelDetailsFavoriteButton.textContent = !signedIn
-    ? "Sign in to Favorite"
-    : entry?.is_favorited ? "★ Favorited" : "☆ Favorite";
-  customLevelDetailsFavoriteButton.title = signedIn ? "" : "Sign in to favorite published levels";
 }
 
 function closeCommunityLevels() {
@@ -4345,7 +4275,6 @@ async function openCustomLevelDetails(levelId, returnTo = "community") {
   customLevelDetailsType.textContent = "—";
   customLevelDetailsVersion.textContent = "—";
   customLevelDetailsStatus.textContent = "—";
-  customLevelDetailsFavorites.textContent = "—";
   customLevelDetailsObjective.textContent = "—";
   customLevelPersonalBest.textContent = accountSession?.user ? "Loading your best trusted result..." : "Sign in to track your best trusted result.";
   customLevelLeaderboard.replaceChildren();
@@ -4354,7 +4283,6 @@ async function openCustomLevelDetails(levelId, returnTo = "community") {
   customLevelLeaderboardNote.textContent = "Loading trusted results for this published version...";
   customLevelDetailsPlayButton.hidden = returnTo === "pause";
   customLevelDetailsPlayButton.disabled = true;
-  customLevelDetailsFavoriteButton.disabled = true;
   customLevelDetailsRefreshButton.disabled = true;
   try {
     const entry = await window.PlatformsAccount.loadPublishedCustomLevelDetails(levelId);
@@ -4368,7 +4296,6 @@ async function openCustomLevelDetails(levelId, returnTo = "community") {
     customLevelDetailsType.textContent = customLevelTypeLabel(entry.level_type, entry.required_stars);
     customLevelDetailsVersion.textContent = `v${entry.version} (current immutable version)`;
     customLevelDetailsStatus.textContent = customLevelStatusLabel(entry);
-    renderCustomLevelFavorite();
     customLevelDetailsObjective.textContent = entry.objective || (entry.level_type === "survival"
       ? "Survive as long as possible." : "Reach the exit.");
     customLevelPersonalBest.textContent = !accountSession?.user
@@ -4598,7 +4525,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -5707,12 +5634,6 @@ communitySearchForm.addEventListener("submit", (event) => {
   loadCommunityLevels(true);
 });
 communitySortSelect.addEventListener("change", () => loadCommunityLevels(true));
-communityFavoritesButton.addEventListener("click", () => {
-  if (!accountSession?.user) return;
-  communityFavoritesOnly = !communityFavoritesOnly;
-  updateCommunityFavoriteControls();
-  loadCommunityLevels(true);
-});
 loadMoreCommunityLevelsButton.addEventListener("click", () => loadCommunityLevels(false));
 closeCommunityLevelsButton.addEventListener("click", closeCommunityLevels);
 closeCustomLevelDetailsButton.addEventListener("click", closeCustomLevelDetails);
@@ -5724,13 +5645,6 @@ customLevelDetailsRefreshButton.addEventListener("click", () => {
 });
 customLevelDetailsPlayButton.addEventListener("click", () => {
   if (customLevelDetailsEntry) playCommunityLevel(customLevelDetailsEntry.level_id, customLevelDetailsPlayButton);
-});
-customLevelDetailsFavoriteButton.addEventListener("click", () => {
-  if (customLevelDetailsEntry) toggleCustomLevelFavorite(
-    customLevelDetailsEntry.level_id,
-    !customLevelDetailsEntry.is_favorited,
-    customLevelDetailsFavoriteButton
-  );
 });
 closePublicProfileButton.addEventListener("click", closePublicProfile);
 pauseLeaderboardButton.addEventListener("click", () => {

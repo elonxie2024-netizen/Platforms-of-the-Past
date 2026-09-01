@@ -53,7 +53,7 @@ try {
     -WindowStyle Hidden -RedirectStandardOutput $mainStdoutPath -RedirectStandardError $mainStderrPath
   if ($mainProcess.ExitCode -ne 0) { throw "The game smoke test exited with code $($mainProcess.ExitCode)." }
   $mainDom = Get-Content -LiteralPath $mainStdoutPath -Raw
-  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.37.2')) {
+  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.38.0')) {
     throw 'The complete game did not initialize with the current verification and level-data scripts.'
   }
   Write-Host 'Complete game initialization: 1/1 passed' -ForegroundColor Green
@@ -75,6 +75,8 @@ try {
   $listSql = $trustedSql.Substring($listStart, $listEnd - $listStart)
   $detailStart = $sql.IndexOf('-- v0.36.0: metadata-only published-level details')
   $detailsSql = if ($detailStart -ge 0) { $sql.Substring($detailStart) } else { '' }
+  $favoriteStart = $sql.IndexOf('-- v0.38.0: private account favorites')
+  $favoritesSql = if ($favoriteStart -ge 0) { $sql.Substring($favoriteStart) } else { '' }
   $contracts = [ordered]@{}
   $contracts['SQL accepts exactly three level types'] = $sql.Contains("level_type in ('exit', 'exit-stars', 'survival')")
   $contracts['SQL creates monotonically increasing immutable versions'] = $sql.Contains('coalesce(max(history.version), 0) + 1')
@@ -152,6 +154,18 @@ try {
   $contracts['Leaderboard offers readable current recent and common boards'] = $game.Contains('Current and recent') -and $game.Contains('Common boards') -and $game.Contains('rememberLeaderboardBoard')
   $contracts['Long board routes expose exact readable contents'] = $index.Contains('See this board''s exact route') -and $game.Contains('runRules.routeContents')
   $contracts['Historical Classic Adventure boards remain selectable'] = $game.Contains('new Map([["classic", "Classic Adventure"]])')
+  $contracts['Favorite identity is stable across publication versions'] = $favoritesSql.Contains('level_id uuid not null references public.custom_levels(id)') -and -not $favoritesSql.Contains('level_version integer')
+  $contracts['Database prevents duplicate account favorites'] = $favoritesSql.Contains('primary key (level_id, user_id)') -and $favoritesSql.Contains('on conflict (level_id, user_id) do nothing')
+  $contracts['Favorite and unfavorite use the authenticated account only'] = $favoritesSql.Contains('current_user_id uuid := (select auth.uid())') -and $favoritesSql.Contains('favorite.user_id = current_user_id')
+  $contracts['Favorite relationships are not publicly readable'] = $favoritesSql.Contains('revoke all on table public.custom_level_favorites from anon, authenticated') -and -not $favoritesSql.Contains('grant select on public.custom_level_favorites')
+  $contracts['Only currently published levels can gain favorites'] = $favoritesSql.Contains("raise exception 'Only published levels can be favorited'")
+  $contracts['Unpublishing hides favorites without deleting them'] = $favoritesSql.Contains('from public.published_custom_levels published') -and $favoritesSql.Contains('from public.custom_level_favorites own') -and -not $favoritesSql.Contains('delete from public.custom_level_favorites where level_id')
+  $contracts['Community exposes aggregate counts and private own state'] = $favoritesSql.Contains('favorite_count bigint, is_favorited boolean') -and $favoritesSql.Contains('count(*)::bigint') -and $favoritesSql.Contains('own.user_id = (select auth.uid())')
+  $contracts['Most Favorited sorting remains server-side'] = $favoritesSql.Contains("p_sort = 'favorites' then catalog.favorite_count") -and $index.Contains('<option value="favorites">Most Favorited</option>')
+  $contracts['Favorite search and sorting share one server query'] = $favoritesSql.Contains("left(btrim(coalesce(p_query, '')), 80)") -and $favoritesSql.Contains("p_sort = 'favorites'")
+  $contracts['Favorite pagination has stable bounds and tie-breaking'] = $favoritesSql.Contains('catalog.level_id') -and $favoritesSql.Contains('offset least(greatest(coalesce(p_offset, 0), 0), 100000)') -and $favoritesSql.Contains('limit least(greatest(coalesce(p_limit, 13), 1), 51)')
+  $contracts['Signed-in My Favorites is an account-filtered Community view'] = $account.Contains('p_favorites_only: Boolean(favoritesOnly)') -and $game.Contains('communityFavoritesButton.hidden = !userId') -and $game.Contains('communityFavoritesOnly')
+  $contracts['Guests see counts but cannot favorite'] = $game.Contains('favorite.disabled = !accountSession?.user') -and $game.Contains('Sign in to favorite levels')
   $contractFailures = @($contracts.GetEnumerator() | Where-Object { -not $_.Value })
   foreach ($failure in $contractFailures) { Write-Host "FAIL: source contract - $($failure.Key)" -ForegroundColor Red }
   if ($contractFailures.Count -gt 0) { throw "$($contractFailures.Count) database/source contracts failed." }
