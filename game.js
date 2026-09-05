@@ -182,6 +182,7 @@ const profileDisplayName = document.querySelector("#profileDisplayName");
 const profileUsername = document.querySelector("#profileUsername");
 
 const CHANGELOG_ENTRIES = [
+  { version: "v0.40.1", commit: "Pending commit", date: "2026-09-05", message: "Correct the documented game premise", description: "Removed unbuilt time-travel claims from the README. The project description, the \"Change the past\" section, and the \"Time-travel plans\" list all promised past, present, and future versions of each level, era switching during platforming, cross-era cause and effect, and secrets found by comparing a place across time. None of that was ever implemented. The documented premise now describes the Rewind and Echo mechanics the game actually ships. No gameplay, level, timing, star, scoring, or database behavior changed." },
   { version: "v0.40.0", commit: "Pending commit", date: "2026-09-05", message: "Remove Survival custom levels", description: "Removed the Survival custom-level type, its leaderboard and community-review systems, and every Survival draft, publication, run, completion, favorite, report, and vote. This database purge is irreversible. Custom levels now support only Exit and Exit + Required Stars; the Survival-only Ranked, Disputed, and Restored states were migrated away and removed from their constraints." },
   { version: "v0.39.0", commit: "Pending commit", date: "2026-09-04", message: "Trusted replay playback", description: "Added secure Watch controls for trusted current-version custom-level runs and an optional signed-in Race Ghost mode. Replay viewing uses the exact immutable published snapshot, replays recorded controls without creating progress or submissions, and keeps ghost motion translucent and non-interactive while a fresh ranked attempt follows the normal trusted ticket flow." },
   { version: "v0.38.0", commit: "Pending commit", date: "2026-09-01", message: "Favorites and Community discovery", description: "Added private account Favorites for published custom levels, public aggregate favorite counts, a signed-in My Favorites view, and server-side Most Favorited sorting that remains compatible with search and pagination. Favorites stay attached to the stable level identity across publication versions, disappear from public views while a level is unpublished, and return when it is republished without exposing which accounts favorited it." },
@@ -1620,7 +1621,7 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.40.0";
+const GAME_VERSION = "v0.40.1";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
@@ -1628,8 +1629,8 @@ const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const ACCOUNT_PREFERENCES_STORAGE_PREFIX = "platforms-past-account-preferences-v1:";
 const LEGACY_SHARED_PREFERENCE_KEYS = ["platforms-volume", "platforms-audio-mix-v1", "platforms-display-size"];
 const LEADERBOARD_RULESETS = [
-  { id: "full-custom-routes-v1", label: "Custom Routes · Version 0.37.0 to 0.40.0" },
-  { id: "crate-jump-collision-v1", label: "Classic Adventure · Version 0.24.1 to 0.40.0" },
+  { id: "full-custom-routes-v1", label: "Custom Routes · Version 0.37.0 to 0.40.1" },
+  { id: "crate-jump-collision-v1", label: "Classic Adventure · Version 0.24.1 to 0.40.1" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1674,7 +1675,7 @@ const CUSTOM_ROUTE_LEADERBOARD_ID = "full-custom-routes-v1";
 const CLASSIC_LEADERBOARD_ID = "crate-jump-collision-v1";
 const CURRENT_LEADERBOARD_ID = CUSTOM_ROUTE_LEADERBOARD_ID;
 const RELEASE_VERSIONS = [
-  "v0.40.0", "v0.39.0", "v0.38.0",
+  "v0.40.1", "v0.40.0", "v0.39.0", "v0.38.0",
   "v0.37.2", "v0.37.1", "v0.37.0", "v0.36.2", "v0.36.1", "v0.36.0", "v0.35.2", "v0.35.1", "v0.35.0", "v0.34.2", "v0.34.1", "v0.34.0",
   "v0.33.3", "v0.33.2", "v0.33.1", "v0.33.0", "v0.32.1", "v0.32.0", "v0.31.1", "v0.31.0", "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",

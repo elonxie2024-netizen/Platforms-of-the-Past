@@ -2,13 +2,13 @@
 
 Play at: https://elonxie2024-netizen.github.io/Platforms-of-the-Past/
 
-A browser-based platformer where the world changes across time. Run, jump, avoid hazards, and collect stars while exploring levels that will eventually shift between the past, present, and future.
+A browser-based puzzle platformer built on time-manipulation mechanics. Run, jump, avoid hazards, and collect stars, then rewind the recent history of the world around you and send looping echoes of yourself through it.
 
 No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.40.0`
+**Current version:** `v0.40.1`
 
 ## How it works
 
@@ -76,8 +76,6 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Build a run.** Before starting, combine an objective, a constraint, a preferred leaderboard view, and a route containing individual levels, whole chapters, gauntlets, or any mixture. All Levels means the complete forty-level campaign; all gauntlets are a separate choice. Falls are not placed hazards and do not count. Equivalent selections normalize to the same canonical leaderboard, and Time, Score, and Stars are different rankings of its same published runs.
 
-**Change the past.** In the finished game, time travel will let you switch eras and reshape the level. A bridge that is broken in the present may still stand in the past, while a seed planted long ago could become a path through the future.
-
 ## Controls
 
 | Input | Action |
@@ -135,16 +133,6 @@ The playable prototype includes:
 - Four-section procedural soundtracks for the menu and levels, with persistent master, music, and per-effect volume controls
 - Surface-aware landing sounds and particles plus effects for collecting, finishing, and dying
 - Keyboard and touchscreen controls
-
-## Time-travel plans
-
-The full game is planned to include:
-
-- Past, present, and future versions of each level
-- Fast era switching during platforming
-- Different platforms, hazards, and routes in each period
-- Cause-and-effect puzzles that change later eras
-- Secrets found by comparing the same place across time
 
 ## Play locally
 
