@@ -34,10 +34,10 @@ try {
   if ($result.failed -gt 0) { throw "$($result.failed) of $($result.total) browser regression tests failed." }
   Write-Host "Browser rules and serialization: $($result.passed)/$($result.total) passed" -ForegroundColor Green
   if ($result.measurements) {
-    Write-Host ("Replay bytes: Exit {0}->{1}, Exit+Stars {2}->{3}, Survival 1h {4}->{5}" -f `
+    Write-Host ("Replay bytes: Exit {0}->{1}, Exit+Stars {2}->{3}, Long Exit {4}->{5}" -f `
       $result.measurements.exit.expanded, $result.measurements.exit.compact,
       $result.measurements.exitStars.expanded, $result.measurements.exitStars.compact,
-      $result.measurements.survivalOneHour.expanded, $result.measurements.survivalOneHour.compact) -ForegroundColor Cyan
+      $result.measurements.longExit.expanded, $result.measurements.longExit.compact) -ForegroundColor Cyan
   }
 
   $mainPage = Join-Path $repoRoot 'index.html'
@@ -53,7 +53,7 @@ try {
     -WindowStyle Hidden -RedirectStandardOutput $mainStdoutPath -RedirectStandardError $mainStderrPath
   if ($mainProcess.ExitCode -ne 0) { throw "The game smoke test exited with code $($mainProcess.ExitCode)." }
   $mainDom = Get-Content -LiteralPath $mainStdoutPath -Raw
-  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.39.0')) {
+  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.40.0')) {
     throw 'The complete game did not initialize with the current verification and level-data scripts.'
   }
   Write-Host 'Complete game initialization: 1/1 passed' -ForegroundColor Green
@@ -71,17 +71,22 @@ try {
   $edgeVerifier = Get-Content -LiteralPath (Join-Path $repoRoot 'supabase\functions\verify-custom-run\index.ts') -Raw
   $supabaseConfig = Get-Content -LiteralPath (Join-Path $repoRoot 'supabase\config.toml') -Raw
   $trustedSql = $sql.Substring($sql.IndexOf('-- v0.35.0:'))
-  $listStart = $trustedSql.LastIndexOf('create function public.list_custom_level_runs')
+  $listStart = $trustedSql.LastIndexOf('create or replace function public.list_custom_level_runs')
   $listEnd = $trustedSql.IndexOf('create or replace function public.record_custom_level_completion', $listStart)
+  if ($listEnd -lt 0) { $listEnd = $trustedSql.IndexOf('drop function if exists public.get_published_custom_level', $listStart) }
   $listSql = $trustedSql.Substring($listStart, $listEnd - $listStart)
   $detailStart = $sql.IndexOf('-- v0.36.0: metadata-only published-level details')
   $favoriteStart = $sql.IndexOf('-- v0.38.0: private account favorites')
   $replayPlaybackStart = $sql.IndexOf('-- v0.39.0: fetch one trusted replay')
-  $detailsSql = if ($detailStart -ge 0 -and $favoriteStart -gt $detailStart) { $sql.Substring($detailStart, $favoriteStart - $detailStart) } else { '' }
+  $v40Start = $sql.IndexOf('-- v0.40.0 final schema:')
+  $v40DetailsStart = if ($v40Start -ge 0) { $sql.IndexOf('create function public.get_published_custom_level_details', $v40Start) } else { -1 }
+  $v40DetailsEnd = if ($v40DetailsStart -ge 0) { $sql.IndexOf('drop function if exists public.list_published_custom_levels', $v40DetailsStart) } else { -1 }
+  $detailsSql = if ($v40DetailsStart -ge 0 -and $v40DetailsEnd -gt $v40DetailsStart) { $sql.Substring($v40DetailsStart, $v40DetailsEnd - $v40DetailsStart) } elseif ($detailStart -ge 0 -and $favoriteStart -gt $detailStart) { $sql.Substring($detailStart, $favoriteStart - $detailStart) } else { '' }
+  $finalSql = if ($v40Start -ge 0) { $sql.Substring($v40Start) } else { '' }
   $favoritesSql = if ($favoriteStart -ge 0 -and $replayPlaybackStart -gt $favoriteStart) { $sql.Substring($favoriteStart, $replayPlaybackStart - $favoriteStart) } else { '' }
   $replayPlaybackSql = if ($replayPlaybackStart -ge 0) { $sql.Substring($replayPlaybackStart) } else { '' }
   $contracts = [ordered]@{}
-  $contracts['SQL accepts exactly three level types'] = $sql.Contains("level_type in ('exit', 'exit-stars', 'survival')")
+  $contracts['Final SQL accepts exactly two level types'] = $finalSql.Contains("level_type in ('exit', 'exit-stars')") -and -not $finalSql.Contains("level_type in ('exit', 'exit-stars', 'survival')")
   $contracts['SQL creates monotonically increasing immutable versions'] = $sql.Contains('coalesce(max(history.version), 0) + 1')
   $contracts['SQL creates fresh publication status rows'] = $sql.Contains('insert into public.published_custom_level_status')
   $contracts['SQL binds tickets to exact versions'] = $trustedSql.Contains('ticket.level_id <> p_level_id or ticket.level_version <> p_level_version')
@@ -90,11 +95,10 @@ try {
   $contracts['Trusted verifier derives exit completion'] = $validator.Contains('terminal.kind === "exit"') -and $validator.Contains('Replay did not legitimately reach the exit')
   $contracts['SQL rechecks Required Stars from trusted results'] = $trustedSql.Contains("run.level_type = 'exit-stars' and derived_stars < status_row.required_stars")
   $contracts['SQL refuses trusted Fly and cheat results'] = $trustedSql.Contains('or derived_fly or derived_cheat')
-  $contracts['SQL orders Survival longest-first'] = $sql.Contains("run.level_type = 'survival' then run.seconds end desc")
-  $contracts['SQL ranks only valid and restored runs'] = $sql.Contains("case when ordered.ranking_status in ('valid', 'restored') then ordered.valid_position else null end")
-  $contracts['SQL keeps review threshold at three votes'] = $sql.Contains('invalid_votes + valid_votes < 3')
-  $contracts['SQL uses a two-thirds review majority'] = $sql.Contains('invalid_votes * 3 >= (invalid_votes + valid_votes) * 2') -and $sql.Contains('valid_votes * 3 >= (invalid_votes + valid_votes) * 2')
-  $contracts['SQL preserves restoration history'] = $sql.Contains('report.ever_invalidated or report.decision_status')
+  $contracts['Final SQL orders every published board fastest-first'] = $finalSql.Contains('order by run.seconds, run.created_at, run.id')
+  $contracts['Survival purge precedes final constraint tightening'] = $sql.IndexOf('-- v0.40.0: irreversibly remove Survival drafts') -lt $v40Start
+  $contracts['Survival purge includes current and historical drafts'] = $sql.Contains("public.resolve_level_type(level.level_data) = 'survival'") -and $sql.Contains("history.level_data #>> '{settings,levelType}' = 'survival'")
+  $contracts['Final schema drops Survival review storage'] = $finalSql.Contains('drop table if exists public.survival_exploit_votes') -and $finalSql.Contains('drop table if exists public.survival_exploit_reports')
   $contracts['Client keeps Fly use sticky'] = $game.Contains('if (enabled) markPublishedCheatUsed(true)')
   $contracts['Client keeps developer-cheat use sticky'] = $game.Contains('markPublishedCheatUsed(false, "collision")') -and $game.Contains('markPublishedCheatUsed(false, "invincibility")')
   $contracts['Level validation uses shared level-type rules'] = $levelData.Contains('verificationRules.resolveLevelType')
@@ -104,7 +108,7 @@ try {
   $contracts['Old client-trusted decision RPC is removed'] = $trustedSql.Contains('drop function if exists public.submit_custom_level_run') -and -not $trustedSql.Contains('grant execute on function public.submit_custom_level_run')
   $contracts['Trusted finalizer is service-role only'] = $trustedSql.Contains('grant execute on function public.finalize_custom_level_run_verification(uuid, jsonb) to service_role') -and $trustedSql.Contains('revoke all on function public.finalize_custom_level_run_verification(uuid, jsonb) from public')
   $contracts['Trusted verifier claims immutable replay context'] = $trustedSql.Contains("'levelData', snapshot, 'replayData', run.replay_data")
-  $contracts['Only trusted runs receive ranks'] = $trustedSql.Contains("run.validation_state = 'trusted' and run.ranking_status in ('valid', 'restored')")
+  $contracts['Only trusted valid runs receive ranks'] = $finalSql.Contains("run.validation_state = 'trusted' and run.ranking_status = 'valid'")
   $contracts['Historical runs remain explicitly legacy'] = $trustedSql.Contains("validation_state text not null default 'legacy'")
   $contracts['Legacy clears cannot appear as trusted profile highlights'] = $trustedSql.Contains("trusted_run.id = clear.verified_run_id and trusted_run.validation_state = 'trusted'")
   $contracts['Verifier derives time and stars from evidence'] = $validator.Contains('seconds: Math.round(terminal.atMs) / 1000') -and $validator.Contains('stars: collected.size')
@@ -120,16 +124,16 @@ try {
   $contracts['Published detail RPC reports the current immutable version'] = $detailsSql.Contains('status.level_version = published.version') -and $detailsSql.Contains('published.version')
   $contracts['Per-level leaderboard requires the exact current published version'] = $listSql.Contains('current.version = p_level_version')
   $contracts['Per-level leaderboard excludes every non-trusted validation state'] = $listSql.Contains("run.validation_state = 'trusted'")
-  $contracts['Per-level leaderboard preserves reversible Survival rank states'] = $listSql.Contains("run.ranking_status in ('valid', 'restored')") -and $listSql.Contains('then ordered.valid_position else null end')
-  $contracts['Personal best uses only trusted valid or restored runs'] = $detailsSql.Contains("run.validation_state = 'trusted'") -and $detailsSql.Contains("run.ranking_status in ('valid', 'restored')") -and $detailsSql.Contains('ranked.user_id = (select auth.uid())')
+  $contracts['Per-level leaderboard ranks only trusted valid rows'] = $detailsSql.Contains("run.validation_state = 'trusted' and run.ranking_status = 'valid'")
+  $contracts['Personal best uses only trusted valid runs'] = $detailsSql.Contains("run.validation_state = 'trusted'") -and $detailsSql.Contains("run.ranking_status = 'valid'") -and $detailsSql.Contains('ranked.user_id = (select auth.uid())')
   $contracts['Details are loaded before Community and profile gameplay'] = $game.Contains('openCustomLevelDetails(level.level_id, "profile")') -and $game.Contains('openCustomLevelDetails(entry.level_id, "community")') -and $account.Contains('get_published_custom_level_details')
   $contracts['Existing direct-play links still bypass the detail screen'] = $game.Contains('new URL(location.href).searchParams.get("level")') -and $game.Contains('openPublishedLevel(publicLevelId)')
   $contracts['Detail Play rechecks stale publications before loading snapshots'] = $game.Contains('const latest = await window.PlatformsAccount.loadPublishedCustomLevelDetails(levelId)') -and $game.Contains('Review the new version before playing')
   $contracts['Editor rejects a snapshot that changed after detail preflight'] = $editor.Contains('openPublishedLevel(levelId, expectedVersion = null)') -and $editor.Contains('Number(published.version) !== Number(expectedVersion)')
-  $contracts['Leaderboard and review failures remain isolated from level metadata'] = $game.Contains('Promise.allSettled') -and $game.Contains('Leaderboard unavailable. Refresh to try again; the level can still be played.') -and $game.Contains('Strategy reviews are temporarily unavailable.')
+  $contracts['Leaderboard failures remain isolated from level metadata'] = $game.Contains('Leaderboard unavailable. Refresh to try again; the level can still be played.')
   $contracts['Failed detail metadata can be retried without a loaded entry'] = $game.Contains('customLevelDetailsLevelId = levelId') -and $game.Contains('if (customLevelDetailsLevelId) openCustomLevelDetails')
   $contracts['Detail navigation is stable while an exact-version Play load is in flight'] = $game.Contains('closeCustomLevelDetailsButton.disabled = true') -and $game.Contains('customLevelDetailsRefreshButton.disabled = true') -and $game.Contains('customLevelDetailsCreator.disabled = true')
-  $contracts['Published run status labels cover every trusted-pipeline state'] = $game.Contains('validationState === "pending"') -and $game.Contains('validationState === "processing"') -and $game.Contains('validationState === "rejected"') -and $game.Contains('validationState === "legacy"') -and $game.Contains('restored: "Restored"')
+  $contracts['Published run status labels cover every trusted-pipeline state'] = $game.Contains('validationState === "pending"') -and $game.Contains('validationState === "processing"') -and $game.Contains('validationState === "rejected"') -and $game.Contains('validationState === "legacy"')
   $contracts['Long published names and leaderboard identities cannot widen the detail panel'] = $styles.Contains('.custom-level-details-panel h2,') -and $styles.Contains('overflow-wrap: anywhere') -and $styles.Contains('.custom-level-run strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }')
   $contracts['Run intake and finalization return metadata instead of replay rows'] = ([regex]::Matches($trustedSql, 'returns jsonb').Count -ge 3) -and $trustedSql.Contains("'id', result.id, 'validation_state', result.validation_state")
   $contracts['Replay byte size is observable without loading evidence'] = $trustedSql.Contains('replay_bytes integer generated always as')
@@ -163,19 +167,19 @@ try {
   $contracts['Favorite relationships are not publicly readable'] = $favoritesSql.Contains('revoke all on table public.custom_level_favorites from anon, authenticated') -and -not $favoritesSql.Contains('grant select on public.custom_level_favorites')
   $contracts['Only currently published levels can gain favorites'] = $favoritesSql.Contains("raise exception 'Only published levels can be favorited'")
   $contracts['Unpublishing hides favorites without deleting them'] = $favoritesSql.Contains('from public.published_custom_levels published') -and $favoritesSql.Contains('from public.custom_level_favorites own') -and -not $favoritesSql.Contains('delete from public.custom_level_favorites where level_id')
-  $contracts['Community exposes aggregate counts and private own state'] = $favoritesSql.Contains('favorite_count bigint, is_favorited boolean') -and $favoritesSql.Contains('count(*)::bigint') -and $favoritesSql.Contains('own.user_id = (select auth.uid())')
-  $contracts['Most Favorited sorting remains server-side'] = $favoritesSql.Contains("p_sort = 'favorites' then catalog.favorite_count") -and $index.Contains('<option value="favorites">Most Favorited</option>')
-  $contracts['Favorite search and sorting share one server query'] = $favoritesSql.Contains("left(btrim(coalesce(p_query, '')), 80)") -and $favoritesSql.Contains("p_sort = 'favorites'")
-  $contracts['Favorite pagination has stable bounds and tie-breaking'] = $favoritesSql.Contains('catalog.level_id') -and $favoritesSql.Contains('offset least(greatest(coalesce(p_offset, 0), 0), 100000)') -and $favoritesSql.Contains('limit least(greatest(coalesce(p_limit, 13), 1), 51)')
+  $contracts['Community exposes aggregate counts and private own state'] = $finalSql.Contains('favorite_count bigint, is_favorited boolean') -and $finalSql.Contains('count(*)::bigint') -and $finalSql.Contains('own.user_id = (select auth.uid())')
+  $contracts['Most Favorited sorting remains server-side'] = $finalSql.Contains("p_sort = 'favorites' then catalog.favorite_count") -and $index.Contains('<option value="favorites">Most Favorited</option>')
+  $contracts['Favorite search and sorting share one server query'] = $finalSql.Contains("left(btrim(coalesce(p_query, '')), 80)") -and $finalSql.Contains("p_sort = 'favorites'")
+  $contracts['Favorite pagination has stable bounds and tie-breaking'] = $finalSql.Contains('catalog.level_id') -and $finalSql.Contains('offset least(greatest(coalesce(p_offset, 0), 0), 100000)') -and $finalSql.Contains('limit least(greatest(coalesce(p_limit, 13), 1), 51)')
   $contracts['Signed-in My Favorites is an account-filtered Community view'] = $account.Contains('p_favorites_only: Boolean(favoritesOnly)') -and $game.Contains('communityFavoritesButton.hidden = !userId') -and $game.Contains('communityFavoritesOnly')
   $contracts['Guests see counts but cannot favorite'] = $game.Contains('favorite.disabled = !accountSession?.user') -and $game.Contains('Sign in to favorite levels')
   $contracts['Replay fetch returns one trusted run through a narrow RPC'] = $replayPlaybackSql.Contains('create function public.get_custom_level_run_replay') -and $account.Contains('rpc("get_custom_level_run_replay"')
   $contracts['Replay fetch refuses non-trusted evidence'] = $replayPlaybackSql.Contains("run.validation_state = 'trusted'")
   $contracts['Replay fetch refuses unpublished levels'] = $replayPlaybackSql.Contains('join public.published_custom_levels current') -and $replayPlaybackSql.Contains('current.level_id = run.level_id')
   $contracts['Replay fetch refuses runs after a newer publication'] = $replayPlaybackSql.Contains('current.version = run.level_version')
-  $contracts['Replay fetch is public without granting replay-table reads'] = $replayPlaybackSql.Contains('grant execute on function public.get_custom_level_run_replay(uuid) to anon, authenticated') -and $sql.Contains('public.custom_level_runs, public.survival_exploit_reports')
+  $contracts['Replay fetch is public without granting replay-table reads'] = $replayPlaybackSql.Contains('grant execute on function public.get_custom_level_run_replay(uuid) to anon, authenticated') -and $sql.Contains('public.custom_level_run_tickets, public.custom_level_runs from anon, authenticated')
   $contracts['Leaderboard listing remains metadata-only after replay playback'] = -not $listSql.Contains('replay_data')
-  $contracts['Only trusted valid or restored rows offer Watch'] = $game.Contains('if (trusted && ["valid", "restored"].includes(run.ranking_status))') -and $game.Contains('watch.textContent = "Watch"')
+  $contracts['Only trusted valid rows offer Watch'] = $game.Contains('if (trusted && run.ranking_status === "valid")') -and $game.Contains('watch.textContent = "Watch"')
   $contracts['Watch validates replay level version and immutable digest'] = $game.Contains('levelVersion: replay.level_version') -and $game.Contains('levelDigest: window.PlatformsReplayValidator.levelDigest(prepared.level)')
   $contracts['Watch creates no ticket or submission evidence'] = $game.Contains('source: "replay", runTicket: null') -and $game.Contains('publishedLevelActive && !trustedReplayPlayback')
   $contracts['Watch blocks live keyboard touch and canvas gameplay input'] = $game.Contains('function setKey(code, down) {') -and $game.Contains('if (trustedReplayPlayback) return;') -and $game.Contains('levelTransition > 0 || trustedReplayPlayback) return;')

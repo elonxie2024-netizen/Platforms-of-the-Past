@@ -198,7 +198,7 @@
       }
 
       const levelType = levelData?.settings?.levelType || (Number(levelData?.settings?.requiredStars) > 0 ? "exit-stars" : "exit");
-      if (!["exit", "exit-stars"].includes(levelType)) return fail("Unsupported published level type");
+      if (!["exit", "exit-stars", "survival"].includes(levelType)) return fail("Unsupported published level type");
       const requiredStars = levelType === "exit-stars" ? Math.max(1, Number(levelData?.settings?.requiredStars) || 0) : 0;
       const spawn = levelData.spawn || {};
       const initial = evidence.initialState;
@@ -336,12 +336,16 @@
       if (!finite(terminal.x) || !finite(terminal.y) || Math.abs(terminal.x - terminalCheckpoint[1]) > .2 || Math.abs(terminal.y - terminalCheckpoint[2]) > .2) {
         return fail("Replay terminal claim disagrees with its final checkpoint");
       }
-      const reachedExit = terminal.kind === "exit" && levelData.exit && overlapsPlayer(terminalCheckpoint, levelData.exit, 2);
-      if (deathActions.length) return fail("Replay crosses an in-level death boundary");
-      if (!reachedExit) return fail("Replay did not legitimately reach the exit");
+      const reachedExit = levelType !== "survival" && terminal.kind === "exit" && levelData.exit && overlapsPlayer(terminalCheckpoint, levelData.exit, 2);
+      if (levelType !== "survival" && deathActions.length) return fail("Replay crosses an in-level death boundary");
+      if (levelType === "survival" && (deathActions.length !== 1 || deathActions[0] !== terminal.atMs)) {
+        return fail("Survival death is not anchored to the replay end");
+      }
+      if (levelType === "survival" && terminal.kind !== "death") return fail("Survival replay must end in a recorded death");
+      if (levelType !== "survival" && !reachedExit) return fail("Replay did not legitimately reach the exit");
       const flyEver = integrityKinds.has("fly");
       const cheatEver = [...integrityKinds].some(kind => kind !== "fly") || flyEver;
-      const completion = reachedExit && (levelType !== "exit-stars" || collected.size >= requiredStars);
+      const completion = levelType === "survival" || (reachedExit && (levelType !== "exit-stars" || collected.size >= requiredStars));
       if (!completion) return fail("Replay did not satisfy the published completion rules");
       if (flyEver || cheatEver) return fail("Replay contains developer integrity events");
 

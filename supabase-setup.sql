@@ -14,8 +14,8 @@ create table if not exists public.leaderboard_rulesets (
 
 insert into public.leaderboard_rulesets (id, label, accepted_versions)
 values
-  ('full-custom-routes-v1', 'Custom Routes · Version 0.37.0 to 0.39.0', array['v0.37.0', 'v0.37.1', 'v0.37.2', 'v0.38.0', 'v0.39.0']),
-  ('crate-jump-collision-v1', 'Classic Adventure · Version 0.24.1 to 0.39.0', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1', 'v0.28.2', 'v0.29.0', 'v0.29.1', 'v0.30.0', 'v0.30.1', 'v0.30.2', 'v0.30.3', 'v0.31.0', 'v0.31.1', 'v0.32.0', 'v0.32.1', 'v0.33.0', 'v0.33.1', 'v0.33.2', 'v0.33.3', 'v0.34.0', 'v0.34.1', 'v0.34.2', 'v0.35.0', 'v0.35.1', 'v0.35.2', 'v0.36.0', 'v0.36.1', 'v0.36.2', 'v0.37.0', 'v0.37.1', 'v0.37.2', 'v0.38.0', 'v0.39.0']),
+  ('full-custom-routes-v1', 'Custom Routes · Version 0.37.0 to 0.40.0', array['v0.37.0', 'v0.37.1', 'v0.37.2', 'v0.38.0', 'v0.39.0', 'v0.40.0']),
+  ('crate-jump-collision-v1', 'Classic Adventure · Version 0.24.1 to 0.40.0', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1', 'v0.28.2', 'v0.29.0', 'v0.29.1', 'v0.30.0', 'v0.30.1', 'v0.30.2', 'v0.30.3', 'v0.31.0', 'v0.31.1', 'v0.32.0', 'v0.32.1', 'v0.33.0', 'v0.33.1', 'v0.33.2', 'v0.33.3', 'v0.34.0', 'v0.34.1', 'v0.34.2', 'v0.35.0', 'v0.35.1', 'v0.35.2', 'v0.36.0', 'v0.36.1', 'v0.36.2', 'v0.37.0', 'v0.37.1', 'v0.37.2', 'v0.38.0', 'v0.39.0', 'v0.40.0']),
   ('crate-platform-collision-v1', 'Version 0.23.2 to 0.24.0', array['v0.23.2', 'v0.24.0']),
   ('history-forge-gate-v1', 'Version 0.23.1 to 0.23.1', array['v0.23.1']),
   ('crate-gravity-v1', 'Version 0.23.0 to 0.23.0', array['v0.23.0']),
@@ -257,7 +257,7 @@ create policy "Anyone can submit validated scores"
     )
     and char_length(run_type_id) between 1 and 500
     and (
-      game_version not in ('v0.37.0', 'v0.37.1', 'v0.37.2', 'v0.38.0', 'v0.39.0')
+      game_version not in ('v0.37.0', 'v0.37.1', 'v0.37.2', 'v0.38.0', 'v0.39.0', 'v0.40.0')
       or (leaderboard_id = 'crate-jump-collision-v1' and run_type_id = 'classic')
       or (leaderboard_id = 'full-custom-routes-v1' and run_type_id <> 'classic')
     )
@@ -963,7 +963,7 @@ grant execute on function public.list_public_profile_categories(uuid, integer) t
 grant execute on function public.list_public_profile_levels(uuid) to anon, authenticated;
 grant execute on function public.list_public_profile_highlights(uuid) to anon, authenticated;
 
--- v0.34.0-v0.34.1: exact-version verification, hardened run evidence, and reversible Survival review.
+-- v0.34.0-v0.40.0: exact-version verification and hardened run evidence.
 
 create table if not exists public.published_custom_level_status (
   level_id uuid not null references public.custom_levels(id) on delete cascade,
@@ -993,10 +993,8 @@ create table if not exists public.custom_level_runs (
   fly_ever boolean not null default false,
   cheat_ever boolean not null default false,
   replay_data jsonb not null check (jsonb_typeof(replay_data) = 'object' and octet_length(replay_data::text) <= 4000000),
-  strategy_fingerprint text check (strategy_fingerprint is null or strategy_fingerprint ~ '^[a-f0-9]{8,64}$'),
   ranking_status text not null default 'valid' check (ranking_status in ('valid', 'disputed', 'invalidated', 'restored')),
   status_reason text,
-  invalidated_by_report uuid,
   created_at timestamptz not null default now()
 );
 
@@ -1047,55 +1045,12 @@ alter table public.custom_level_runs
   add constraint custom_level_runs_ticket_fkey
   foreign key (run_ticket_id) references public.custom_level_run_tickets(id) on delete set null;
 
-create table if not exists public.survival_exploit_reports (
-  id uuid primary key default gen_random_uuid(),
-  level_id uuid not null references public.custom_levels(id) on delete cascade,
-  level_version integer not null check (level_version > 0),
-  run_id uuid not null references public.custom_level_runs(id) on delete cascade,
-  reporter_id uuid not null references auth.users(id) on delete cascade,
-  strategy_fingerprint text not null check (strategy_fingerprint ~ '^[a-f0-9]{8,64}$'),
-  description text not null check (char_length(btrim(description)) between 12 and 1000 and description !~ '[[:cntrl:]]'),
-  evidence_url text check (evidence_url is null or (char_length(evidence_url) <= 500 and evidence_url ~ '^https?://')),
-  decision_status text not null default 'disputed' check (decision_status in ('valid', 'disputed', 'invalidated', 'restored')),
-  ever_invalidated boolean not null default false,
-  created_at timestamptz not null default now(),
-  decided_at timestamptz,
-  unique (run_id, reporter_id)
-);
-
-alter table public.survival_exploit_reports
-  add column if not exists ever_invalidated boolean not null default false;
-update public.survival_exploit_reports
-  set ever_invalidated = true
-  where decision_status in ('invalidated', 'restored') and not ever_invalidated;
-
-alter table public.custom_level_runs
-  drop constraint if exists custom_level_runs_invalidated_by_report_fkey;
-alter table public.custom_level_runs
-  add constraint custom_level_runs_invalidated_by_report_fkey
-  foreign key (invalidated_by_report) references public.survival_exploit_reports(id) on delete set null;
-
-create table if not exists public.survival_exploit_votes (
-  report_id uuid not null references public.survival_exploit_reports(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  vote text not null check (vote in ('valid', 'invalidated')),
-  updated_at timestamptz not null default now(),
-  primary key (report_id, user_id)
-);
-
 create index if not exists custom_level_runs_board_idx
   on public.custom_level_runs (level_id, level_version, seconds, created_at);
-create index if not exists custom_level_runs_fingerprint_idx
-  on public.custom_level_runs (level_id, level_version, strategy_fingerprint)
-  where strategy_fingerprint is not null;
-create index if not exists survival_reports_level_idx
-  on public.survival_exploit_reports (level_id, level_version, decision_status, created_at desc);
 
 alter table public.published_custom_level_status enable row level security;
 alter table public.custom_level_runs enable row level security;
 alter table public.custom_level_run_tickets enable row level security;
-alter table public.survival_exploit_reports enable row level security;
-alter table public.survival_exploit_votes enable row level security;
 
 drop policy if exists "Anyone can read published level status" on public.published_custom_level_status;
 create policy "Anyone can read published level status" on public.published_custom_level_status
@@ -1108,19 +1063,77 @@ create policy "Anyone can read published level runs" on public.custom_level_runs
     exists (select 1 from public.published_custom_levels current where current.level_id = custom_level_runs.level_id)
   );
 -- Run tickets are private bearer records. They are issued and consumed only through RPCs.
-drop policy if exists "Anyone can read Survival reports" on public.survival_exploit_reports;
-create policy "Anyone can read Survival reports" on public.survival_exploit_reports
-  for select to anon, authenticated using (
-    exists (select 1 from public.published_custom_levels current where current.level_id = survival_exploit_reports.level_id)
-  );
-drop policy if exists "Anyone can read Survival votes" on public.survival_exploit_votes;
-create policy "Anyone can read Survival votes" on public.survival_exploit_votes
-  for select to anon, authenticated using (true);
 
+-- Preserve the pre-v0.40 resolver just long enough to identify Survival drafts
+-- by their existing semantics. It is replaced with the two-type resolver below.
 create or replace function public.resolve_level_type(p_level_data jsonb)
 returns text language sql immutable set search_path = '' as $$
   select case
     when p_level_data #>> '{settings,levelType}' in ('exit', 'exit-stars', 'survival')
+      then p_level_data #>> '{settings,levelType}'
+    when coalesce((p_level_data #>> '{settings,requiredStars}')::integer, 0) > 0 then 'exit-stars'
+    else 'exit'
+  end;
+$$;
+
+-- v0.40.0: irreversibly remove Survival drafts and all data derived from them.
+-- This purge intentionally runs before the two-type constraints below are tightened.
+do $$
+declare
+  doomed_level_ids uuid[] := '{}'::uuid[];
+  draft_count bigint := 0;
+  published_count bigint := 0;
+  run_count bigint := 0;
+  completion_count bigint := 0;
+  favorite_count bigint := 0;
+  report_count bigint := 0;
+  vote_count bigint := 0;
+begin
+  select coalesce(array_agg(level.id), '{}'::uuid[]) into doomed_level_ids
+  from public.custom_levels level
+  where public.resolve_level_type(level.level_data) = 'survival'
+     or exists (
+       select 1 from public.published_custom_level_versions history
+       where history.level_id = level.id
+         and history.level_data #>> '{settings,levelType}' = 'survival'
+     );
+
+  draft_count := cardinality(doomed_level_ids);
+  select count(*) into published_count from public.published_custom_levels
+    where level_id = any(doomed_level_ids);
+  select count(*) into run_count from public.custom_level_runs
+    where level_id = any(doomed_level_ids) or level_type = 'survival';
+  select count(*) into completion_count from public.custom_level_completions
+    where level_id = any(doomed_level_ids);
+  if to_regclass('public.custom_level_favorites') is not null then
+    execute 'select count(*) from public.custom_level_favorites where level_id = any($1)'
+      into favorite_count using doomed_level_ids;
+  end if;
+  if to_regclass('public.survival_exploit_reports') is not null then
+    execute 'select count(*) from public.survival_exploit_reports' into report_count;
+  end if;
+  if to_regclass('public.survival_exploit_votes') is not null then
+    execute 'select count(*) from public.survival_exploit_votes' into vote_count;
+  end if;
+
+  raise notice 'Survival purge: drafts=%, published_levels=%, runs=%, completions=%, favorites=%, reports=%, votes=%',
+    draft_count, published_count, run_count, completion_count, favorite_count, report_count, vote_count;
+
+  delete from public.custom_levels where id = any(doomed_level_ids);
+  delete from public.custom_level_runs where level_type = 'survival';
+  delete from public.published_custom_level_status where level_type = 'survival';
+end;
+$$;
+
+drop function if exists public.report_survival_strategy(uuid, text, text);
+drop function if exists public.vote_survival_strategy(uuid, text);
+drop function if exists public.get_custom_level_review_state(uuid, integer);
+
+create or replace function public.resolve_level_type(p_level_data jsonb)
+returns text language sql immutable set search_path = '' as $$
+  select case
+    when p_level_data #>> '{settings,levelType}' = 'survival' then 'exit'
+    when p_level_data #>> '{settings,levelType}' in ('exit', 'exit-stars')
       then p_level_data #>> '{settings,levelType}'
     when coalesce((p_level_data #>> '{settings,requiredStars}')::integer, 0) > 0 then 'exit-stars'
     else 'exit'
@@ -1153,8 +1166,7 @@ begin
   insert into public.published_custom_level_versions (level_id, version, level_data, published_at)
     values (draft.id, next_version, draft.level_data, result.updated_at);
   insert into public.published_custom_level_status (level_id, level_version, level_type, required_stars, verification_status, updated_at)
-    values (draft.id, next_version, resolved_type, required_count,
-      case when resolved_type = 'survival' then 'ranked' else 'unverified' end, now());
+    values (draft.id, next_version, resolved_type, required_count, 'unverified', now());
   return result;
 end;
 $$;
@@ -1168,7 +1180,7 @@ insert into public.published_custom_level_status (level_id, level_version, level
 select history.level_id, history.version, public.resolve_level_type(history.level_data),
   case when public.resolve_level_type(history.level_data) = 'exit-stars'
     then greatest(1, coalesce((history.level_data #>> '{settings,requiredStars}')::integer, 0)) else 0 end,
-  case when public.resolve_level_type(history.level_data) = 'survival' then 'ranked' else 'unverified' end
+  'unverified'
 from public.published_custom_level_versions history
 on conflict (level_id, level_version) do nothing;
 
@@ -1191,504 +1203,6 @@ begin
 end;
 $$;
 revoke all on function public.issue_custom_level_run_ticket(uuid, integer) from public;
-
-create or replace function public.custom_level_run_evidence_error(
-  p_level_data jsonb,
-  p_run_ticket uuid,
-  p_level_id uuid,
-  p_level_version integer,
-  p_level_type text,
-  p_seconds numeric,
-  p_stars integer,
-  p_reached_exit boolean,
-  p_fly_ever boolean,
-  p_cheat_ever boolean,
-  p_replay_data jsonb
-)
-returns text
-language plpgsql immutable set search_path = '' as $$
-declare
-  samples jsonb;
-  actions jsonb;
-  sample_item jsonb;
-  action_item jsonb;
-  action_name text;
-  sample_count integer;
-  action_star_count integer;
-  placed_star_count integer;
-  enemy_count integer;
-  previous_time numeric := null;
-  previous_x numeric := null;
-  previous_y numeric := null;
-  sample_time numeric;
-  sample_x numeric;
-  sample_y numeric;
-  sample_mask integer;
-  delta_time numeric;
-  last_time numeric := null;
-  last_x numeric := null;
-  last_y numeric := null;
-  exit_x numeric;
-  exit_y numeric;
-  exit_width numeric;
-  exit_height numeric;
-  spawn_x numeric;
-  is_truncated boolean;
-begin
-  if jsonb_typeof(p_replay_data) <> 'object' or p_replay_data ->> 'format' <> 'POTP-RUN-1' then
-    return 'Invalid run evidence';
-  end if;
-  if p_replay_data ->> 'runTicket' is distinct from p_run_ticket::text then
-    return 'Run evidence does not match its server ticket';
-  end if;
-  if p_replay_data ->> 'levelId' is distinct from p_level_id::text
-     or coalesce((p_replay_data ->> 'levelVersion')::integer, 0) <> p_level_version then
-    return 'Run evidence belongs to another published version';
-  end if;
-  if jsonb_typeof(p_replay_data -> 'integrity') <> 'object'
-     or (p_replay_data #>> '{integrity,flyEver}')::boolean is distinct from coalesce(p_fly_ever, false)
-     or (p_replay_data #>> '{integrity,cheatEver}')::boolean is distinct from coalesce(p_cheat_ever, false) then
-    return 'Run integrity flags are inconsistent';
-  end if;
-  if coalesce((p_replay_data ->> 'endStars')::integer, -1) <> coalesce(p_stars, 0) then
-    return 'Run star evidence is inconsistent';
-  end if;
-
-  samples := p_replay_data -> 'samples';
-  actions := p_replay_data -> 'actions';
-  if jsonb_typeof(samples) <> 'array' or jsonb_typeof(actions) <> 'array' then return 'Run evidence is incomplete'; end if;
-  sample_count := jsonb_array_length(samples);
-  if sample_count < 1 or sample_count > 3600 or jsonb_array_length(actions) > 10000 then return 'Run evidence has an invalid length'; end if;
-  is_truncated := coalesce((p_replay_data ->> 'truncated')::boolean, false);
-  if is_truncated and (sample_count < 2700 or p_seconds < 675) then return 'Truncated run evidence is inconsistent'; end if;
-  if not is_truncated and sample_count < greatest(1, floor(p_seconds)::integer) then return 'Run evidence has too few checkpoints'; end if;
-
-  for sample_item in select value from jsonb_array_elements(samples) loop
-    if jsonb_typeof(sample_item) <> 'array' or jsonb_array_length(sample_item) < 6
-       or jsonb_typeof(sample_item -> 0) <> 'number'
-       or jsonb_typeof(sample_item -> 1) <> 'number'
-       or jsonb_typeof(sample_item -> 2) <> 'number'
-       or jsonb_typeof(sample_item -> 3) <> 'number'
-       or jsonb_typeof(sample_item -> 4) <> 'number'
-       or jsonb_typeof(sample_item -> 5) <> 'number' then return 'Run checkpoint is malformed'; end if;
-    sample_time := (sample_item ->> 0)::numeric;
-    sample_x := (sample_item ->> 1)::numeric;
-    sample_y := (sample_item ->> 2)::numeric;
-    sample_mask := (sample_item ->> 5)::integer;
-    if sample_time < 0 or sample_mask < 0 or sample_mask > 63 then return 'Run checkpoint contains unsupported input'; end if;
-    if sample_x < -5 or sample_x > coalesce((p_level_data ->> 'width')::numeric, 0) + 5
-       or sample_y < -5000 or sample_y > 10000 then return 'Run checkpoint is outside the level'; end if;
-    if previous_time is not null then
-      delta_time := (sample_time - previous_time) / 1000;
-      if delta_time < 0 then return 'Run checkpoint time moved backward'; end if;
-      if abs(sample_x - previous_x) > 60 + 3000 * delta_time
-         or abs(sample_y - previous_y) > 80 + 3000 * delta_time then return 'Run motion is not physically plausible'; end if;
-    elsif not is_truncated and sample_time > 1000 then return 'Run evidence does not begin near the timer start';
-    end if;
-    previous_time := sample_time; previous_x := sample_x; previous_y := sample_y;
-    last_time := sample_time; last_x := sample_x; last_y := sample_y;
-  end loop;
-
-  if abs(last_time - p_seconds * 1000) > 1000 then return 'Run time does not match its checkpoints'; end if;
-  if p_seconds > 0 and p_level_type <> 'survival' and p_seconds < .05 then return 'Completion time is not physically plausible'; end if;
-  spawn_x := coalesce((p_level_data #>> '{spawn,x}')::numeric, 0);
-  if p_level_type <> 'survival' and p_seconds + .02 < greatest(0, abs(last_x - spawn_x) - 30) / 3000 then
-    return 'Completion time is not physically plausible';
-  end if;
-
-  select count(*) filter (where object ->> 'type' = 'star')::integer,
-    count(*) filter (where object ->> 'type' = 'enemy')::integer
-  into placed_star_count, enemy_count
-  from jsonb_array_elements(coalesce(p_level_data -> 'objects', '[]'::jsonb)) object;
-  if p_stars < 0 or p_stars > placed_star_count + enemy_count then return 'Claimed stars exceed the published level'; end if;
-
-  action_star_count := 0;
-  for action_item in select value from jsonb_array_elements(actions) loop
-    if jsonb_typeof(action_item) <> 'array' or jsonb_array_length(action_item) < 2
-       or jsonb_typeof(action_item -> 0) <> 'number' or jsonb_typeof(action_item -> 1) <> 'string' then
-      return 'Run action evidence is malformed';
-    end if;
-    action_name := action_item ->> 1;
-    if action_name ~ '^star:[0-9]+$' then
-      if split_part(action_name, ':', 2)::integer >= placed_star_count then return 'Run references an unavailable star'; end if;
-    elsif action_name ~ '^enemy-star:[0-9]+$' then
-      if split_part(action_name, ':', 2)::integer >= enemy_count then return 'Run references an unavailable enemy star'; end if;
-    end if;
-  end loop;
-  select count(distinct action.value ->> 1)::integer into action_star_count
-  from jsonb_array_elements(actions) action(value)
-  where action.value ->> 1 ~ '^(star|enemy-star):[0-9]+$';
-  if action_star_count <> p_stars then return 'Run star count does not match collection evidence'; end if;
-
-  if p_level_type = 'survival' then
-    if coalesce(p_reached_exit, false) then return 'Survival runs cannot complete through the exit'; end if;
-  else
-    if not coalesce(p_reached_exit, false) then return 'The exit was not reached'; end if;
-    exit_x := (p_level_data #>> '{exit,x}')::numeric;
-    exit_y := (p_level_data #>> '{exit,y}')::numeric;
-    exit_width := (p_level_data #>> '{exit,width}')::numeric;
-    exit_height := (p_level_data #>> '{exit,height}')::numeric;
-    if not (last_x < exit_x + exit_width and last_x + 30 > exit_x
-      and last_y < exit_y + exit_height and last_y + 42 > exit_y) then
-      return 'Final checkpoint does not reach the exit';
-    end if;
-  end if;
-  return null;
-exception when others then
-  return 'Malformed run evidence';
-end;
-$$;
-revoke all on function public.custom_level_run_evidence_error(jsonb, uuid, uuid, integer, text, numeric, integer, boolean, boolean, boolean, jsonb) from public;
-
-drop function if exists public.submit_custom_level_run(uuid, integer, text, numeric, integer, boolean, boolean, boolean, jsonb, text);
-drop function if exists public.submit_custom_level_run(uuid, uuid, integer, text, numeric, integer, boolean, boolean, boolean, jsonb, text);
-create function public.submit_custom_level_run(
-  p_run_ticket uuid, p_level_id uuid, p_level_version integer, p_runner_name text, p_seconds numeric,
-  p_stars integer, p_reached_exit boolean, p_fly_ever boolean, p_cheat_ever boolean,
-  p_replay_data jsonb, p_strategy_fingerprint text default null
-)
-returns public.custom_level_runs
-language plpgsql security definer set search_path = '' as $$
-declare
-  current_user_id uuid := (select auth.uid());
-  ticket public.custom_level_run_tickets;
-  snapshot jsonb;
-  status_row public.published_custom_level_status;
-  clean_name text;
-  clean_fingerprint text;
-  evidence_error text;
-  safe_replay jsonb;
-  safe_seconds numeric;
-  safe_stars integer;
-  available_stars integer := 0;
-  wall_seconds numeric;
-  integrity_ok boolean;
-  completion_ok boolean;
-  strategy_review text;
-  result public.custom_level_runs;
-begin
-  if p_run_ticket is null then raise exception 'A server-issued run ticket is required'; end if;
-  select * into ticket from public.custom_level_run_tickets
-    where id = p_run_ticket for update;
-  if ticket.id is null then raise exception 'Run ticket is unavailable'; end if;
-  if ticket.used_at is not null then raise exception 'Run ticket has already been used'; end if;
-  if ticket.expires_at <= clock_timestamp() then raise exception 'Run ticket has expired'; end if;
-  if ticket.level_id <> p_level_id or ticket.level_version <> p_level_version then
-    raise exception 'Run ticket belongs to another published version';
-  end if;
-  if ticket.user_id is distinct from current_user_id then
-    raise exception 'Run ticket belongs to another account session';
-  end if;
-
-  select history.level_data into snapshot from public.published_custom_level_versions history
-    where history.level_id = p_level_id and history.version = p_level_version;
-  select * into status_row from public.published_custom_level_status
-    where level_id = p_level_id and level_version = p_level_version;
-  if snapshot is null or status_row.level_id is null then raise exception 'Published level version is unavailable'; end if;
-  if not exists (select 1 from public.published_custom_levels current where current.level_id = p_level_id)
-    then raise exception 'Level is not currently published'; end if;
-
-  select count(*) filter (where object ->> 'type' in ('star', 'enemy'))::integer
-    into available_stars
-    from jsonb_array_elements(coalesce(snapshot -> 'objects', '[]'::jsonb)) object;
-  safe_seconds := least(86400, greatest(.001, coalesce(p_seconds, .001)));
-  safe_stars := least(available_stars, greatest(0, coalesce(p_stars, 0)));
-  safe_replay := case
-    when jsonb_typeof(p_replay_data) = 'object' and octet_length(p_replay_data::text) <= 4000000
-      then p_replay_data
-    else jsonb_build_object('format', 'POTP-REJECTED-1', 'reason', 'Invalid run evidence')
-  end;
-  wall_seconds := extract(epoch from (clock_timestamp() - ticket.issued_at));
-  evidence_error := case
-    when p_seconds is null or p_seconds <= 0 or p_seconds > 86400 then 'Invalid run time'
-    when p_stars is null or p_stars < 0 or p_stars > available_stars then 'Claimed stars exceed the published level'
-    when p_seconds > wall_seconds + 2 then 'Run time exceeds the server-issued session'
-    else public.custom_level_run_evidence_error(
-      snapshot, p_run_ticket, p_level_id, p_level_version, status_row.level_type,
-      p_seconds, p_stars, p_reached_exit, p_fly_ever, p_cheat_ever, p_replay_data
-    ) end;
-
-  if current_user_id is not null then
-    select profile.display_name into clean_name from public.player_profiles profile where profile.user_id = current_user_id;
-  else clean_name := left(regexp_replace(btrim(coalesce(p_runner_name, 'Guest')), '[[:cntrl:]]', '', 'g'), 24);
-  end if;
-  if clean_name is null or char_length(clean_name) < 1 then clean_name := 'Guest'; end if;
-  clean_fingerprint := case when coalesce(p_strategy_fingerprint, '') ~ '^[a-f0-9]{8,64}$'
-    then p_strategy_fingerprint else null end;
-  integrity_ok := evidence_error is null
-    and not coalesce(p_fly_ever, false) and not coalesce(p_cheat_ever, false);
-  completion_ok := evidence_error is null and (status_row.level_type = 'survival' or (
-    coalesce(p_reached_exit, false) and
-    (status_row.level_type <> 'exit-stars' or coalesce(p_stars, 0) >= status_row.required_stars)
-  ));
-  if status_row.level_type = 'survival' and clean_fingerprint is not null and integrity_ok then
-    select case
-      when exists (select 1 from public.survival_exploit_reports report where report.level_id = p_level_id and report.level_version = p_level_version and report.strategy_fingerprint = clean_fingerprint and report.decision_status = 'invalidated') then 'invalidated'
-      when exists (select 1 from public.survival_exploit_reports report where report.level_id = p_level_id and report.level_version = p_level_version and report.strategy_fingerprint = clean_fingerprint and report.decision_status = 'disputed') then 'disputed'
-      else null end into strategy_review;
-  end if;
-  update public.custom_level_run_tickets set used_at = clock_timestamp() where id = ticket.id;
-  insert into public.custom_level_runs (
-    run_ticket_id, level_id, level_version, user_id, runner_name, level_type, seconds, stars, reached_exit,
-    fly_ever, cheat_ever, replay_data, strategy_fingerprint, ranking_status, status_reason
-  ) values (
-    ticket.id, p_level_id, p_level_version, current_user_id, clean_name, status_row.level_type,
-    round(safe_seconds, 3), safe_stars, coalesce(p_reached_exit, false),
-    coalesce(p_fly_ever, false), coalesce(p_cheat_ever, false), safe_replay,
-    case when status_row.level_type = 'survival' then clean_fingerprint else null end,
-    case when not integrity_ok or not completion_ok then 'invalidated'
-      when strategy_review = 'invalidated' then 'invalidated'
-      when strategy_review = 'disputed' then 'disputed' else 'valid' end,
-    case when evidence_error is not null then evidence_error
-      when not integrity_ok then 'Cheats used' when not completion_ok then 'Incomplete run'
-      when strategy_review = 'invalidated' then 'Invalid strategy'
-      when strategy_review = 'disputed' then 'Disputed motion' else null end
-  ) returning * into result;
-  if integrity_ok and completion_ok and status_row.level_type <> 'survival'
-     and status_row.verification_status = 'unverified' then
-    update public.published_custom_level_status set verification_status = 'verified', verified_run_id = result.id, updated_at = now()
-      where level_id = p_level_id and level_version = p_level_version;
-  end if;
-  return result;
-end;
-$$;
-revoke all on function public.submit_custom_level_run(uuid, uuid, integer, text, numeric, integer, boolean, boolean, boolean, jsonb, text) from public;
-
-drop function if exists public.record_custom_level_completion(uuid, integer, numeric, integer, integer);
-drop function if exists public.record_custom_level_completion(uuid, integer);
-create function public.record_custom_level_completion(
-  p_run_id uuid,
-  p_deaths integer
-)
-returns public.custom_level_completions
-language plpgsql security definer set search_path = '' as $$
-declare
-  current_user_id uuid := (select auth.uid());
-  accepted_run public.custom_level_runs;
-  snapshot jsonb;
-  snapshot_name text;
-  star_count integer := 0;
-  difficulty integer := 1;
-  result public.custom_level_completions;
-begin
-  if current_user_id is null then raise exception 'Authentication required'; end if;
-  if p_deaths is null or p_deaths < 0 or p_deaths > 100000 then raise exception 'Invalid death count'; end if;
-
-  select * into accepted_run
-  from public.custom_level_runs run
-  where run.id = p_run_id
-    and run.user_id = current_user_id
-    and run.level_type <> 'survival'
-    and run.ranking_status in ('valid', 'restored');
-  if accepted_run.id is null then raise exception 'A validated completion run is required'; end if;
-
-  select history.level_data,
-    coalesce(nullif(btrim(history.level_data ->> 'name'), ''), 'Untitled Level')
-  into snapshot, snapshot_name
-  from public.published_custom_level_versions history
-  where history.level_id = accepted_run.level_id and history.version = accepted_run.level_version;
-  if snapshot is null then raise exception 'Published level version is unavailable'; end if;
-
-  select count(*) filter (where object ->> 'type' in ('star', 'enemy'))::integer,
-    greatest(1, (
-      count(*)
-      + coalesce(sum(case object ->> 'type'
-          when 'hazard' then 5 when 'movingObstacle' then 7 when 'enemy' then 5
-          when 'breakableBlock' then 3 when 'crate' then 3 when 'movingPlatform' then 3
-          when 'controlledPlatform' then 4 when 'rewindPlatform' then 5
-          when 'switch' then 2 when 'pressurePlate' then 2 when 'jumpPad' then 1 else 0 end), 0)
-      + greatest(0, coalesce((snapshot ->> 'width')::numeric, 960) - 960) / 160
-      + case when snapshot #>> '{settings,rewind,enabled}' = 'true' then 8 else 0 end
-      + case when snapshot #>> '{settings,echo,enabled}' = 'true' then 8 else 0 end
-    )::integer)
-  into star_count, difficulty
-  from jsonb_array_elements(coalesce(snapshot -> 'objects', '[]'::jsonb)) object;
-
-  insert into public.custom_level_completions as existing (
-    user_id, level_id, level_version, level_name, seconds, stars,
-    stars_available, deaths, difficulty_score, completed_at
-  ) values (
-    current_user_id, accepted_run.level_id, accepted_run.level_version, left(snapshot_name, 80),
-    accepted_run.seconds, least(accepted_run.stars, star_count), star_count,
-    p_deaths, difficulty, now()
-  )
-  on conflict (user_id, level_id, level_version) do update set
-    level_name = excluded.level_name,
-    seconds = least(existing.seconds, excluded.seconds),
-    stars = greatest(existing.stars, excluded.stars),
-    stars_available = excluded.stars_available,
-    deaths = least(existing.deaths, excluded.deaths),
-    difficulty_score = excluded.difficulty_score,
-    completed_at = now()
-  returning * into result;
-  return result;
-end;
-$$;
-revoke all on function public.record_custom_level_completion(uuid, integer) from public;
-
-drop function if exists public.list_custom_level_runs(uuid, integer, integer, integer);
-create function public.list_custom_level_runs(p_level_id uuid, p_level_version integer, p_offset integer default 0, p_limit integer default 25)
-returns table (run_id uuid, user_id uuid, runner_name text, seconds numeric, stars smallint, ranking_status text, status_reason text, display_rank bigint, created_at timestamptz)
-language sql security definer set search_path = '' stable as $$
-  with ordered as (
-    select run.id, run.user_id, run.runner_name, run.seconds, run.stars, run.ranking_status,
-      run.status_reason, run.created_at, run.level_type,
-      sum(case when run.ranking_status in ('valid', 'restored') then 1 else 0 end) over (
-        order by case when run.level_type = 'survival' then run.seconds end desc,
-          case when run.level_type <> 'survival' then run.seconds end asc, run.created_at, run.id
-      ) as valid_position
-    from public.custom_level_runs run
-    where run.level_id = p_level_id and run.level_version = p_level_version
-      and exists (select 1 from public.published_custom_levels current where current.level_id = p_level_id)
-  )
-  select ordered.id, ordered.user_id, ordered.runner_name, ordered.seconds, ordered.stars,
-    ordered.ranking_status, ordered.status_reason,
-    case when ordered.ranking_status in ('valid', 'restored') then ordered.valid_position else null end,
-    ordered.created_at
-  from ordered
-  order by case when ordered.level_type = 'survival' then ordered.seconds end desc,
-    case when ordered.level_type <> 'survival' then ordered.seconds end asc, ordered.created_at, ordered.id
-  offset least(greatest(coalesce(p_offset, 0), 0), 100000)
-  limit least(greatest(coalesce(p_limit, 25), 1), 100);
-$$;
-
-drop function if exists public.report_survival_strategy(uuid, text, text);
-create function public.report_survival_strategy(p_run_id uuid, p_description text, p_evidence_url text default null)
-returns public.survival_exploit_reports
-language plpgsql security definer set search_path = '' as $$
-declare current_user_id uuid := (select auth.uid()); target public.custom_level_runs; result public.survival_exploit_reports;
-begin
-  if current_user_id is null then raise exception 'Authentication required'; end if;
-  select * into target from public.custom_level_runs where id = p_run_id and level_type = 'survival';
-  if target.id is null or target.strategy_fingerprint is null then raise exception 'Survival run evidence is unavailable'; end if;
-  if target.fly_ever or target.cheat_ever
-     or target.status_reason is not null and target.status_reason not in ('Disputed motion', 'Invalid strategy') then
-    raise exception 'Only integrity-valid Survival runs can be reviewed';
-  end if;
-  if not exists (select 1 from public.published_custom_levels current where current.level_id = target.level_id)
-    then raise exception 'Level is not currently published'; end if;
-  insert into public.survival_exploit_reports (level_id, level_version, run_id, reporter_id, strategy_fingerprint, description, evidence_url)
-    values (target.level_id, target.level_version, target.id, current_user_id, target.strategy_fingerprint,
-      btrim(p_description), nullif(btrim(coalesce(p_evidence_url, '')), '')) returning * into result;
-  update public.custom_level_runs set ranking_status = 'disputed', status_reason = 'Disputed motion'
-    where level_id = target.level_id and level_version = target.level_version
-      and strategy_fingerprint = target.strategy_fingerprint and ranking_status in ('valid', 'restored');
-  return result;
-end;
-$$;
-
-drop function if exists public.vote_survival_strategy(uuid, text);
-create function public.vote_survival_strategy(p_report_id uuid, p_vote text)
-returns public.survival_exploit_reports
-language plpgsql security definer set search_path = '' as $$
-declare current_user_id uuid := (select auth.uid()); report public.survival_exploit_reports; invalid_votes integer; valid_votes integer; new_state text;
-begin
-  if current_user_id is null then raise exception 'Authentication required'; end if;
-  if p_vote not in ('valid', 'invalidated') then raise exception 'Vote must be valid or invalidated'; end if;
-  select * into report from public.survival_exploit_reports where id = p_report_id for update;
-  if report.id is null then raise exception 'Report not found'; end if;
-  if not exists (select 1 from public.published_custom_levels current where current.level_id = report.level_id)
-    then raise exception 'Level is not currently published'; end if;
-  insert into public.survival_exploit_votes (report_id, user_id, vote, updated_at)
-    values (report.id, current_user_id, p_vote, now())
-    on conflict (report_id, user_id) do update set vote = excluded.vote, updated_at = now();
-  select count(*) filter (where vote = 'invalidated'), count(*) filter (where vote = 'valid')
-    into invalid_votes, valid_votes from public.survival_exploit_votes where report_id = report.id;
-  new_state := case
-    when invalid_votes + valid_votes < 3 then 'disputed'
-    when invalid_votes * 3 >= (invalid_votes + valid_votes) * 2 then 'invalidated'
-    when valid_votes * 3 >= (invalid_votes + valid_votes) * 2 then case when report.ever_invalidated or report.decision_status in ('invalidated', 'restored') then 'restored' else 'valid' end
-    else 'disputed' end;
-  update public.survival_exploit_reports set decision_status = new_state,
-    ever_invalidated = report.ever_invalidated or new_state = 'invalidated',
-    decided_at = case when new_state in ('valid', 'invalidated', 'restored') then now() else null end
-    where id = report.id returning * into report;
-  if exists (select 1 from public.survival_exploit_reports other where other.level_id = report.level_id and other.level_version = report.level_version and other.strategy_fingerprint = report.strategy_fingerprint and other.decision_status = 'invalidated') then
-    update public.custom_level_runs set ranking_status = 'invalidated', status_reason = 'Invalid strategy',
-      invalidated_by_report = (select other.id from public.survival_exploit_reports other where other.level_id = report.level_id and other.level_version = report.level_version and other.strategy_fingerprint = report.strategy_fingerprint and other.decision_status = 'invalidated' order by other.created_at limit 1)
-      where level_id = report.level_id and level_version = report.level_version and strategy_fingerprint = report.strategy_fingerprint;
-  elsif exists (select 1 from public.survival_exploit_reports other where other.level_id = report.level_id and other.level_version = report.level_version and other.strategy_fingerprint = report.strategy_fingerprint and other.decision_status = 'disputed') then
-    update public.custom_level_runs set ranking_status = 'disputed', status_reason = 'Disputed motion', invalidated_by_report = null
-      where level_id = report.level_id and level_version = report.level_version and strategy_fingerprint = report.strategy_fingerprint;
-  else
-    update public.custom_level_runs set ranking_status = 'restored', status_reason = null, invalidated_by_report = null
-      where level_id = report.level_id and level_version = report.level_version and strategy_fingerprint = report.strategy_fingerprint;
-  end if;
-  return report;
-end;
-$$;
-
-drop function if exists public.get_custom_level_review_state(uuid, integer);
-create function public.get_custom_level_review_state(p_level_id uuid, p_level_version integer)
-returns table (report_id uuid, run_id uuid, strategy_fingerprint text, description text, evidence_url text, decision_status text, invalid_votes bigint, valid_votes bigint, created_at timestamptz)
-language sql security definer set search_path = '' stable as $$
-  select report.id, report.run_id, report.strategy_fingerprint, report.description, report.evidence_url,
-    report.decision_status, count(vote.report_id) filter (where vote.vote = 'invalidated'),
-    count(vote.report_id) filter (where vote.vote = 'valid'), report.created_at
-  from public.survival_exploit_reports report
-  left join public.survival_exploit_votes vote on vote.report_id = report.id
-  where report.level_id = p_level_id and report.level_version = p_level_version
-    and exists (select 1 from public.published_custom_levels current where current.level_id = p_level_id)
-  group by report.id order by report.created_at desc;
-$$;
-
-drop function if exists public.get_published_custom_level(uuid);
-create function public.get_published_custom_level(p_level_id uuid)
-returns table (level_id uuid, owner_id uuid, owner_name text, owner_username text, level_data jsonb, version integer, published_at timestamptz, updated_at timestamptz, level_type text, required_stars integer, verification_status text, review_status text)
-language sql security definer set search_path = '' stable as $$
-  select published.level_id, published.owner_id, profile.display_name, profile.username::text,
-    published.level_data, published.version, published.published_at, published.updated_at,
-    status.level_type, status.required_stars, status.verification_status,
-    case when exists (select 1 from public.survival_exploit_reports report where report.level_id = published.level_id and report.level_version = published.version and report.decision_status = 'invalidated') then 'invalidated'
-      when exists (select 1 from public.survival_exploit_reports report where report.level_id = published.level_id and report.level_version = published.version and report.decision_status = 'disputed') then 'disputed'
-      else 'valid' end
-  from public.published_custom_levels published
-  join public.player_profiles profile on profile.user_id = published.owner_id
-  join public.published_custom_level_status status on status.level_id = published.level_id and status.level_version = published.version
-  where published.level_id = p_level_id;
-$$;
-
-drop function if exists public.list_published_custom_levels(text, text, integer, integer);
-create function public.list_published_custom_levels(p_query text default '', p_sort text default 'newest', p_offset integer default 0, p_limit integer default 13)
-returns table (level_id uuid, owner_id uuid, level_name text, owner_name text, owner_username text, version integer, published_at timestamptz, updated_at timestamptz, level_type text, required_stars integer, verification_status text, review_status text)
-language sql security definer set search_path = '' stable as $$
-  select published.level_id, published.owner_id,
-    coalesce(nullif(btrim(published.level_data ->> 'name'), ''), 'Untitled Level'), profile.display_name, profile.username::text,
-    published.version, published.published_at, published.updated_at, status.level_type, status.required_stars, status.verification_status,
-    case when exists (select 1 from public.survival_exploit_reports report where report.level_id = published.level_id and report.level_version = published.version and report.decision_status = 'invalidated') then 'invalidated'
-      when exists (select 1 from public.survival_exploit_reports report where report.level_id = published.level_id and report.level_version = published.version and report.decision_status = 'disputed') then 'disputed'
-      else 'valid' end
-  from public.published_custom_levels published
-  join public.player_profiles profile on profile.user_id = published.owner_id
-  join public.published_custom_level_status status on status.level_id = published.level_id and status.level_version = published.version
-  where left(btrim(coalesce(p_query, '')), 80) = '' or position(lower(left(btrim(coalesce(p_query, '')), 80)) in lower(concat_ws(' ', published.level_data ->> 'name', profile.display_name, profile.username::text))) > 0
-  order by case when p_sort = 'updated' then published.updated_at end desc nulls last,
-    case when p_sort <> 'updated' then published.published_at end desc nulls last, published.level_id
-  offset least(greatest(coalesce(p_offset, 0), 0), 100000)
-  limit least(greatest(coalesce(p_limit, 13), 1), 51);
-$$;
-
-revoke all on table public.published_custom_level_status, public.custom_level_run_tickets, public.custom_level_runs, public.survival_exploit_reports, public.survival_exploit_votes from anon, authenticated;
-grant select on public.published_custom_level_status, public.survival_exploit_reports, public.survival_exploit_votes to anon, authenticated;
-revoke all on function public.resolve_level_type(jsonb) from public;
-revoke all on function public.issue_custom_level_run_ticket(uuid, integer) from public;
-revoke all on function public.custom_level_run_evidence_error(jsonb, uuid, uuid, integer, text, numeric, integer, boolean, boolean, boolean, jsonb) from public;
-revoke all on function public.submit_custom_level_run(uuid, uuid, integer, text, numeric, integer, boolean, boolean, boolean, jsonb, text) from public;
-revoke all on function public.list_custom_level_runs(uuid, integer, integer, integer) from public;
-revoke all on function public.report_survival_strategy(uuid, text, text) from public;
-revoke all on function public.vote_survival_strategy(uuid, text) from public;
-revoke all on function public.get_custom_level_review_state(uuid, integer) from public;
-revoke all on function public.get_published_custom_level(uuid) from public;
-revoke all on function public.list_published_custom_levels(text, text, integer, integer) from public;
-grant execute on function public.issue_custom_level_run_ticket(uuid, integer) to anon, authenticated;
-grant execute on function public.submit_custom_level_run(uuid, uuid, integer, text, numeric, integer, boolean, boolean, boolean, jsonb, text) to anon, authenticated;
-grant execute on function public.record_custom_level_completion(uuid, integer) to authenticated;
-grant execute on function public.list_custom_level_runs(uuid, integer, integer, integer) to anon, authenticated;
-grant execute on function public.report_survival_strategy(uuid, text, text) to authenticated;
-grant execute on function public.vote_survival_strategy(uuid, text) to authenticated;
-grant execute on function public.get_custom_level_review_state(uuid, integer) to anon, authenticated;
-grant execute on function public.get_published_custom_level(uuid) to anon, authenticated;
-grant execute on function public.list_published_custom_levels(text, text, integer, integer) to anon, authenticated;
 
 -- v0.35.0: public evidence intake plus service-role-only trusted replay validation.
 
@@ -1727,125 +1241,6 @@ where status.verified_run_id is not null
     where run.id = status.verified_run_id and run.validation_state = 'legacy'
   );
 
-drop function if exists public.enqueue_custom_level_run(uuid, uuid, integer, text, jsonb, text);
-create function public.enqueue_custom_level_run(
-  p_run_ticket uuid,
-  p_level_id uuid,
-  p_level_version integer,
-  p_runner_name text,
-  p_replay_data jsonb,
-  p_strategy_fingerprint text default null
-)
-returns jsonb
-language plpgsql security definer set search_path = '' as $$
-declare
-  current_user_id uuid := (select auth.uid());
-  ticket public.custom_level_run_tickets;
-  status_row public.published_custom_level_status;
-  clean_name text;
-  replay_format text;
-  terminal_ms numeric;
-  result public.custom_level_runs;
-begin
-  if p_run_ticket is null then raise exception 'A server-issued run ticket is required'; end if;
-  select * into ticket from public.custom_level_run_tickets where id = p_run_ticket for update;
-  if ticket.id is null then raise exception 'Run ticket is unavailable'; end if;
-  if ticket.used_at is not null then raise exception 'Run ticket has already been used'; end if;
-  if ticket.expires_at <= clock_timestamp() then raise exception 'Run ticket has expired'; end if;
-  if ticket.level_id <> p_level_id or ticket.level_version <> p_level_version then
-    raise exception 'Run ticket belongs to another published version';
-  end if;
-  if ticket.user_id is distinct from current_user_id then raise exception 'Run ticket belongs to another account session'; end if;
-  if not exists (
-    select 1 from public.published_custom_levels current
-    where current.level_id = p_level_id and current.version = p_level_version
-  ) then raise exception 'Published level version is unavailable'; end if;
-  select * into status_row from public.published_custom_level_status
-    where level_id = p_level_id and level_version = p_level_version;
-  if status_row.level_id is null then raise exception 'Published level status is unavailable'; end if;
-
-  if jsonb_typeof(p_replay_data) <> 'object' then raise exception 'Invalid replay evidence'; end if;
-  replay_format := p_replay_data ->> 'format';
-  if replay_format not in ('POTP-RUN-2', 'POTP-RUN-3')
-     or octet_length(p_replay_data::text) > (
-       case when replay_format = 'POTP-RUN-3' then 650000 else 1500000 end
-     ) then
-    raise exception 'Invalid or oversized replay evidence';
-  end if;
-  if replay_format = 'POTP-RUN-3' then
-    if exists (
-      select 1 from jsonb_object_keys(p_replay_data) compact_key
-      where compact_key not in ('format', 'v', 'l', 'n', 's', 'i', 'c', 'w', 'a', 'g', 'z', 'q')
-    ) then raise exception 'Replay evidence contains unsupported properties'; end if;
-    if jsonb_typeof(p_replay_data -> 'l') <> 'array' or jsonb_array_length(p_replay_data -> 'l') <> 4
-       or p_replay_data #>> '{l,2}' is distinct from p_run_ticket::text
-       or p_replay_data #>> '{l,0}' is distinct from p_level_id::text
-       or coalesce((p_replay_data #>> '{l,1}')::integer, 0) <> p_level_version then
-      raise exception 'Replay evidence belongs to another ticket or version';
-    end if;
-    if jsonb_typeof(p_replay_data -> 'i') <> 'array' or jsonb_typeof(p_replay_data -> 'c') <> 'array'
-       or jsonb_typeof(p_replay_data -> 'w') <> 'array' or jsonb_typeof(p_replay_data -> 'a') <> 'array'
-       or jsonb_typeof(p_replay_data -> 'g') <> 'array' or jsonb_typeof(p_replay_data -> 'z') <> 'array'
-       or jsonb_array_length(p_replay_data -> 'z') <> 5 then raise exception 'Replay evidence is incomplete'; end if;
-    if jsonb_array_length(p_replay_data -> 'i') not between 2 and 40000
-       or mod(jsonb_array_length(p_replay_data -> 'i'), 2) <> 0
-       or jsonb_array_length(p_replay_data -> 'c') not between 6 and 86700
-       or mod(jsonb_array_length(p_replay_data -> 'c'), 6) <> 0
-       or jsonb_array_length(p_replay_data -> 'w') > 14450
-       or jsonb_array_length(p_replay_data -> 'a') > 20000 or mod(jsonb_array_length(p_replay_data -> 'a'), 2) <> 0
-       or jsonb_array_length(p_replay_data -> 'g') > 128 or mod(jsonb_array_length(p_replay_data -> 'g'), 2) <> 0 then
-      raise exception 'Replay stream length is invalid';
-    end if;
-    terminal_ms := (p_replay_data #>> '{z,1}')::numeric;
-  else
-    if p_replay_data ->> 'runTicket' is distinct from p_run_ticket::text
-       or p_replay_data ->> 'levelId' is distinct from p_level_id::text
-       or coalesce((p_replay_data ->> 'levelVersion')::integer, 0) <> p_level_version then
-      raise exception 'Replay evidence belongs to another ticket or version';
-    end if;
-    if jsonb_typeof(p_replay_data -> 'inputEvents') <> 'array'
-       or jsonb_typeof(p_replay_data -> 'checkpoints') <> 'array'
-       or jsonb_typeof(p_replay_data -> 'actions') <> 'array'
-       or jsonb_typeof(p_replay_data -> 'integrityEvents') <> 'array'
-       or jsonb_typeof(p_replay_data -> 'terminal') <> 'object' then raise exception 'Replay evidence is incomplete'; end if;
-    if jsonb_array_length(p_replay_data -> 'inputEvents') not between 1 and 20000
-       or jsonb_array_length(p_replay_data -> 'checkpoints') not between 1 and 14450
-       or jsonb_array_length(p_replay_data -> 'actions') > 10000
-       or jsonb_array_length(p_replay_data -> 'integrityEvents') > 64 then raise exception 'Replay stream length is invalid'; end if;
-    terminal_ms := (p_replay_data #>> '{terminal,atMs}')::numeric;
-  end if;
-  if terminal_ms is null or terminal_ms <= 0 or terminal_ms > 3600000 then raise exception 'Replay duration is invalid'; end if;
-
-  if current_user_id is not null then
-    select profile.display_name into clean_name from public.player_profiles profile where profile.user_id = current_user_id;
-  else
-    clean_name := left(regexp_replace(btrim(coalesce(p_runner_name, 'Guest')), '[[:cntrl:]]', '', 'g'), 24);
-  end if;
-  if clean_name is null or char_length(clean_name) < 1 then clean_name := 'Guest'; end if;
-
-  update public.custom_level_run_tickets set used_at = clock_timestamp() where id = ticket.id;
-  insert into public.custom_level_runs (
-    run_ticket_id, level_id, level_version, user_id, runner_name, level_type,
-    seconds, stars, reached_exit, fly_ever, cheat_ever, replay_data,
-    strategy_fingerprint, ranking_status, status_reason, validation_state
-  ) values (
-    ticket.id, p_level_id, p_level_version, current_user_id, clean_name, status_row.level_type,
-    round(terminal_ms / 1000, 3), 0, false, false, false, p_replay_data,
-    case when status_row.level_type = 'survival' and coalesce(p_strategy_fingerprint, '') ~ '^[a-f0-9]{8,64}$'
-      then p_strategy_fingerprint else null end,
-    'invalidated', 'Pending trusted replay verification', 'pending'
-  ) returning * into result;
-  return jsonb_build_object(
-    'id', result.id, 'validation_state', result.validation_state,
-    'ranking_status', result.ranking_status, 'status_reason', result.status_reason,
-    'verifier_version', result.verifier_version, 'seconds', result.seconds,
-    'stars', result.stars, 'reached_exit', result.reached_exit
-  );
-exception when invalid_text_representation or numeric_value_out_of_range then
-  raise exception 'Replay evidence is malformed';
-end;
-$$;
-
 drop function if exists public.claim_custom_level_run_verification(uuid);
 create function public.claim_custom_level_run_verification(p_run_id uuid)
 returns jsonb
@@ -1876,234 +1271,6 @@ begin
     'runTicket', ticket.id, 'issuedAt', ticket.issued_at, 'receivedAt', run.created_at,
     'levelData', snapshot, 'replayData', run.replay_data
   );
-end;
-$$;
-
-drop function if exists public.finalize_custom_level_run_verification(uuid, jsonb);
-create function public.finalize_custom_level_run_verification(p_run_id uuid, p_validation_result jsonb)
-returns jsonb
-language plpgsql security definer set search_path = '' as $$
-declare
-  run public.custom_level_runs;
-  status_row public.published_custom_level_status;
-  snapshot jsonb;
-  available_stars integer := 0;
-  accepted boolean := coalesce((p_validation_result ->> 'accepted')::boolean, false);
-  derived_seconds numeric;
-  derived_stars integer;
-  derived_exit boolean;
-  derived_fly boolean;
-  derived_cheat boolean;
-  verifier text;
-  strategy_review text;
-  result public.custom_level_runs;
-begin
-  select * into run from public.custom_level_runs where id = p_run_id and validation_state = 'processing' for update;
-  if run.id is null then raise exception 'Pending replay is unavailable'; end if;
-  select * into status_row from public.published_custom_level_status
-    where level_id = run.level_id and level_version = run.level_version;
-  select history.level_data into snapshot from public.published_custom_level_versions history
-    where history.level_id = run.level_id and history.version = run.level_version;
-  select count(*) filter (where object ->> 'type' in ('star', 'enemy'))::integer into available_stars
-    from jsonb_array_elements(coalesce(snapshot -> 'objects', '[]'::jsonb)) object;
-  verifier := left(coalesce(p_validation_result ->> 'verifierVersion', 'unknown'), 80);
-
-  if accepted then
-    derived_seconds := (p_validation_result ->> 'seconds')::numeric;
-    derived_stars := (p_validation_result ->> 'stars')::integer;
-    derived_exit := coalesce((p_validation_result ->> 'reachedExit')::boolean, false);
-    derived_fly := coalesce((p_validation_result ->> 'flyEver')::boolean, false);
-    derived_cheat := coalesce((p_validation_result ->> 'cheatEver')::boolean, false);
-    -- v0.35.2: the database independently checks the current compact verifier's derived result.
-    if verifier <> 'potp-replay-v3'
-       or not coalesce((p_validation_result ->> 'completed')::boolean, false)
-       or snapshot is null or status_row.level_id is null
-       or derived_seconds is null or derived_stars is null
-       or derived_seconds <= 0 or derived_seconds > 3600 or derived_stars < 0 or derived_stars > available_stars
-       or abs(derived_seconds - ((case when run.replay_data ->> 'format' = 'POTP-RUN-3'
-         then run.replay_data #>> '{z,1}' else run.replay_data #>> '{terminal,atMs}' end)::numeric / 1000)) > 0.001
-       or derived_fly or derived_cheat
-       or p_validation_result ->> 'levelType' is distinct from run.level_type
-       or (run.level_type <> 'survival' and not derived_exit)
-       or (run.level_type = 'exit-stars' and derived_stars < status_row.required_stars) then
-      accepted := false;
-      p_validation_result := jsonb_build_object(
-        'accepted', false, 'reason', 'Trusted result failed database completion rules',
-        'verifierVersion', verifier
-      );
-    end if;
-  end if;
-
-  if accepted and run.level_type = 'survival' and run.strategy_fingerprint is not null then
-    select case
-      when exists (select 1 from public.survival_exploit_reports report where report.level_id = run.level_id and report.level_version = run.level_version and report.strategy_fingerprint = run.strategy_fingerprint and report.decision_status = 'invalidated') then 'invalidated'
-      when exists (select 1 from public.survival_exploit_reports report where report.level_id = run.level_id and report.level_version = run.level_version and report.strategy_fingerprint = run.strategy_fingerprint and report.decision_status = 'disputed') then 'disputed'
-      else null end into strategy_review;
-  end if;
-
-  update public.custom_level_runs set
-    seconds = case when accepted then round(derived_seconds, 3) else seconds end,
-    stars = case when accepted then derived_stars else 0 end,
-    reached_exit = case when accepted then derived_exit else false end,
-    fly_ever = case when accepted then derived_fly else false end,
-    cheat_ever = case when accepted then derived_cheat else false end,
-    validation_state = case when accepted then 'trusted' else 'rejected' end,
-    verifier_version = verifier,
-    trusted_result = p_validation_result,
-    verified_at = clock_timestamp(),
-    ranking_status = case when not accepted then 'invalidated'
-      when strategy_review = 'invalidated' then 'invalidated'
-      when strategy_review = 'disputed' then 'disputed' else 'valid' end,
-    status_reason = case when not accepted then left(coalesce(p_validation_result ->> 'reason', 'Replay validation failed'), 500)
-      when strategy_review = 'invalidated' then 'Invalid strategy'
-      when strategy_review = 'disputed' then 'Disputed motion' else null end
-  where id = run.id returning * into result;
-
-  if accepted and run.level_type <> 'survival' and status_row.verification_status = 'unverified' then
-    update public.published_custom_level_status
-      set verification_status = 'verified', verified_run_id = result.id, updated_at = now()
-      where level_id = run.level_id and level_version = run.level_version;
-  end if;
-  return jsonb_build_object(
-    'id', result.id, 'validation_state', result.validation_state,
-    'ranking_status', result.ranking_status, 'status_reason', result.status_reason,
-    'verifier_version', result.verifier_version, 'seconds', result.seconds,
-    'stars', result.stars, 'reached_exit', result.reached_exit
-  );
-exception when invalid_text_representation or numeric_value_out_of_range then
-  update public.custom_level_runs set validation_state = 'rejected', ranking_status = 'invalidated',
-    status_reason = 'Trusted verifier returned malformed results', verified_at = clock_timestamp()
-    where id = p_run_id returning * into result;
-  return jsonb_build_object(
-    'id', result.id, 'validation_state', result.validation_state,
-    'ranking_status', result.ranking_status, 'status_reason', result.status_reason,
-    'verifier_version', result.verifier_version, 'seconds', result.seconds,
-    'stars', result.stars, 'reached_exit', result.reached_exit
-  );
-end;
-$$;
-
-drop function if exists public.list_custom_level_runs(uuid, integer, integer, integer);
-create function public.list_custom_level_runs(
-  p_level_id uuid, p_level_version integer, p_offset integer default 0, p_limit integer default 25
-)
-returns table (
-  run_id uuid, user_id uuid, runner_name text, seconds numeric, stars smallint,
-  ranking_status text, status_reason text, display_rank bigint, created_at timestamptz,
-  validation_state text, verifier_version text
-)
-language sql security definer set search_path = '' stable as $$
-  with ordered as (
-    select run.id, run.user_id, run.runner_name, run.seconds, run.stars, run.ranking_status,
-      run.status_reason, run.created_at, run.level_type, run.validation_state, run.verifier_version,
-      sum(case when run.validation_state = 'trusted' and run.ranking_status in ('valid', 'restored') then 1 else 0 end) over (
-        order by case when run.level_type = 'survival' then run.seconds end desc,
-          case when run.level_type <> 'survival' then run.seconds end asc, run.created_at, run.id
-      ) as valid_position
-    from public.custom_level_runs run
-    where run.level_id = p_level_id and run.level_version = p_level_version
-      and run.validation_state = 'trusted'
-      and exists (
-        select 1 from public.published_custom_levels current
-        where current.level_id = p_level_id and current.version = p_level_version
-      )
-  )
-  select ordered.id, ordered.user_id, ordered.runner_name, ordered.seconds, ordered.stars,
-    ordered.ranking_status, ordered.status_reason,
-    case when ordered.validation_state = 'trusted' and ordered.ranking_status in ('valid', 'restored')
-      then ordered.valid_position else null end,
-    ordered.created_at, ordered.validation_state, ordered.verifier_version
-  from ordered
-  order by case when ordered.level_type = 'survival' then ordered.seconds end desc,
-    case when ordered.level_type <> 'survival' then ordered.seconds end asc, ordered.created_at, ordered.id
-  offset least(greatest(coalesce(p_offset, 0), 0), 100000)
-  limit least(greatest(coalesce(p_limit, 25), 1), 100);
-$$;
-
-create or replace function public.record_custom_level_completion(p_run_id uuid, p_deaths integer)
-returns public.custom_level_completions
-language plpgsql security definer set search_path = '' as $$
-declare
-  current_user_id uuid := (select auth.uid());
-  accepted_run record;
-  snapshot jsonb;
-  snapshot_name text;
-  star_count integer := 0;
-  difficulty integer := 1;
-  result public.custom_level_completions;
-begin
-  if current_user_id is null then raise exception 'Authentication required'; end if;
-  if p_deaths is null or p_deaths < 0 or p_deaths > 100000 then raise exception 'Invalid death count'; end if;
-  select run.id, run.level_id, run.level_version, run.seconds, run.stars into accepted_run
-  from public.custom_level_runs run
-  where run.id = p_run_id and run.user_id = current_user_id and run.level_type <> 'survival'
-    and run.validation_state = 'trusted' and run.ranking_status in ('valid', 'restored');
-  if accepted_run.id is null then raise exception 'A trusted replay completion is required'; end if;
-  select history.level_data, coalesce(nullif(btrim(history.level_data ->> 'name'), ''), 'Untitled Level')
-    into snapshot, snapshot_name from public.published_custom_level_versions history
-    where history.level_id = accepted_run.level_id and history.version = accepted_run.level_version;
-  if snapshot is null then raise exception 'Published level version is unavailable'; end if;
-  select count(*) filter (where object ->> 'type' in ('star', 'enemy'))::integer,
-    greatest(1, (count(*) + coalesce(sum(case object ->> 'type'
-      when 'hazard' then 5 when 'movingObstacle' then 7 when 'enemy' then 5 when 'breakableBlock' then 3
-      when 'crate' then 3 when 'movingPlatform' then 3 when 'controlledPlatform' then 4 when 'rewindPlatform' then 5
-      when 'switch' then 2 when 'pressurePlate' then 2 when 'jumpPad' then 1 else 0 end), 0)
-      + greatest(0, coalesce((snapshot ->> 'width')::numeric, 960) - 960) / 160
-      + case when snapshot #>> '{settings,rewind,enabled}' = 'true' then 8 else 0 end
-      + case when snapshot #>> '{settings,echo,enabled}' = 'true' then 8 else 0 end)::integer)
-    into star_count, difficulty from jsonb_array_elements(coalesce(snapshot -> 'objects', '[]'::jsonb)) object;
-  insert into public.custom_level_completions as existing (
-    user_id, level_id, level_version, level_name, seconds, stars, stars_available, deaths,
-    difficulty_score, completed_at, verified_run_id
-  ) values (
-    current_user_id, accepted_run.level_id, accepted_run.level_version, left(snapshot_name, 80), accepted_run.seconds,
-    least(accepted_run.stars, star_count), star_count, p_deaths, difficulty, now(), accepted_run.id
-  ) on conflict (user_id, level_id, level_version) do update set
-    level_name = excluded.level_name, seconds = least(existing.seconds, excluded.seconds),
-    stars = greatest(existing.stars, excluded.stars), stars_available = excluded.stars_available,
-    deaths = least(existing.deaths, excluded.deaths), difficulty_score = excluded.difficulty_score,
-    completed_at = now(), verified_run_id = excluded.verified_run_id
-  returning * into result;
-  return result;
-end;
-$$;
-
-create or replace function public.report_survival_strategy(
-  p_run_id uuid, p_description text, p_evidence_url text default null
-)
-returns public.survival_exploit_reports
-language plpgsql security definer set search_path = '' as $$
-declare
-  current_user_id uuid := (select auth.uid());
-  target record;
-  result public.survival_exploit_reports;
-begin
-  if current_user_id is null then raise exception 'Authentication required'; end if;
-  select run.id, run.level_id, run.level_version, run.strategy_fingerprint,
-    run.fly_ever, run.cheat_ever, run.status_reason into target
-  from public.custom_level_runs run
-    where id = p_run_id and level_type = 'survival' and validation_state = 'trusted';
-  if target.id is null or target.strategy_fingerprint is null then
-    raise exception 'Trusted Survival run evidence is unavailable';
-  end if;
-  if target.fly_ever or target.cheat_ever
-     or target.status_reason is not null and target.status_reason not in ('Disputed motion', 'Invalid strategy') then
-    raise exception 'Only integrity-valid Survival runs can be reviewed';
-  end if;
-  if not exists (select 1 from public.published_custom_levels current where current.level_id = target.level_id) then
-    raise exception 'Level is not currently published';
-  end if;
-  insert into public.survival_exploit_reports (
-    level_id, level_version, run_id, reporter_id, strategy_fingerprint, description, evidence_url
-  ) values (
-    target.level_id, target.level_version, target.id, current_user_id, target.strategy_fingerprint,
-    btrim(p_description), nullif(btrim(coalesce(p_evidence_url, '')), '')
-  ) returning * into result;
-  update public.custom_level_runs set ranking_status = 'disputed', status_reason = 'Disputed motion'
-    where level_id = target.level_id and level_version = target.level_version
-      and validation_state = 'trusted' and strategy_fingerprint = target.strategy_fingerprint
-      and ranking_status in ('valid', 'restored');
-  return result;
 end;
 $$;
 
@@ -2139,102 +1306,6 @@ language sql security definer set search_path = '' stable as $$
   ) result
   order by case result.highlight_label when 'Hardest Clear' then 1 when 'Fastest Clear' then 2 else 3 end;
 $$;
-
--- The old public decision RPC is intentionally removed. Public callers may only enqueue evidence.
-drop function if exists public.submit_custom_level_run(uuid, uuid, integer, text, numeric, integer, boolean, boolean, boolean, jsonb, text);
-revoke all on function public.enqueue_custom_level_run(uuid, uuid, integer, text, jsonb, text) from public;
-revoke all on function public.claim_custom_level_run_verification(uuid) from public;
-revoke all on function public.finalize_custom_level_run_verification(uuid, jsonb) from public;
-grant execute on function public.enqueue_custom_level_run(uuid, uuid, integer, text, jsonb, text) to anon, authenticated;
-grant execute on function public.claim_custom_level_run_verification(uuid) to service_role;
-grant execute on function public.finalize_custom_level_run_verification(uuid, jsonb) to service_role;
-grant execute on function public.list_custom_level_runs(uuid, integer, integer, integer) to anon, authenticated;
-grant execute on function public.record_custom_level_completion(uuid, integer) to authenticated;
-
--- v0.36.0: metadata-only published-level details and exact-version personal results.
-
-drop function if exists public.get_published_custom_level_details(uuid);
-create function public.get_published_custom_level_details(p_level_id uuid)
-returns table (
-  level_id uuid,
-  owner_id uuid,
-  level_name text,
-  owner_name text,
-  owner_username text,
-  version integer,
-  published_at timestamptz,
-  updated_at timestamptz,
-  level_type text,
-  required_stars integer,
-  verification_status text,
-  review_status text,
-  objective text,
-  player_best_seconds numeric,
-  player_best_stars smallint,
-  player_best_rank bigint,
-  player_best_status text
-)
-language sql security definer set search_path = '' stable as $$
-  with details as (
-    select published.level_id, published.owner_id,
-      coalesce(nullif(btrim(published.level_data ->> 'name'), ''), 'Untitled Level') as level_name,
-      profile.display_name as owner_name, profile.username::text as owner_username,
-      published.version, published.published_at, published.updated_at,
-      status.level_type, status.required_stars, status.verification_status,
-      case
-        when exists (
-          select 1 from public.survival_exploit_reports report
-          where report.level_id = published.level_id and report.level_version = published.version
-            and report.decision_status = 'invalidated'
-        ) then 'invalidated'
-        when exists (
-          select 1 from public.survival_exploit_reports report
-          where report.level_id = published.level_id and report.level_version = published.version
-            and report.decision_status = 'disputed'
-        ) then 'disputed'
-        else 'valid'
-      end as review_status,
-      case status.level_type
-        when 'survival' then 'Survive as long as possible.'
-        when 'exit-stars' then concat('Collect at least ', status.required_stars, ' star',
-          case when status.required_stars = 1 then '' else 's' end, ', then reach the exit.')
-        else 'Reach the exit.'
-      end as objective
-    from public.published_custom_levels published
-    join public.player_profiles profile on profile.user_id = published.owner_id
-    join public.published_custom_level_status status
-      on status.level_id = published.level_id and status.level_version = published.version
-    where published.level_id = p_level_id
-  ), ranked as (
-    select run.user_id, run.seconds, run.stars, run.ranking_status,
-      row_number() over (
-        order by case when details.level_type = 'survival' then run.seconds end desc,
-          case when details.level_type <> 'survival' then run.seconds end asc,
-          run.created_at, run.id
-      ) as display_rank
-    from public.custom_level_runs run
-    cross join details
-    where run.level_id = details.level_id and run.level_version = details.version
-      and run.validation_state = 'trusted'
-      and run.ranking_status in ('valid', 'restored')
-  )
-  select details.level_id, details.owner_id, details.level_name, details.owner_name,
-    details.owner_username, details.version, details.published_at, details.updated_at,
-    details.level_type, details.required_stars, details.verification_status,
-    details.review_status, details.objective,
-    best.seconds, best.stars, best.display_rank, best.ranking_status
-  from details
-  left join lateral (
-    select ranked.seconds, ranked.stars, ranked.display_rank, ranked.ranking_status
-    from ranked
-    where ranked.user_id = (select auth.uid())
-    order by ranked.display_rank
-    limit 1
-  ) best on true;
-$$;
-
-revoke all on function public.get_published_custom_level_details(uuid) from public;
-grant execute on function public.get_published_custom_level_details(uuid) to anon, authenticated;
 
 -- v0.38.0: private account favorites and aggregate Community discovery.
 
@@ -2276,107 +1347,8 @@ begin
 end;
 $$;
 
-drop function if exists public.get_published_custom_level_details(uuid);
-create function public.get_published_custom_level_details(p_level_id uuid)
-returns table (
-  level_id uuid, owner_id uuid, level_name text, owner_name text, owner_username text,
-  version integer, published_at timestamptz, updated_at timestamptz, level_type text,
-  required_stars integer, verification_status text, review_status text, objective text,
-  player_best_seconds numeric, player_best_stars smallint, player_best_rank bigint,
-  player_best_status text, favorite_count bigint, is_favorited boolean
-)
-language sql security definer set search_path = '' stable as $$
-  with details as (
-    select published.level_id, published.owner_id,
-      coalesce(nullif(btrim(published.level_data ->> 'name'), ''), 'Untitled Level') as level_name,
-      profile.display_name as owner_name, profile.username::text as owner_username,
-      published.version, published.published_at, published.updated_at,
-      status.level_type, status.required_stars, status.verification_status,
-      case
-        when exists (select 1 from public.survival_exploit_reports report where report.level_id = published.level_id and report.level_version = published.version and report.decision_status = 'invalidated') then 'invalidated'
-        when exists (select 1 from public.survival_exploit_reports report where report.level_id = published.level_id and report.level_version = published.version and report.decision_status = 'disputed') then 'disputed'
-        else 'valid'
-      end as review_status,
-      case status.level_type
-        when 'survival' then 'Survive as long as possible.'
-        when 'exit-stars' then concat('Collect at least ', status.required_stars, ' star', case when status.required_stars = 1 then '' else 's' end, ', then reach the exit.')
-        else 'Reach the exit.'
-      end as objective
-    from public.published_custom_levels published
-    join public.player_profiles profile on profile.user_id = published.owner_id
-    join public.published_custom_level_status status on status.level_id = published.level_id and status.level_version = published.version
-    where published.level_id = p_level_id
-  ), ranked as (
-    select run.user_id, run.seconds, run.stars, run.ranking_status,
-      row_number() over (order by case when details.level_type = 'survival' then run.seconds end desc,
-        case when details.level_type <> 'survival' then run.seconds end asc, run.created_at, run.id) as display_rank
-    from public.custom_level_runs run cross join details
-    where run.level_id = details.level_id and run.level_version = details.version
-      and run.validation_state = 'trusted' and run.ranking_status in ('valid', 'restored')
-  )
-  select details.level_id, details.owner_id, details.level_name, details.owner_name,
-    details.owner_username, details.version, details.published_at, details.updated_at,
-    details.level_type, details.required_stars, details.verification_status,
-    details.review_status, details.objective, best.seconds, best.stars, best.display_rank, best.ranking_status,
-    (select count(*)::bigint from public.custom_level_favorites favorite where favorite.level_id = details.level_id),
-    exists (select 1 from public.custom_level_favorites own where own.level_id = details.level_id and own.user_id = (select auth.uid()))
-  from details
-  left join lateral (
-    select ranked.seconds, ranked.stars, ranked.display_rank, ranked.ranking_status from ranked
-    where ranked.user_id = (select auth.uid()) order by ranked.display_rank limit 1
-  ) best on true;
-$$;
-
-drop function if exists public.list_published_custom_levels(text, text, integer, integer);
-drop function if exists public.list_published_custom_levels(text, text, integer, integer, boolean);
-create function public.list_published_custom_levels(
-  p_query text default '', p_sort text default 'newest', p_offset integer default 0,
-  p_limit integer default 13, p_favorites_only boolean default false
-)
-returns table (
-  level_id uuid, owner_id uuid, level_name text, owner_name text, owner_username text,
-  version integer, published_at timestamptz, updated_at timestamptz, level_type text,
-  required_stars integer, verification_status text, review_status text,
-  favorite_count bigint, is_favorited boolean
-)
-language sql security definer set search_path = '' stable as $$
-  with favorite_counts as (
-    select favorite.level_id, count(*)::bigint as favorite_count from public.custom_level_favorites favorite group by favorite.level_id
-  ), catalog as (
-    select published.level_id, published.owner_id,
-      coalesce(nullif(btrim(published.level_data ->> 'name'), ''), 'Untitled Level') as level_name,
-      profile.display_name as owner_name, profile.username::text as owner_username,
-      published.version, published.published_at, published.updated_at,
-      status.level_type, status.required_stars, status.verification_status,
-      case
-        when exists (select 1 from public.survival_exploit_reports report where report.level_id = published.level_id and report.level_version = published.version and report.decision_status = 'invalidated') then 'invalidated'
-        when exists (select 1 from public.survival_exploit_reports report where report.level_id = published.level_id and report.level_version = published.version and report.decision_status = 'disputed') then 'disputed'
-        else 'valid'
-      end as review_status,
-      coalesce(favorite_counts.favorite_count, 0)::bigint as favorite_count,
-      exists (select 1 from public.custom_level_favorites own where own.level_id = published.level_id and own.user_id = (select auth.uid())) as is_favorited
-    from public.published_custom_levels published
-    join public.player_profiles profile on profile.user_id = published.owner_id
-    join public.published_custom_level_status status on status.level_id = published.level_id and status.level_version = published.version
-    left join favorite_counts on favorite_counts.level_id = published.level_id
-    where (left(btrim(coalesce(p_query, '')), 80) = '' or position(lower(left(btrim(coalesce(p_query, '')), 80)) in lower(concat_ws(' ', published.level_data ->> 'name', profile.display_name, profile.username::text))) > 0)
-      and (not coalesce(p_favorites_only, false) or exists (select 1 from public.custom_level_favorites own where own.level_id = published.level_id and own.user_id = (select auth.uid())))
-  )
-  select catalog.* from catalog
-  order by case when p_sort = 'favorites' then catalog.favorite_count end desc nulls last,
-    case when p_sort = 'updated' then catalog.updated_at end desc nulls last,
-    case when p_sort not in ('updated', 'favorites') then catalog.published_at end desc nulls last,
-    catalog.level_id
-  offset least(greatest(coalesce(p_offset, 0), 0), 100000)
-  limit least(greatest(coalesce(p_limit, 13), 1), 51);
-$$;
-
 revoke all on function public.set_custom_level_favorite(uuid, boolean) from public;
-revoke all on function public.get_published_custom_level_details(uuid) from public;
-revoke all on function public.list_published_custom_levels(text, text, integer, integer, boolean) from public;
 grant execute on function public.set_custom_level_favorite(uuid, boolean) to authenticated;
-grant execute on function public.get_published_custom_level_details(uuid) to anon, authenticated;
-grant execute on function public.list_published_custom_levels(text, text, integer, integer, boolean) to anon, authenticated;
 
 -- v0.39.0: fetch one trusted replay without exposing replay evidence in leaderboard listings.
 
@@ -2403,3 +1375,381 @@ $$;
 
 revoke all on function public.get_custom_level_run_replay(uuid) from public;
 grant execute on function public.get_custom_level_run_replay(uuid) to anon, authenticated;
+
+-- v0.40.0 final schema: Survival has been purged above. Remove its temporary
+-- compatibility objects only after every older idempotent setup layer has run.
+drop function if exists public.submit_custom_level_run(uuid, integer, text, numeric, integer, boolean, boolean, boolean, jsonb, text);
+drop function if exists public.submit_custom_level_run(uuid, uuid, integer, text, numeric, integer, boolean, boolean, boolean, jsonb, text);
+drop function if exists public.custom_level_run_evidence_error(jsonb, uuid, uuid, integer, text, numeric, integer, boolean, boolean, boolean, jsonb);
+drop function if exists public.report_survival_strategy(uuid, text, text);
+drop function if exists public.vote_survival_strategy(uuid, text);
+drop function if exists public.get_custom_level_review_state(uuid, integer);
+drop function if exists public.enqueue_custom_level_run(uuid, uuid, integer, text, jsonb, text);
+drop function if exists public.enqueue_custom_level_run(uuid, uuid, integer, text, jsonb);
+
+alter table public.custom_level_runs drop constraint if exists custom_level_runs_invalidated_by_report_fkey;
+drop index if exists public.custom_level_runs_fingerprint_idx;
+drop index if exists public.survival_reports_level_idx;
+alter table public.custom_level_runs
+  drop column if exists strategy_fingerprint,
+  drop column if exists invalidated_by_report;
+drop table if exists public.survival_exploit_votes;
+drop table if exists public.survival_exploit_reports;
+
+update public.published_custom_level_status set verification_status = 'unverified', verified_run_id = null
+  where verification_status = 'ranked';
+update public.custom_level_runs set ranking_status = 'valid', status_reason = null
+  where ranking_status = 'restored';
+update public.custom_level_runs set ranking_status = 'invalidated'
+  where ranking_status = 'disputed';
+
+alter table public.published_custom_level_status
+  drop constraint if exists published_custom_level_status_level_type_check,
+  drop constraint if exists published_custom_level_status_verification_status_check;
+alter table public.published_custom_level_status
+  add constraint published_custom_level_status_level_type_check check (level_type in ('exit', 'exit-stars')),
+  add constraint published_custom_level_status_verification_status_check check (verification_status in ('unverified', 'verified'));
+alter table public.custom_level_runs
+  drop constraint if exists custom_level_runs_level_type_check,
+  drop constraint if exists custom_level_runs_ranking_status_check;
+alter table public.custom_level_runs
+  add constraint custom_level_runs_level_type_check check (level_type in ('exit', 'exit-stars')),
+  add constraint custom_level_runs_ranking_status_check check (ranking_status in ('valid', 'invalidated'));
+
+create function public.enqueue_custom_level_run(
+  p_run_ticket uuid, p_level_id uuid, p_level_version integer, p_runner_name text, p_replay_data jsonb
+)
+returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  current_user_id uuid := (select auth.uid());
+  ticket public.custom_level_run_tickets;
+  status_row public.published_custom_level_status;
+  clean_name text;
+  replay_format text;
+  terminal_ms numeric;
+  result public.custom_level_runs;
+begin
+  if p_run_ticket is null then raise exception 'A server-issued run ticket is required'; end if;
+  select * into ticket from public.custom_level_run_tickets where id = p_run_ticket for update;
+  if ticket.id is null then raise exception 'Run ticket is unavailable'; end if;
+  if ticket.used_at is not null then raise exception 'Run ticket has already been used'; end if;
+  if ticket.expires_at <= clock_timestamp() then raise exception 'Run ticket has expired'; end if;
+  if ticket.level_id <> p_level_id or ticket.level_version <> p_level_version then raise exception 'Run ticket belongs to another published version'; end if;
+  if ticket.user_id is distinct from current_user_id then raise exception 'Run ticket belongs to another account session'; end if;
+  if not exists (select 1 from public.published_custom_levels current where current.level_id = p_level_id and current.version = p_level_version)
+    then raise exception 'Published level version is unavailable'; end if;
+  select * into status_row from public.published_custom_level_status where level_id = p_level_id and level_version = p_level_version;
+  if status_row.level_id is null then raise exception 'Published level status is unavailable'; end if;
+  if status_row.level_type not in ('exit', 'exit-stars') then raise exception 'Unsupported published level type'; end if;
+
+  if jsonb_typeof(p_replay_data) <> 'object' then raise exception 'Invalid replay evidence'; end if;
+  replay_format := p_replay_data ->> 'format';
+  if replay_format not in ('POTP-RUN-2', 'POTP-RUN-3')
+     or octet_length(p_replay_data::text) > (
+       case when replay_format = 'POTP-RUN-3' then 650000 else 1500000 end
+     ) then raise exception 'Invalid or oversized replay evidence'; end if;
+  if replay_format = 'POTP-RUN-3' then
+    if exists (select 1 from jsonb_object_keys(p_replay_data) compact_key
+      where compact_key not in ('format', 'v', 'l', 'n', 's', 'i', 'c', 'w', 'a', 'g', 'z', 'q'))
+      then raise exception 'Replay evidence contains unsupported properties'; end if;
+    if jsonb_typeof(p_replay_data -> 'l') <> 'array' or jsonb_array_length(p_replay_data -> 'l') <> 4
+       or p_replay_data #>> '{l,2}' is distinct from p_run_ticket::text
+       or p_replay_data #>> '{l,0}' is distinct from p_level_id::text
+       or coalesce((p_replay_data #>> '{l,1}')::integer, 0) <> p_level_version
+      then raise exception 'Replay evidence belongs to another ticket or version'; end if;
+    if jsonb_typeof(p_replay_data -> 'i') <> 'array' or jsonb_typeof(p_replay_data -> 'c') <> 'array'
+       or jsonb_typeof(p_replay_data -> 'w') <> 'array' or jsonb_typeof(p_replay_data -> 'a') <> 'array'
+       or jsonb_typeof(p_replay_data -> 'g') <> 'array' or jsonb_typeof(p_replay_data -> 'z') <> 'array'
+       or jsonb_array_length(p_replay_data -> 'z') <> 5 then raise exception 'Replay evidence is incomplete'; end if;
+    if jsonb_array_length(p_replay_data -> 'i') not between 2 and 40000
+       or mod(jsonb_array_length(p_replay_data -> 'i'), 2) <> 0
+       or jsonb_array_length(p_replay_data -> 'c') not between 6 and 86700
+       or mod(jsonb_array_length(p_replay_data -> 'c'), 6) <> 0
+       or jsonb_array_length(p_replay_data -> 'w') > 14450
+       or jsonb_array_length(p_replay_data -> 'a') > 20000 or mod(jsonb_array_length(p_replay_data -> 'a'), 2) <> 0
+       or jsonb_array_length(p_replay_data -> 'g') > 128 or mod(jsonb_array_length(p_replay_data -> 'g'), 2) <> 0
+      then raise exception 'Replay stream length is invalid'; end if;
+    terminal_ms := (p_replay_data #>> '{z,1}')::numeric;
+  else
+    if p_replay_data ->> 'runTicket' is distinct from p_run_ticket::text
+       or p_replay_data ->> 'levelId' is distinct from p_level_id::text
+       or coalesce((p_replay_data ->> 'levelVersion')::integer, 0) <> p_level_version
+      then raise exception 'Replay evidence belongs to another ticket or version'; end if;
+    if jsonb_typeof(p_replay_data -> 'inputEvents') <> 'array' or jsonb_typeof(p_replay_data -> 'checkpoints') <> 'array'
+       or jsonb_typeof(p_replay_data -> 'actions') <> 'array' or jsonb_typeof(p_replay_data -> 'integrityEvents') <> 'array'
+       or jsonb_typeof(p_replay_data -> 'terminal') <> 'object' then raise exception 'Replay evidence is incomplete'; end if;
+    if jsonb_array_length(p_replay_data -> 'inputEvents') not between 1 and 20000
+       or jsonb_array_length(p_replay_data -> 'checkpoints') not between 1 and 14450
+       or jsonb_array_length(p_replay_data -> 'actions') > 10000
+       or jsonb_array_length(p_replay_data -> 'integrityEvents') > 64 then raise exception 'Replay stream length is invalid'; end if;
+    terminal_ms := (p_replay_data #>> '{terminal,atMs}')::numeric;
+  end if;
+  if terminal_ms is null or terminal_ms <= 0 or terminal_ms > 3600000 then raise exception 'Replay duration is invalid'; end if;
+
+  if current_user_id is not null then
+    select profile.display_name into clean_name from public.player_profiles profile where profile.user_id = current_user_id;
+  else
+    clean_name := left(regexp_replace(btrim(coalesce(p_runner_name, 'Guest')), '[[:cntrl:]]', '', 'g'), 24);
+  end if;
+  if clean_name is null or char_length(clean_name) < 1 then clean_name := 'Guest'; end if;
+  update public.custom_level_run_tickets set used_at = clock_timestamp() where id = ticket.id;
+  insert into public.custom_level_runs (
+    run_ticket_id, level_id, level_version, user_id, runner_name, level_type,
+    seconds, stars, reached_exit, fly_ever, cheat_ever, replay_data,
+    ranking_status, status_reason, validation_state
+  ) values (
+    ticket.id, p_level_id, p_level_version, current_user_id, clean_name, status_row.level_type,
+    round(terminal_ms / 1000, 3), 0, false, false, false, p_replay_data,
+    'invalidated', 'Pending trusted replay verification', 'pending'
+  ) returning * into result;
+  return jsonb_build_object('id', result.id, 'validation_state', result.validation_state,
+    'ranking_status', result.ranking_status, 'status_reason', result.status_reason,
+    'verifier_version', result.verifier_version, 'seconds', result.seconds,
+    'stars', result.stars, 'reached_exit', result.reached_exit);
+exception when invalid_text_representation or numeric_value_out_of_range then
+  raise exception 'Replay evidence is malformed';
+end;
+$$;
+
+create or replace function public.finalize_custom_level_run_verification(p_run_id uuid, p_validation_result jsonb)
+returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  run public.custom_level_runs;
+  status_row public.published_custom_level_status;
+  snapshot jsonb;
+  available_stars integer := 0;
+  accepted boolean := coalesce((p_validation_result ->> 'accepted')::boolean, false);
+  derived_seconds numeric; derived_stars integer; derived_exit boolean; derived_fly boolean; derived_cheat boolean;
+  verifier text;
+  result public.custom_level_runs;
+begin
+  select * into run from public.custom_level_runs where id = p_run_id and validation_state = 'processing' for update;
+  if run.id is null then raise exception 'Pending replay is unavailable'; end if;
+  select * into status_row from public.published_custom_level_status where level_id = run.level_id and level_version = run.level_version;
+  select history.level_data into snapshot from public.published_custom_level_versions history
+    where history.level_id = run.level_id and history.version = run.level_version;
+  select count(*) filter (where object ->> 'type' in ('star', 'enemy'))::integer into available_stars
+    from jsonb_array_elements(coalesce(snapshot -> 'objects', '[]'::jsonb)) object;
+  verifier := left(coalesce(p_validation_result ->> 'verifierVersion', 'unknown'), 80);
+  if accepted then
+    derived_seconds := (p_validation_result ->> 'seconds')::numeric;
+    derived_stars := (p_validation_result ->> 'stars')::integer;
+    derived_exit := coalesce((p_validation_result ->> 'reachedExit')::boolean, false);
+    derived_fly := coalesce((p_validation_result ->> 'flyEver')::boolean, false);
+    derived_cheat := coalesce((p_validation_result ->> 'cheatEver')::boolean, false);
+    if verifier <> 'potp-replay-v3' or not coalesce((p_validation_result ->> 'completed')::boolean, false)
+       or snapshot is null or status_row.level_id is null or run.level_type not in ('exit', 'exit-stars')
+       or derived_seconds is null or derived_stars is null or derived_seconds <= 0 or derived_seconds > 3600
+       or derived_stars < 0 or derived_stars > available_stars
+       or abs(derived_seconds - ((case when run.replay_data ->> 'format' = 'POTP-RUN-3'
+         then run.replay_data #>> '{z,1}' else run.replay_data #>> '{terminal,atMs}' end)::numeric / 1000)) > 0.001
+       or derived_fly or derived_cheat or not derived_exit
+       or p_validation_result ->> 'levelType' is distinct from run.level_type
+       or (run.level_type = 'exit-stars' and derived_stars < status_row.required_stars) then
+      accepted := false;
+      p_validation_result := jsonb_build_object('accepted', false,
+        'reason', 'Trusted result failed database completion rules', 'verifierVersion', verifier);
+    end if;
+  end if;
+  update public.custom_level_runs set
+    seconds = case when accepted then round(derived_seconds, 3) else seconds end,
+    stars = case when accepted then derived_stars else 0 end,
+    reached_exit = case when accepted then derived_exit else false end,
+    fly_ever = case when accepted then derived_fly else false end,
+    cheat_ever = case when accepted then derived_cheat else false end,
+    validation_state = case when accepted then 'trusted' else 'rejected' end,
+    verifier_version = verifier, trusted_result = p_validation_result, verified_at = clock_timestamp(),
+    ranking_status = case when accepted then 'valid' else 'invalidated' end,
+    status_reason = case when accepted then null else left(coalesce(p_validation_result ->> 'reason', 'Replay validation failed'), 500) end
+  where id = run.id returning * into result;
+  if accepted and status_row.verification_status = 'unverified' then
+    update public.published_custom_level_status set verification_status = 'verified', verified_run_id = result.id, updated_at = now()
+      where level_id = run.level_id and level_version = run.level_version;
+  end if;
+  return jsonb_build_object('id', result.id, 'validation_state', result.validation_state,
+    'ranking_status', result.ranking_status, 'status_reason', result.status_reason,
+    'verifier_version', result.verifier_version, 'seconds', result.seconds,
+    'stars', result.stars, 'reached_exit', result.reached_exit);
+exception when invalid_text_representation or numeric_value_out_of_range then
+  update public.custom_level_runs set validation_state = 'rejected', ranking_status = 'invalidated',
+    status_reason = 'Trusted verifier returned malformed results', verified_at = clock_timestamp()
+    where id = p_run_id returning * into result;
+  return jsonb_build_object('id', result.id, 'validation_state', result.validation_state,
+    'ranking_status', result.ranking_status, 'status_reason', result.status_reason,
+    'verifier_version', result.verifier_version, 'seconds', result.seconds,
+    'stars', result.stars, 'reached_exit', result.reached_exit);
+end;
+$$;
+
+create or replace function public.list_custom_level_runs(
+  p_level_id uuid, p_level_version integer, p_offset integer default 0, p_limit integer default 25
+)
+returns table (run_id uuid, user_id uuid, runner_name text, seconds numeric, stars smallint,
+  ranking_status text, status_reason text, display_rank bigint, created_at timestamptz,
+  validation_state text, verifier_version text)
+language sql security definer set search_path = '' stable as $$
+  select run.id, run.user_id, run.runner_name, run.seconds, run.stars, run.ranking_status,
+    run.status_reason, row_number() over (order by run.seconds, run.created_at, run.id),
+    run.created_at, run.validation_state, run.verifier_version
+  from public.custom_level_runs run
+  where run.level_id = p_level_id and run.level_version = p_level_version
+    and run.validation_state = 'trusted' and run.ranking_status = 'valid'
+    and exists (select 1 from public.published_custom_levels current
+      where current.level_id = p_level_id and current.version = p_level_version)
+  order by run.seconds, run.created_at, run.id
+  offset least(greatest(coalesce(p_offset, 0), 0), 100000)
+  limit least(greatest(coalesce(p_limit, 25), 1), 100);
+$$;
+
+create or replace function public.record_custom_level_completion(p_run_id uuid, p_deaths integer)
+returns public.custom_level_completions
+language plpgsql security definer set search_path = '' as $$
+declare current_user_id uuid := (select auth.uid()); accepted_run record; snapshot jsonb; snapshot_name text;
+  star_count integer := 0; difficulty integer := 1; result public.custom_level_completions;
+begin
+  if current_user_id is null then raise exception 'Authentication required'; end if;
+  if p_deaths is null or p_deaths < 0 or p_deaths > 100000 then raise exception 'Invalid death count'; end if;
+  select run.id, run.level_id, run.level_version, run.seconds, run.stars into accepted_run
+  from public.custom_level_runs run where run.id = p_run_id and run.user_id = current_user_id
+    and run.level_type in ('exit', 'exit-stars') and run.validation_state = 'trusted' and run.ranking_status = 'valid';
+  if accepted_run.id is null then raise exception 'A trusted replay completion is required'; end if;
+  select history.level_data, coalesce(nullif(btrim(history.level_data ->> 'name'), ''), 'Untitled Level')
+    into snapshot, snapshot_name from public.published_custom_level_versions history
+    where history.level_id = accepted_run.level_id and history.version = accepted_run.level_version;
+  if snapshot is null then raise exception 'Published level version is unavailable'; end if;
+  select count(*) filter (where object ->> 'type' in ('star', 'enemy'))::integer,
+    greatest(1, (count(*) + coalesce(sum(case object ->> 'type'
+      when 'hazard' then 5 when 'movingObstacle' then 7 when 'enemy' then 5 when 'breakableBlock' then 3
+      when 'crate' then 3 when 'movingPlatform' then 3 when 'controlledPlatform' then 4 when 'rewindPlatform' then 5
+      when 'switch' then 2 when 'pressurePlate' then 2 when 'jumpPad' then 1 else 0 end), 0)
+      + greatest(0, coalesce((snapshot ->> 'width')::numeric, 960) - 960) / 160
+      + case when snapshot #>> '{settings,rewind,enabled}' = 'true' then 8 else 0 end
+      + case when snapshot #>> '{settings,echo,enabled}' = 'true' then 8 else 0 end)::integer)
+    into star_count, difficulty from jsonb_array_elements(coalesce(snapshot -> 'objects', '[]'::jsonb)) object;
+  insert into public.custom_level_completions as existing (
+    user_id, level_id, level_version, level_name, seconds, stars, stars_available, deaths,
+    difficulty_score, completed_at, verified_run_id
+  ) values (current_user_id, accepted_run.level_id, accepted_run.level_version, left(snapshot_name, 80),
+    accepted_run.seconds, least(accepted_run.stars, star_count), star_count, p_deaths, difficulty, now(), accepted_run.id)
+  on conflict (user_id, level_id, level_version) do update set
+    level_name = excluded.level_name, seconds = least(existing.seconds, excluded.seconds),
+    stars = greatest(existing.stars, excluded.stars), stars_available = excluded.stars_available,
+    deaths = least(existing.deaths, excluded.deaths), difficulty_score = excluded.difficulty_score,
+    completed_at = now(), verified_run_id = excluded.verified_run_id returning * into result;
+  return result;
+end;
+$$;
+
+drop function if exists public.get_published_custom_level(uuid);
+create function public.get_published_custom_level(p_level_id uuid)
+returns table (level_id uuid, owner_id uuid, owner_name text, owner_username text, level_data jsonb,
+  version integer, published_at timestamptz, updated_at timestamptz, level_type text,
+  required_stars integer, verification_status text)
+language sql security definer set search_path = '' stable as $$
+  select published.level_id, published.owner_id, profile.display_name, profile.username::text,
+    published.level_data, published.version, published.published_at, published.updated_at,
+    status.level_type, status.required_stars, status.verification_status
+  from public.published_custom_levels published
+  join public.player_profiles profile on profile.user_id = published.owner_id
+  join public.published_custom_level_status status on status.level_id = published.level_id and status.level_version = published.version
+  where published.level_id = p_level_id;
+$$;
+
+drop function if exists public.get_published_custom_level_details(uuid);
+create function public.get_published_custom_level_details(p_level_id uuid)
+returns table (level_id uuid, owner_id uuid, level_name text, owner_name text, owner_username text,
+  version integer, published_at timestamptz, updated_at timestamptz, level_type text,
+  required_stars integer, verification_status text, objective text, player_best_seconds numeric,
+  player_best_stars smallint, player_best_rank bigint, player_best_status text,
+  favorite_count bigint, is_favorited boolean)
+language sql security definer set search_path = '' stable as $$
+  with details as (
+    select published.level_id, published.owner_id,
+      coalesce(nullif(btrim(published.level_data ->> 'name'), ''), 'Untitled Level') level_name,
+      profile.display_name owner_name, profile.username::text owner_username,
+      published.version, published.published_at, published.updated_at,
+      status.level_type, status.required_stars, status.verification_status,
+      case when status.level_type = 'exit-stars' then concat('Collect at least ', status.required_stars,
+        ' star', case when status.required_stars = 1 then '' else 's' end, ', then reach the exit.')
+        else 'Reach the exit.' end objective
+    from public.published_custom_levels published
+    join public.player_profiles profile on profile.user_id = published.owner_id
+    join public.published_custom_level_status status on status.level_id = published.level_id and status.level_version = published.version
+    where published.level_id = p_level_id
+  ), ranked as (
+    select run.user_id, run.seconds, run.stars, run.ranking_status,
+      row_number() over (order by run.seconds, run.created_at, run.id) display_rank
+    from public.custom_level_runs run cross join details
+    where run.level_id = details.level_id and run.level_version = details.version
+      and run.validation_state = 'trusted' and run.ranking_status = 'valid'
+  )
+  select details.level_id, details.owner_id, details.level_name, details.owner_name,
+    details.owner_username, details.version, details.published_at, details.updated_at,
+    details.level_type, details.required_stars, details.verification_status, details.objective,
+    best.seconds, best.stars, best.display_rank, best.ranking_status,
+    (select count(*)::bigint from public.custom_level_favorites favorite where favorite.level_id = details.level_id),
+    exists (select 1 from public.custom_level_favorites own where own.level_id = details.level_id and own.user_id = (select auth.uid()))
+  from details left join lateral (
+    select ranked.seconds, ranked.stars, ranked.display_rank, ranked.ranking_status from ranked
+    where ranked.user_id = (select auth.uid()) order by ranked.display_rank limit 1
+  ) best on true;
+$$;
+
+drop function if exists public.list_published_custom_levels(text, text, integer, integer, boolean);
+create function public.list_published_custom_levels(
+  p_query text default '', p_sort text default 'newest', p_offset integer default 0,
+  p_limit integer default 13, p_favorites_only boolean default false
+)
+returns table (level_id uuid, owner_id uuid, level_name text, owner_name text, owner_username text,
+  version integer, published_at timestamptz, updated_at timestamptz, level_type text,
+  required_stars integer, verification_status text, favorite_count bigint, is_favorited boolean)
+language sql security definer set search_path = '' stable as $$
+  with favorite_counts as (
+    select favorite.level_id, count(*)::bigint favorite_count from public.custom_level_favorites favorite group by favorite.level_id
+  ), catalog as (
+    select published.level_id, published.owner_id,
+      coalesce(nullif(btrim(published.level_data ->> 'name'), ''), 'Untitled Level') level_name,
+      profile.display_name owner_name, profile.username::text owner_username,
+      published.version, published.published_at, published.updated_at,
+      status.level_type, status.required_stars, status.verification_status,
+      coalesce(favorite_counts.favorite_count, 0)::bigint favorite_count,
+      exists (select 1 from public.custom_level_favorites own where own.level_id = published.level_id and own.user_id = (select auth.uid())) is_favorited
+    from public.published_custom_levels published
+    join public.player_profiles profile on profile.user_id = published.owner_id
+    join public.published_custom_level_status status on status.level_id = published.level_id and status.level_version = published.version
+    left join favorite_counts on favorite_counts.level_id = published.level_id
+    where (left(btrim(coalesce(p_query, '')), 80) = '' or position(lower(left(btrim(coalesce(p_query, '')), 80))
+      in lower(concat_ws(' ', published.level_data ->> 'name', profile.display_name, profile.username::text))) > 0)
+      and (not coalesce(p_favorites_only, false) or exists (select 1 from public.custom_level_favorites own
+        where own.level_id = published.level_id and own.user_id = (select auth.uid())))
+  )
+  select catalog.* from catalog
+  order by case when p_sort = 'favorites' then catalog.favorite_count end desc nulls last,
+    case when p_sort = 'updated' then catalog.updated_at end desc nulls last,
+    case when p_sort not in ('updated', 'favorites') then catalog.published_at end desc nulls last,
+    catalog.level_id
+  offset least(greatest(coalesce(p_offset, 0), 0), 100000)
+  limit least(greatest(coalesce(p_limit, 13), 1), 51);
+$$;
+
+revoke all on function public.enqueue_custom_level_run(uuid, uuid, integer, text, jsonb) from public;
+revoke all on function public.get_published_custom_level(uuid) from public;
+revoke all on function public.get_published_custom_level_details(uuid) from public;
+revoke all on function public.list_published_custom_levels(text, text, integer, integer, boolean) from public;
+grant execute on function public.enqueue_custom_level_run(uuid, uuid, integer, text, jsonb) to anon, authenticated;
+revoke all on function public.claim_custom_level_run_verification(uuid) from public;
+revoke all on function public.finalize_custom_level_run_verification(uuid, jsonb) from public;
+grant execute on function public.claim_custom_level_run_verification(uuid) to service_role;
+grant execute on function public.finalize_custom_level_run_verification(uuid, jsonb) to service_role;
+grant execute on function public.get_published_custom_level(uuid) to anon, authenticated;
+grant execute on function public.get_published_custom_level_details(uuid) to anon, authenticated;
+grant execute on function public.list_published_custom_levels(text, text, integer, integer, boolean) to anon, authenticated;
+revoke all on table public.published_custom_level_status, public.custom_level_run_tickets, public.custom_level_runs from anon, authenticated;
+grant select on public.published_custom_level_status to anon, authenticated;
+revoke all on function public.resolve_level_type(jsonb) from public;
+revoke all on function public.issue_custom_level_run_ticket(uuid, integer) from public;
+grant execute on function public.issue_custom_level_run_ticket(uuid, integer) to anon, authenticated;
+grant execute on function public.record_custom_level_completion(uuid, integer) to authenticated;
+grant execute on function public.list_custom_level_runs(uuid, integer, integer, integer) to anon, authenticated;

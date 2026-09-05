@@ -311,7 +311,7 @@ canvas {
   bottom: 48px;
   width: 44px;
   height: 44px;
-  background: url("assets/slime-player.svg") center / contain no-repeat;
+  background: url("../assets/slime-player.svg") center / contain no-repeat;
   filter: drop-shadow(0 6px 5px #17482b45);
   will-change: left, bottom, transform;
 }
@@ -1142,6 +1142,12 @@ canvas {
 .custom-level-run small { color: inherit; opacity: .82; }
 .custom-level-run button { min-width: 58px; padding: 6px 8px; font-size: .72rem; }
 .custom-level-run-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.survival-review-panel { display: grid; gap: 8px; padding: 10px; border: 1px solid #ffffff24; border-radius: 10px; background: #071326aa; }
+.survival-review-panel p { color: #b8cbe2; font-size: .76rem; line-height: 1.4; }
+.survival-review-list { display: grid; gap: 7px; }
+.survival-review-item { display: grid; gap: 6px; padding: 8px; border-radius: 8px; background: #ffffff10; }
+.survival-review-actions { display: flex; gap: 8px; }
+
 .public-profile-panel {
   width: min(800px, 100%);
   height: 100%;

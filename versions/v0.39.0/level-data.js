@@ -272,7 +272,7 @@
     if (settings.theme !== undefined && !["default", "lava", "rewind"].includes(settings.theme)) errors.push("level.settings.theme is unsupported.");
     optionalBoolean(settings.postRun, "level.settings.postRun", errors);
     if (settings.levelType !== undefined && !verificationRules.LEVEL_TYPES.includes(settings.levelType)) {
-      errors.push("level.settings.levelType must be exit or exit-stars. Survival levels are no longer supported.");
+      errors.push("level.settings.levelType must be exit, exit-stars, or survival.");
     }
     if (settings.requiredStars !== undefined) requireInteger(settings.requiredStars, "level.settings.requiredStars", errors, 0, 600);
     if (settings.levelType !== undefined && settings.levelType !== "exit-stars" && settings.requiredStars !== undefined) {

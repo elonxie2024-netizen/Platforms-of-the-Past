@@ -56,7 +56,7 @@
     const ticket = "11111111-1111-4111-8111-111111111111";
     const collectedStars = options.collectedStars || [];
     const terminalAt = 3000;
-    const terminalKind = options.terminalKind || (level.settings.levelType === "survival" ? "death" : "exit");
+    const terminalKind = options.terminalKind || "exit";
     const terminalPoint = terminalKind === "exit"
       ? [terminalAt, level.exit.x, level.exit.y, 300, 0, 2, []]
       : [terminalAt, level.spawn.x + 100, level.spawn.y, 0, 0, 2, []];
@@ -113,22 +113,20 @@
     });
   }
 
-  function longSurvivalEvidence(durationMs = replayVerifier.MAX_DURATION_MS, worldIntervalMs = 2000) {
-    const level = baseLevel({ levelType: "survival" });
-    const evidence = replayEvidence(level, { terminalKind: "death" });
-    evidence.inputEvents = [[0, 0]];
+  function longExitEvidence(durationMs = replayVerifier.MAX_DURATION_MS, worldIntervalMs = 2000) {
+    const level = baseLevel({ levelType: "exit" });
+    const evidence = replayEvidence(level);
+    evidence.inputEvents = [[0, 2]];
     evidence.checkpoints = [];
     for (let time = 0; time <= durationMs; time += 250) {
-      evidence.checkpoints.push([
-        time, level.spawn.x, level.spawn.y, 0, 0, 0,
-        time % worldIntervalMs === 0 ? [[0, 0, 490, 0]] : []
-      ]);
+      const progress = time / durationMs;
+      evidence.checkpoints.push([time,
+        level.spawn.x + (level.exit.x - level.spawn.x) * progress,
+        level.spawn.y + (level.exit.y - level.spawn.y) * progress, 1, 0, 2,
+        time % worldIntervalMs === 0 ? [[0, 0, 490, 0]] : []]);
     }
-    if (evidence.checkpoints[evidence.checkpoints.length - 1][0] !== durationMs) {
-      evidence.checkpoints.push([durationMs, level.spawn.x, level.spawn.y, 0, 0, 0, [[0, 0, 490, 0]]]);
-    }
-    evidence.actions = [[durationMs, "death:hazard"]];
-    evidence.terminal = { kind: "death", atMs: durationMs, x: level.spawn.x, y: level.spawn.y, reason: "hazard" };
+    evidence.actions = [];
+    evidence.terminal = { kind: "exit", atMs: durationMs, x: level.exit.x, y: level.exit.y };
     return { level, evidence };
   }
 
@@ -138,7 +136,7 @@
 
   test("Level type: Exit", () => equal(rules.resolveLevelType({ levelType: "exit" }), "exit"));
   test("Level type: Exit + Required Stars", () => equal(rules.resolveLevelType({ levelType: "exit-stars", requiredStars: 2 }), "exit-stars"));
-  test("Level type: Survival", () => equal(rules.resolveLevelType({ levelType: "survival" }), "survival"));
+  test("Level type: removed Survival resolves to Exit for legacy migration", () => equal(rules.resolveLevelType({ levelType: "survival" }), "exit"));
   test("Level type: unknown type rejected", () => throws(() => rules.resolveLevelType({ levelType: "mystery" })));
   test("Level type: legacy required-stars level migrates", () => equal(rules.resolveLevelType({ requiredStars: 2 }), "exit-stars"));
   test("Level type: legacy level defaults to Exit", () => equal(rules.resolveLevelType({}), "exit"));
@@ -177,10 +175,6 @@
   test("Required Stars: above requirement", () => assert(verify({ levelType: "exit-stars", requiredStars: 2, stars: 3 }).verifies));
   test("Required Stars: Fly invalidates a sufficient run", () => assert(!verify({ levelType: "exit-stars", requiredStars: 2, stars: 3, flyEver: true }).valid));
   test("Required Stars: cheat invalidates a sufficient run", () => assert(!verify({ levelType: "exit-stars", requiredStars: 2, stars: 3, cheatEver: true }).valid));
-  test("Survival completion: valid death produces a ranked run, not verification", () => {
-    const result = verify({ levelType: "survival", reachedExit: false });
-    assert(result.valid && !result.verifies && result.rankingStatus === "valid");
-  });
 
   test("Publishing: every publish creates a new version", () => {
     const first = rules.publishSnapshot([], baseLevel({ levelType: "exit" }));
@@ -208,49 +202,7 @@
     equal(runs, [{ id: "old-run", levelVersion: 1 }]);
   });
 
-  const survivalRuns = () => [
-    { id: "valid-90", seconds: 90, rankingStatus: "valid", strategyFingerprint: "safe" },
-    { id: "disputed-120", seconds: 120, rankingStatus: "disputed", strategyFingerprint: "loop" },
-    { id: "invalid-100", seconds: 100, rankingStatus: "invalidated", strategyFingerprint: "ledge" },
-    { id: "valid-80", seconds: 80, rankingStatus: "valid", strategyFingerprint: "route" }
-  ];
-  test("Survival leaderboard: longest time displays first", () => equal(rules.rankSurvivalRuns(survivalRuns()).map(run => run.id), ["disputed-120", "invalid-100", "valid-90", "valid-80"]));
-  test("Survival leaderboard: invalid and disputed runs receive no rank", () => equal(rules.rankSurvivalRuns(survivalRuns()).slice(0, 2).map(run => run.displayRank), [null, null]));
-  test("Survival leaderboard: affected rows remain in score order", () => equal(rules.rankSurvivalRuns(survivalRuns()).map(run => run.seconds), [120, 100, 90, 80]));
-  test("Survival leaderboard: affected rows do not consume ranks", () => equal(rules.rankSurvivalRuns(survivalRuns()).map(run => run.displayRank), [null, null, 1, 2]));
-  test("Survival leaderboard: restoration recalculates ranking", () => {
-    const restored = rules.applyStrategyDecision(survivalRuns(), "loop", "restored", "report-1");
-    equal(rules.rankSurvivalRuns(restored).map(run => run.displayRank), [1, null, 2, 3]);
-  });
-
-  test("Survival review: report creation starts disputed", () => equal(rules.createReviewReport({ id: "r", runId: "run", strategyFingerprint: "loop", description: "Evidence" }).decisionStatus, "disputed"));
-  test("Survival review: votes are stored by voter", () => {
-    const report = rules.createReviewReport({ id: "r", runId: "run", strategyFingerprint: "loop", description: "Evidence" });
-    equal(rules.castReviewVote(report, "u1", "valid").votes, { u1: "valid" });
-  });
-  test("Survival review: fewer than three votes stays disputed", () => {
-    let report = rules.createReviewReport({ id: "r", runId: "run", strategyFingerprint: "loop", description: "Evidence" });
-    report = rules.castReviewVote(report, "u1", "invalidated");
-    report = rules.castReviewVote(report, "u2", "invalidated");
-    equal(report.decisionStatus, "disputed");
-  });
-  test("Survival review: disputed to invalidated at threshold", () => equal(rules.resolveReviewDecision({ invalidVotes: 2, validVotes: 1 }), "invalidated"));
-  test("Survival review: disputed to valid at threshold", () => equal(rules.resolveReviewDecision({ invalidVotes: 1, validVotes: 2 }), "valid"));
-  test("Survival review: invalidated to restored", () => {
-    let report = rules.createReviewReport({ id: "r", runId: "run", strategyFingerprint: "loop", description: "Evidence" });
-    report = rules.castReviewVote(report, "u1", "invalidated");
-    report = rules.castReviewVote(report, "u2", "invalidated");
-    report = rules.castReviewVote(report, "u3", "valid");
-    equal(report.decisionStatus, "invalidated");
-    report = rules.castReviewVote(report, "u1", "valid");
-    equal(report.decisionStatus, "restored");
-  });
-  test("Survival review: rulings never delete runs", () => {
-    const runs = survivalRuns();
-    equal(rules.applyStrategyDecision(runs, "loop", "invalidated", "report-1").length, runs.length);
-  });
-
-  for (const [levelType, requiredStars] of [["exit", undefined], ["exit-stars", 2], ["survival", undefined]]) {
+  for (const [levelType, requiredStars] of [["exit", undefined], ["exit-stars", 2]]) {
     test(`Serialization: ${levelType} JSON and save-code round trip`, () => {
       const level = baseLevel({ levelType, ...(requiredStars === undefined ? {} : { requiredStars }) });
       const exported = levels.exportLevel(level);
@@ -267,7 +219,21 @@
     });
   }
   test("Serialization: Required Stars rejected on explicit Exit", () => assert(!levels.validateLevel(baseLevel({ levelType: "exit", requiredStars: 1 })).valid));
-  test("Serialization: Required Stars rejected on Survival", () => assert(!levels.validateLevel(baseLevel({ levelType: "survival", requiredStars: 1 })).valid));
+  test("Serialization: Survival JSON is rejected clearly", () => {
+    const result = levels.importLevel(JSON.stringify(baseLevel({ levelType: "survival" })));
+    assert(!result.ok && result.errors.some(error => error.includes("Survival levels are no longer supported")));
+  });
+  test("Serialization: Survival save code is rejected clearly", () => {
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(baseLevel({ levelType: "survival" })))))
+      .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    const result = levels.importSaveCode(`POTP1-${encoded}`);
+    assert(!result.ok && result.errors.some(error => error.includes("Survival levels are no longer supported")));
+  });
+  test("Verification rules: removed review helpers are not exported", () => {
+    for (const name of ["rankSurvivalRuns", "resolveReviewDecision", "createReviewReport", "castReviewVote", "applyStrategyDecision", "REVIEW_STATES"]) {
+      assert(!(name in rules), `${name} must not be exported`);
+    }
+  });
   test("Serialization: unknown level type rejected", () => assert(!levels.validateLevel(baseLevel({ levelType: "unknown" })).valid));
   test("Serialization: legacy Required Stars remains supported", () => assert(levels.validateLevel(baseLevel({ requiredStars: 2 })).valid));
   test("Serialization: malformed JSON rejected safely", () => assert(!levels.importLevel('{"broken":').ok));
@@ -355,29 +321,12 @@
     const evidence = replayEvidence(level);
     assert(!trustedReplay(level, { evidence, runTicket: "22222222-2222-4222-8222-222222222222" }).ok);
   });
-  test("Trusted replay: Survival duration is derived from terminal evidence", () => {
-    const level = baseLevel({ levelType: "survival" });
-    const evidence = replayEvidence(level, { terminalKind: "death" });
-    evidence.seconds = .001;
-    const result = trustedReplay(level, { evidence });
-    assert(result.ok && result.result.seconds === evidence.terminal.atMs / 1000);
-  });
-  test("Trusted replay: Survival must end with a recorded death", () => {
-    const level = baseLevel({ levelType: "survival" });
-    assert(!trustedReplay(level, { terminalKind: "exit" }).ok);
-  });
-  test("Trusted replay: Survival requires a terminal death action", () => {
-    const level = baseLevel({ levelType: "survival" });
-    const evidence = replayEvidence(level, { terminalKind: "death" });
-    evidence.actions = [];
-    assert(!trustedReplay(level, { evidence }).ok);
-  });
-  test("Trusted replay: claimed Survival time cannot exceed checkpoint evidence", () => {
-    const level = baseLevel({ levelType: "survival" });
-    const evidence = replayEvidence(level, { terminalKind: "death" });
-    evidence.terminal.atMs += 1000;
-    assert(!trustedReplay(level, { evidence }).ok);
-  });
+  for (const levelType of ["exit", "exit-stars"]) {
+    test(`Trusted replay: death ending is rejected for ${levelType}`, () => {
+      const level = baseLevel({ levelType, ...(levelType === "exit-stars" ? { requiredStars: 1 } : {}) });
+      assert(!trustedReplay(level, { terminalKind: "death", collectedStars: levelType === "exit-stars" ? [0] : [] }).ok);
+    });
+  }
   test("Trusted replay: Rewind and Echo input bits remain recordable", () => {
     const level = baseLevel({ levelType: "exit", rewind: { enabled: true }, echo: { enabled: true } });
     const evidence = replayEvidence(level);
@@ -587,25 +536,25 @@
     assert(result.ok && result.result.stars === 2);
     measurements.exitStars = { expanded: replayVerifier.serializedBytes(expanded), compact: replayVerifier.serializedBytes(compact) };
   });
-  test("Compact replay: one-hour Survival remains bounded and valid", () => {
-    const { level, evidence } = longSurvivalEvidence();
+  test("Compact replay: one-hour Exit evidence remains bounded and valid", () => {
+    const { level, evidence } = longExitEvidence();
     const compact = replayVerifier.encodeReplay(evidence);
     const bytes = replayVerifier.serializedBytes(compact);
-    measurements.survivalOneHour = { expanded: replayVerifier.serializedBytes(evidence), compact: bytes };
+    measurements.longExit = { expanded: replayVerifier.serializedBytes(evidence), compact: bytes };
     assert(bytes <= replayVerifier.MAX_COMPACT_BYTES, `One-hour compact replay used ${bytes} bytes`);
     const result = trustedReplay(level, { evidence: compact });
     assert(result.ok && result.result.seconds === 3600);
   });
   test("Compact replay: duration beyond one hour is rejected", () => {
-    const { level, evidence } = longSurvivalEvidence(replayVerifier.MAX_DURATION_MS + 250);
+    const { level, evidence } = longExitEvidence(replayVerifier.MAX_DURATION_MS + 250);
     const compact = replayVerifier.encodeReplay(evidence);
     assert(!trustedReplay(level, { evidence: compact }).ok);
   });
   test("Compact replay: dense maximum evidence cannot exceed its byte cap", () => {
-    const { level, evidence } = longSurvivalEvidence(replayVerifier.MAX_DURATION_MS, 250);
+    const { level, evidence } = longExitEvidence(replayVerifier.MAX_DURATION_MS, 250);
     evidence.actions = [
       ...Array.from({ length: 9999 }, (_, index) => [Math.floor(index * (replayVerifier.MAX_DURATION_MS - 1) / 9999), "interact"]),
-      [replayVerifier.MAX_DURATION_MS, "death:hazard"]
+      [replayVerifier.MAX_DURATION_MS - 1, "interact"]
     ];
     const compact = replayVerifier.encodeReplay(evidence);
     const bytes = replayVerifier.serializedBytes(compact);

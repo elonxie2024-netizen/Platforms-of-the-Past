@@ -60,7 +60,7 @@
     if (message.includes("could not share with that account")) return "Could not share with that account.";
     if (message.includes("only published levels can be favorited")) return "That level is no longer published.";
     if (message.includes("custom_levels") || message.includes("custom_level_permissions") || message.includes("published_custom_levels") ||
-        message.includes("custom_level_runs") ||
+        message.includes("custom_level_runs") || message.includes("survival_exploit") ||
         message.includes("enqueue_custom_level_run") || message.includes("get_published_custom_level_details") ||
         message.includes("list_published_custom_levels") ||
         message.includes("get_custom_level_run_replay") ||
@@ -401,7 +401,8 @@
       p_level_id: run.levelId,
       p_level_version: Math.max(1, Number(run.levelVersion) || 1),
       p_runner_name: cleanDisplayName(run.runnerName) || "Guest",
-      p_replay_data: run.replayData || {}
+      p_replay_data: run.replayData || {},
+      p_strategy_fingerprint: run.strategyFingerprint || null
     });
     if (error) throw error;
     const pending = Array.isArray(data) ? data[0] || null : data;
@@ -431,6 +432,34 @@
 
   async function loadCustomLevelRunReplay(runId) {
     const { data, error } = await requireClient().rpc("get_custom_level_run_replay", { p_run_id: runId });
+    if (error) throw error;
+    return Array.isArray(data) ? data[0] || null : data;
+  }
+
+  async function loadCustomLevelReviewState(levelId, levelVersion) {
+    const { data, error } = await requireClient().rpc("get_custom_level_review_state", {
+      p_level_id: levelId,
+      p_level_version: Math.max(1, Number(levelVersion) || 1)
+    });
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function reportSurvivalStrategy(runId, description, evidenceUrl = "") {
+    const { data, error } = await requireClient().rpc("report_survival_strategy", {
+      p_run_id: runId,
+      p_description: String(description || "").trim().slice(0, 1000),
+      p_evidence_url: String(evidenceUrl || "").trim().slice(0, 500) || null
+    });
+    if (error) throw error;
+    return Array.isArray(data) ? data[0] || null : data;
+  }
+
+  async function voteSurvivalStrategy(reportId, vote) {
+    const { data, error } = await requireClient().rpc("vote_survival_strategy", {
+      p_report_id: reportId,
+      p_vote: vote === "invalidated" ? "invalidated" : "valid"
+    });
     if (error) throw error;
     return Array.isArray(data) ? data[0] || null : data;
   }
@@ -473,6 +502,9 @@
     submitCustomLevelRun,
     listCustomLevelRuns,
     loadCustomLevelRunReplay,
+    loadCustomLevelReviewState,
+    reportSurvivalStrategy,
+    voteSurvivalStrategy,
     accessToken,
     cleanDisplayName,
     cleanUsername,

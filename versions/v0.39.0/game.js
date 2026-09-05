@@ -97,6 +97,8 @@ const customLevelDetailsFavoriteButton = document.querySelector("#customLevelDet
 const customLevelDetailsRefreshButton = document.querySelector("#customLevelDetailsRefreshButton");
 const customLevelLeaderboardNote = document.querySelector("#customLevelLeaderboardNote");
 const customLevelLeaderboard = document.querySelector("#customLevelLeaderboard");
+const survivalReviewPanel = document.querySelector("#survivalReviewPanel");
+const survivalReviewList = document.querySelector("#survivalReviewList");
 const closeCustomLevelDetailsButton = document.querySelector("#closeCustomLevelDetailsButton");
 const runIntegrityWarning = document.querySelector("#runIntegrityWarning");
 const replayModeHud = document.querySelector("#replayModeHud");
@@ -182,7 +184,6 @@ const profileDisplayName = document.querySelector("#profileDisplayName");
 const profileUsername = document.querySelector("#profileUsername");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.40.0", commit: "Pending commit", date: "2026-09-05", message: "Remove Survival custom levels", description: "Removed the Survival custom-level type, its leaderboard and community-review systems, and every Survival draft, publication, run, completion, favorite, report, and vote. This database purge is irreversible. Custom levels now support only Exit and Exit + Required Stars; the Survival-only Ranked, Disputed, and Restored states were migrated away and removed from their constraints." },
   { version: "v0.39.0", commit: "Pending commit", date: "2026-09-04", message: "Trusted replay playback", description: "Added secure Watch controls for trusted current-version custom-level runs and an optional signed-in Race Ghost mode. Replay viewing uses the exact immutable published snapshot, replays recorded controls without creating progress or submissions, and keeps ghost motion translucent and non-interactive while a fresh ranked attempt follows the normal trusted ticket flow." },
   { version: "v0.38.0", commit: "Pending commit", date: "2026-09-01", message: "Favorites and Community discovery", description: "Added private account Favorites for published custom levels, public aggregate favorite counts, a signed-in My Favorites view, and server-side Most Favorited sorting that remains compatible with search and pagination. Favorites stay attached to the stable level identity across publication versions, disappear from public views while a level is unpublished, and return when it is republished without exposing which accounts favorited it." },
   { version: "v0.37.2", commit: "Pending commit", date: "2026-08-31", message: "Human-friendly leaderboard UX", description: "Replaced player-facing board codes with concise names such as Chapter 1 · Any%, Full Campaign · Any%, and readable mixed-route summaries. The leaderboard now groups the current and recently viewed boards separately from common presets, keeps Time, Score, and Stars as simple views of the same runs, and offers an expandable exact-route description when a compact label omits individual levels. Internal normalized board IDs and historical Classic Adventure separation remain unchanged." },
@@ -1226,6 +1227,7 @@ let editorPlaytestIndex = -1;
 let publishedLevelActive = false;
 let publishedLevelContext = null;
 let publishedRunEvidence = null;
+let publishedSurvivalEnding = false;
 let trustedReplayPlayback = null;
 let replayGhost = null;
 
@@ -1234,11 +1236,12 @@ function resetPublishedRunEvidence() {
     startedAt: null, samples: [], inputEvents: [[0, publishedInputMask()]], actions: [], integrityEvents: [],
     initialState: null, terminal: null, lastInputMask: publishedInputMask(), flyEver: Boolean(flightEnabled),
     cheatEver: Boolean(flightEnabled || collisionDisabled || invincibilityEnabled),
-    lastSampleAt: -1, ended: false, overflowed: false
+    lastSampleAt: -1, lastReviewPollAt: 0, ended: false, overflowed: false
   } : null;
   if (publishedRunEvidence?.flyEver) publishedRunEvidence.integrityEvents.push([0, "fly"]);
   if (publishedRunEvidence && collisionDisabled) publishedRunEvidence.integrityEvents.push([0, "collision"]);
   if (publishedRunEvidence && invincibilityEnabled) publishedRunEvidence.integrityEvents.push([0, "invincibility"]);
+  publishedSurvivalEnding = false;
   runIntegrityWarning.hidden = true;
   runIntegrityWarning.textContent = "";
 }
@@ -1423,6 +1426,31 @@ function recordPublishedRunState(force = false) {
   if (lastSample?.[0] === sample[0]) publishedRunEvidence.samples[publishedRunEvidence.samples.length - 1] = sample;
   else if (publishedRunEvidence.samples.length < (window.PlatformsReplayValidator?.MAX_CHECKPOINTS || 14450)) publishedRunEvidence.samples.push(sample);
   else publishedRunEvidence.overflowed = true;
+  if (currentLevel().levelType === "survival" && elapsed - publishedRunEvidence.lastReviewPollAt >= 10) {
+    publishedRunEvidence.lastReviewPollAt = elapsed;
+    const fingerprint = survivalStrategyFingerprint();
+    const context = { ...publishedLevelContext };
+    window.PlatformsAccount?.loadCustomLevelReviewState(context.levelId, context.version).then(reviews => {
+      if (!publishedRunEvidence || publishedRunEvidence.ended) return;
+      const match = reviews.find(review => review.strategy_fingerprint === fingerprint && review.decision_status === "invalidated");
+      if (!match) return;
+      publishedRunEvidence.strategyInvalid = true;
+      runIntegrityWarning.textContent = "This motion pattern was invalidated by community review. This run will remain saved but will not rank.";
+      runIntegrityWarning.hidden = false;
+    }).catch(() => {});
+  }
+}
+
+function survivalStrategyFingerprint() {
+  const recent = (publishedRunEvidence?.samples || []).slice(-240).map(sample =>
+    `${Math.round(sample[1] / 5)},${Math.round(sample[2] / 5)},${sample[5]}`
+  ).join(";");
+  let hash = 2166136261;
+  for (let index = 0; index < recent.length; index++) {
+    hash ^= recent.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
 function publishedReplayData() {
@@ -1620,7 +1648,7 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.40.0";
+const GAME_VERSION = "v0.39.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
@@ -1628,8 +1656,8 @@ const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const ACCOUNT_PREFERENCES_STORAGE_PREFIX = "platforms-past-account-preferences-v1:";
 const LEGACY_SHARED_PREFERENCE_KEYS = ["platforms-volume", "platforms-audio-mix-v1", "platforms-display-size"];
 const LEADERBOARD_RULESETS = [
-  { id: "full-custom-routes-v1", label: "Custom Routes · Version 0.37.0 to 0.40.0" },
-  { id: "crate-jump-collision-v1", label: "Classic Adventure · Version 0.24.1 to 0.40.0" },
+  { id: "full-custom-routes-v1", label: "Custom Routes · Version 0.37.0 to 0.39.0" },
+  { id: "crate-jump-collision-v1", label: "Classic Adventure · Version 0.24.1 to 0.39.0" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1674,7 +1702,7 @@ const CUSTOM_ROUTE_LEADERBOARD_ID = "full-custom-routes-v1";
 const CLASSIC_LEADERBOARD_ID = "crate-jump-collision-v1";
 const CURRENT_LEADERBOARD_ID = CUSTOM_ROUTE_LEADERBOARD_ID;
 const RELEASE_VERSIONS = [
-  "v0.40.0", "v0.39.0", "v0.38.0",
+  "v0.39.0", "v0.38.0",
   "v0.37.2", "v0.37.1", "v0.37.0", "v0.36.2", "v0.36.1", "v0.36.0", "v0.35.2", "v0.35.1", "v0.35.0", "v0.34.2", "v0.34.1", "v0.34.0",
   "v0.33.3", "v0.33.2", "v0.33.1", "v0.33.0", "v0.32.1", "v0.32.0", "v0.31.1", "v0.31.0", "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
@@ -1957,7 +1985,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1976,7 +2004,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -2196,8 +2224,18 @@ function startSpikeDeath(hazardId = null) {
   clearEchoState();
   deaths++;
   if (hazardId) recordHazardDeath(hazardId);
+  if (publishedRunEvidence && currentLevel().levelType === "survival" && !publishedRunEvidence.terminal) {
+    recordPublishedRunState(true);
+    recordPublishedAction(`death:${hazardId || "unknown"}`);
+    publishedRunEvidence.terminal = {
+      kind: "death", atMs: Math.round(currentPublishedEvidenceTime() * 1000),
+      x: Math.round(player.x * 10) / 10, y: Math.round(player.y * 10) / 10,
+      reason: hazardId || "unknown"
+    };
+  }
   playSfx("death");
   deathTimer = DEATH_DURATION;
+  if (publishedLevelActive && !trustedReplayPlayback && currentLevel().levelType === "survival") publishedSurvivalEnding = true;
   pressed.jump = false;
   const x = player.x + PLAYER_W / 2;
   const y = player.y + PLAYER_H / 2;
@@ -2918,6 +2956,7 @@ function returnFromEditorPlaytest(note = "Returned from playtest.") {
   publishedLevelActive = false;
   publishedLevelContext = null;
   publishedRunEvidence = null;
+  publishedSurvivalEnding = false;
   trustedReplayPlayback = null;
   replayGhost = null;
   updateReplayModeHud();
@@ -2967,13 +3006,41 @@ function recordPublishedLevelClear() {
     replayData: evidence
   }).then(submittedRun => {
     if (accountSession?.user && submittedRun?.validation_state === "trusted" &&
-        submittedRun?.ranking_status === "valid" && !flyEver && !cheatEver) {
+        ["valid", "restored"].includes(submittedRun?.ranking_status) && !flyEver && !cheatEver) {
       window.PlatformsAccount.recordPublishedLevelCompletion(submittedRun.id, clearDeaths).catch(() => {});
     }
     openCustomLevelDetails(context.levelId, "main");
   }).catch(error => openCustomLevelDetails(context.levelId, "main").then(() => {
     customLevelLeaderboardNote.textContent = `Run rejected: ${window.PlatformsAccount?.friendlyError?.(error) || "verification failed"}`;
   }));
+}
+
+function finishPublishedSurvivalRun() {
+  if (!publishedLevelActive || currentLevel().levelType !== "survival" ||
+      !publishedLevelContext || !publishedRunEvidence || publishedRunEvidence.ended) return false;
+  const context = { ...publishedLevelContext };
+  const seconds = Math.max(.001, (publishedRunEvidence.terminal?.atMs || Math.round(currentPublishedEvidenceTime() * 1000)) / 1000);
+  if (!publishedRunEvidence.terminal) {
+    publishedRunEvidence.terminal = {
+      kind: "death", atMs: Math.round(seconds * 1000),
+      x: Math.round(player.x * 10) / 10, y: Math.round(player.y * 10) / 10,
+      reason: "survival-end"
+    };
+  }
+  const evidence = publishedReplayData();
+  const strategyFingerprint = survivalStrategyFingerprint();
+  publishedRunEvidence.ended = true;
+  publishedSurvivalEnding = false;
+  window.PlatformsAccount?.submitCustomLevelRun({
+    levelId: context.levelId, levelVersion: context.version,
+    runTicket: context.runTicket,
+    runnerName: accountProfile?.display_name || "Guest",
+    replayData: evidence, strategyFingerprint
+  }).then(() => openCustomLevelDetails(context.levelId, "main")).catch(error => openCustomLevelDetails(context.levelId, "main").then(() => {
+    customLevelLeaderboardNote.textContent = `Run rejected: ${window.PlatformsAccount?.friendlyError?.(error) || "verification failed"}`;
+  }));
+  returnFromEditorPlaytest(`Survived ${formatRunTime(seconds)}.`);
+  return true;
 }
 
 function updateHud() {
@@ -4372,11 +4439,15 @@ function closeCommunityLevels() {
 
 function customLevelTypeLabel(type, requiredStars = 0) {
   const resolved = window.PlatformsVerificationRules.resolveLevelType({ levelType: type, requiredStars });
+  if (resolved === "survival") return "Survival";
   if (resolved === "exit-stars") return `Exit + Required Stars (${requiredStars})`;
   return "Exit";
 }
 
 function customLevelStatusLabel(entry) {
+  if (entry.review_status === "invalidated") return "Strategy invalidated";
+  if (entry.review_status === "disputed") return "Strategy disputed";
+  if (entry.level_type === "survival") return "Ranked";
   return entry.verification_status === "verified" ? "Verified" : "Unverified";
 }
 
@@ -4402,6 +4473,8 @@ async function openCustomLevelDetails(levelId, returnTo = "community") {
   customLevelDetailsObjective.textContent = "—";
   customLevelPersonalBest.textContent = accountSession?.user ? "Loading your best trusted result..." : "Sign in to track your best trusted result.";
   customLevelLeaderboard.replaceChildren();
+  survivalReviewList.replaceChildren();
+  survivalReviewPanel.hidden = true;
   customLevelLeaderboardNote.textContent = "Loading trusted results for this published version...";
   customLevelDetailsPlayButton.hidden = returnTo === "pause";
   customLevelDetailsPlayButton.disabled = true;
@@ -4420,12 +4493,13 @@ async function openCustomLevelDetails(levelId, returnTo = "community") {
     customLevelDetailsVersion.textContent = `v${entry.version} (current immutable version)`;
     customLevelDetailsStatus.textContent = customLevelStatusLabel(entry);
     renderCustomLevelFavorite();
-    customLevelDetailsObjective.textContent = entry.objective || "Reach the exit.";
+    customLevelDetailsObjective.textContent = entry.objective || (entry.level_type === "survival"
+      ? "Survive as long as possible." : "Reach the exit.");
     customLevelPersonalBest.textContent = !accountSession?.user
       ? "Sign in to track your best trusted result."
       : entry.player_best_seconds == null
         ? "You do not have a trusted result for this version yet."
-        : `Your best: #${entry.player_best_rank} · ${formatRunTime(Number(entry.player_best_seconds))} · ${entry.player_best_stars} stars`;
+        : `Your best: #${entry.player_best_rank} · ${formatRunTime(Number(entry.player_best_seconds))} · ${entry.player_best_stars} stars${entry.player_best_status === "restored" ? " · Restored" : ""}`;
     customLevelDetailsPlayButton.disabled = false;
     customLevelDetailsRefreshButton.disabled = false;
     await refreshCustomLevelDetails(request);
@@ -4519,15 +4593,17 @@ async function startPublishedReplayExperience(run, mode, button) {
 function renderCustomLevelRuns(runs) {
   customLevelLeaderboard.replaceChildren();
   if (!runs.length) {
-    customLevelLeaderboardNote.textContent = "No completed runs recorded yet.";
+    customLevelLeaderboardNote.textContent = customLevelDetailsEntry?.level_type === "survival"
+      ? "No survival runs recorded yet." : "No completed runs recorded yet.";
     return;
   }
-  customLevelLeaderboardNote.textContent = "Ranked by fastest valid completion time.";
+  customLevelLeaderboardNote.textContent = customLevelDetailsEntry.level_type === "survival"
+    ? "Ranked by longest survival time." : "Ranked by fastest valid completion time.";
   runs.forEach(run => {
     const item = document.createElement("li");
     const validationState = run.validation_state || "legacy";
     const trusted = validationState === "trusted";
-    const invalid = !trusted || run.ranking_status !== "valid";
+    const invalid = !trusted || !["valid", "restored"].includes(run.ranking_status);
     item.className = `custom-level-run run-${run.ranking_status}${invalid ? " invalid" : ""}`;
     const rank = document.createElement("span");
     rank.className = "run-rank";
@@ -4543,12 +4619,12 @@ function renderCustomLevelRuns(runs) {
         ? "Legacy client-verified"
         : validationState === "rejected"
           ? "Replay rejected"
-          : ({ valid: "Valid", invalidated: "Invalidated" })[run.ranking_status] || "Invalidated";
+          : ({ valid: "Valid", disputed: "Disputed", invalidated: "Invalidated", restored: "Restored" })[run.ranking_status] || "Invalidated";
     status.textContent = `${stateLabel} · ${invalid ? (run.status_reason || "Not ranked") : `${run.stars} stars`}`;
     item.append(rank, name, time, status);
     const actions = document.createElement("div");
     actions.className = "custom-level-run-actions";
-    if (trusted && run.ranking_status === "valid") {
+    if (trusted && ["valid", "restored"].includes(run.ranking_status)) {
       const watch = document.createElement("button");
       watch.type = "button";
       watch.textContent = "Watch";
@@ -4562,8 +4638,61 @@ function renderCustomLevelRuns(runs) {
         actions.append(race);
       }
     }
+    if (customLevelDetailsEntry.level_type === "survival" && trusted && accountSession?.user && ["valid", "restored", "disputed"].includes(run.ranking_status)) {
+      const report = document.createElement("button");
+      report.type = "button";
+      report.textContent = "Flag";
+      report.addEventListener("click", () => flagSurvivalRun(run.run_id));
+      actions.append(report);
+    }
     if (actions.childElementCount) item.append(actions);
     customLevelLeaderboard.append(item);
+  });
+}
+
+function renderSurvivalReviews(reviews) {
+  survivalReviewPanel.hidden = customLevelDetailsEntry?.level_type !== "survival";
+  survivalReviewList.replaceChildren();
+  if (!reviews.length) {
+    const empty = document.createElement("p");
+    empty.textContent = "No strategies are under review.";
+    survivalReviewList.append(empty);
+    return;
+  }
+  reviews.forEach(review => {
+    const item = document.createElement("article");
+    item.className = "survival-review-item";
+    const description = document.createElement("strong");
+    description.textContent = review.description;
+    const tally = document.createElement("small");
+    const reviewState = ({ valid: "Valid", disputed: "Disputed", invalidated: "Invalidated", restored: "Restored" })[review.decision_status] || "Disputed";
+    tally.textContent = `${reviewState} · ${review.invalid_votes} invalidate / ${review.valid_votes} allow`;
+    item.append(description, tally);
+    if (review.evidence_url) {
+      const evidence = document.createElement("a");
+      evidence.href = review.evidence_url;
+      evidence.target = "_blank";
+      evidence.rel = "noopener";
+      evidence.textContent = "Open evidence";
+      item.append(evidence);
+    }
+    if (accountSession?.user) {
+      const actions = document.createElement("div");
+      actions.className = "survival-review-actions";
+      for (const [vote, label] of [["invalidated", "Invalidate"], ["valid", "Allow"]]) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        button.addEventListener("click", async () => {
+          button.disabled = true;
+          try { await window.PlatformsAccount.voteSurvivalStrategy(review.report_id, vote); await refreshCustomLevelDetails(); }
+          catch { customLevelLeaderboardNote.textContent = "That review vote could not be saved."; }
+        });
+        actions.append(button);
+      }
+      item.append(actions);
+    }
+    survivalReviewList.append(item);
   });
 }
 
@@ -4572,15 +4701,38 @@ async function refreshCustomLevelDetails(request = customLevelDetailsRequest) {
   const entry = customLevelDetailsEntry;
   customLevelLeaderboardNote.textContent = "Loading trusted results for this published version...";
   customLevelDetailsRefreshButton.disabled = true;
-  const runsResult = await Promise.resolve(
-    window.PlatformsAccount.listCustomLevelRuns(customLevelDetailsEntry.level_id, customLevelDetailsEntry.version, 0, 50)
-  ).then(value => ({ status: "fulfilled", value }), reason => ({ status: "rejected", reason }));
+  const [runsResult, reviewsResult] = await Promise.allSettled([
+    window.PlatformsAccount.listCustomLevelRuns(customLevelDetailsEntry.level_id, customLevelDetailsEntry.version, 0, 50),
+    customLevelDetailsEntry.level_type === "survival"
+      ? window.PlatformsAccount.loadCustomLevelReviewState(customLevelDetailsEntry.level_id, customLevelDetailsEntry.version) : Promise.resolve([])
+  ]);
   if (request !== customLevelDetailsRequest || customLevelDetailsEntry !== entry) return;
   customLevelDetailsRefreshButton.disabled = false;
   if (runsResult.status === "fulfilled") renderCustomLevelRuns(runsResult.value);
   else {
     customLevelLeaderboard.replaceChildren();
     customLevelLeaderboardNote.textContent = "Leaderboard unavailable. Refresh to try again; the level can still be played.";
+  }
+  if (reviewsResult.status === "fulfilled") renderSurvivalReviews(reviewsResult.value);
+  else if (entry.level_type === "survival") {
+    survivalReviewPanel.hidden = false;
+    survivalReviewList.replaceChildren();
+    const error = document.createElement("p");
+    error.textContent = "Strategy reviews are temporarily unavailable.";
+    survivalReviewList.append(error);
+  }
+}
+
+async function flagSurvivalRun(runId) {
+  const description = prompt("Describe the permanent safe spot or trivial repeatable pattern (at least 12 characters):", "");
+  if (!description) return;
+  const evidence = prompt("Optional evidence URL (video, replay, or reproduction segment):", "") || "";
+  customLevelLeaderboardNote.textContent = "Submitting strategy evidence...";
+  try {
+    await window.PlatformsAccount.reportSurvivalStrategy(runId, description, evidence);
+    await refreshCustomLevelDetails();
+  } catch (error) {
+    customLevelLeaderboardNote.textContent = window.PlatformsAccount.friendlyError(error);
   }
 }
 
@@ -4663,7 +4815,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -7032,6 +7184,7 @@ function update(dt) {
         updateReplayModeHud();
         return;
       }
+      if (publishedSurvivalEnding && finishPublishedSurvivalRun()) return;
       resetPlayer(false);
       if (publishedLevelActive) resetPublishedRunEvidence();
     }
@@ -7117,6 +7270,10 @@ function update(dt) {
   const box = playerBox();
   if (player.y > VIEW_H + 100 && !invincibilityEnabled) {
     playSfx("death");
+    if (publishedLevelActive && currentLevel().levelType === "survival") {
+      startSpikeDeath("fall");
+      return;
+    }
     resetPlayer(true);
     return;
   }
@@ -7158,9 +7315,9 @@ function update(dt) {
   }
 
   const collectedLevelStars = collected.filter(Boolean).length;
-  const finishRequirementMet = flightEnabled ||
+  const finishRequirementMet = currentLevel().levelType !== "survival" && (flightEnabled ||
     ((!currentLevel().requiredStars || currentLevelStarCount() >= currentLevel().requiredStars) &&
-      (!currentLevel().requiredLevelStars || collectedLevelStars >= currentLevel().requiredLevelStars));
+      (!currentLevel().requiredLevelStars || collectedLevelStars >= currentLevel().requiredLevelStars)));
   if (finishRequirementMet && overlaps(box, currentLevel().finish)) {
     playSfx("flag");
     if (editorPlaytestActive) {
@@ -8382,7 +8539,7 @@ function render(time) {
   drawReplayGhost(time);
   currentLevel().stars.forEach(([x, y], i) => drawStar(x, y, i, time));
   drawEnemyStars(time);
-  drawFlag(currentLevel().finish);
+  if (currentLevel().levelType !== "survival") drawFlag(currentLevel().finish);
   drawBlockDebris();
   drawLandingParticles();
   drawEnemyDeathParticles();
