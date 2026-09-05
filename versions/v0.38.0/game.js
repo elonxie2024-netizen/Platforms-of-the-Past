@@ -101,7 +101,6 @@ const survivalReviewPanel = document.querySelector("#survivalReviewPanel");
 const survivalReviewList = document.querySelector("#survivalReviewList");
 const closeCustomLevelDetailsButton = document.querySelector("#closeCustomLevelDetailsButton");
 const runIntegrityWarning = document.querySelector("#runIntegrityWarning");
-const replayModeHud = document.querySelector("#replayModeHud");
 const publicProfileMenu = document.querySelector("#publicProfileMenu");
 const publicProfileHeader = document.querySelector("#publicProfileHeader");
 const publicProfileNote = document.querySelector("#publicProfileNote");
@@ -184,7 +183,6 @@ const profileDisplayName = document.querySelector("#profileDisplayName");
 const profileUsername = document.querySelector("#profileUsername");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.39.0", commit: "Pending commit", date: "2026-09-04", message: "Trusted replay playback", description: "Added secure Watch controls for trusted current-version custom-level runs and an optional signed-in Race Ghost mode. Replay viewing uses the exact immutable published snapshot, replays recorded controls without creating progress or submissions, and keeps ghost motion translucent and non-interactive while a fresh ranked attempt follows the normal trusted ticket flow." },
   { version: "v0.38.0", commit: "Pending commit", date: "2026-09-01", message: "Favorites and Community discovery", description: "Added private account Favorites for published custom levels, public aggregate favorite counts, a signed-in My Favorites view, and server-side Most Favorited sorting that remains compatible with search and pagination. Favorites stay attached to the stable level identity across publication versions, disappear from public views while a level is unpublished, and return when it is republished without exposing which accounts favorited it." },
   { version: "v0.37.2", commit: "Pending commit", date: "2026-08-31", message: "Human-friendly leaderboard UX", description: "Replaced player-facing board codes with concise names such as Chapter 1 · Any%, Full Campaign · Any%, and readable mixed-route summaries. The leaderboard now groups the current and recently viewed boards separately from common presets, keeps Time, Score, and Stars as simple views of the same runs, and offers an expandable exact-route description when a compact label omits individual levels. Internal normalized board IDs and historical Classic Adventure separation remain unchanged." },
   { version: "v0.37.1", commit: "Pending commit", date: "2026-08-28", message: "Share runs across leaderboard metrics", description: "Made every published run count in all three leaderboard views. Time, Score, and Stars now sort the same route-specific run pool instead of separating submissions by the metric chosen before the run. The builder's metric choice only selects which view opens first, and historical stored runs remain visible in every view." },
@@ -1228,11 +1226,9 @@ let publishedLevelActive = false;
 let publishedLevelContext = null;
 let publishedRunEvidence = null;
 let publishedSurvivalEnding = false;
-let trustedReplayPlayback = null;
-let replayGhost = null;
 
 function resetPublishedRunEvidence() {
-  publishedRunEvidence = publishedLevelActive && !trustedReplayPlayback ? {
+  publishedRunEvidence = publishedLevelActive ? {
     startedAt: null, samples: [], inputEvents: [[0, publishedInputMask()]], actions: [], integrityEvents: [],
     initialState: null, terminal: null, lastInputMask: publishedInputMask(), flyEver: Boolean(flightEnabled),
     cheatEver: Boolean(flightEnabled || collisionDisabled || invincibilityEnabled),
@@ -1244,105 +1240,6 @@ function resetPublishedRunEvidence() {
   publishedSurvivalEnding = false;
   runIntegrityWarning.hidden = true;
   runIntegrityWarning.textContent = "";
-}
-
-function clearReplayDrivenInput() {
-  if (input.rewind) commitTimelinePreview();
-  Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
-  pressed.jump = false;
-}
-
-function applyReplayInputMask(mask) {
-  const next = Number(mask) || 0;
-  const jump = Boolean(next & 4);
-  const rewind = Boolean(next & 16);
-  const forwardTime = Boolean(next & 32);
-  input.left = Boolean(next & 1);
-  input.right = Boolean(next & 2);
-  input.down = Boolean(next & 8);
-  if (jump && !input.jump) pressed.jump = true;
-  input.jump = jump;
-  if (rewind && !input.rewind) input.rewind = beginTimelinePreview();
-  else if (!rewind && input.rewind) {
-    commitTimelinePreview();
-    input.rewind = false;
-  }
-  if (forwardTime && input.rewind && !input.forwardTime) setTimelinePreviewPaused(false);
-  else if (!forwardTime && input.forwardTime) setTimelinePreviewPaused(true);
-  input.forwardTime = forwardTime && input.rewind;
-}
-
-function performReplayAction(action) {
-  if (action === "interact") activateNearbySwitch();
-  else if (action === "echo-record" || action === "echo-stop" || action === "echo-create") toggleEchoRecording();
-  else if (action === "echo-destroy") destroyEcho();
-}
-
-function resetReplayExperience() {
-  clearReplayDrivenInput();
-  if (trustedReplayPlayback) {
-    Object.assign(trustedReplayPlayback, {
-      elapsedMs: 0, inputMask: 0, actionIndex: 0, checkpointIndex: 0,
-      ended: false, terminalReached: false
-    });
-    applyReplayInputMask(trustedReplayPlayback.timeline.inputMaskAt(0));
-  }
-  if (replayGhost) replayGhost.elapsedMs = 0;
-  updateReplayModeHud();
-}
-
-function updateReplayModeHud() {
-  if (trustedReplayPlayback) {
-    replayModeHud.hidden = false;
-    replayModeHud.textContent = `Watching ${trustedReplayPlayback.runnerName}${trustedReplayPlayback.ended ? " · Finished · R to restart" : ""}`;
-  } else if (replayGhost) {
-    replayModeHud.hidden = false;
-    replayModeHud.textContent = `Racing ghost · ${replayGhost.runnerName}`;
-  } else {
-    replayModeHud.hidden = true;
-    replayModeHud.textContent = "";
-  }
-}
-
-function advanceReplayExperience(dt) {
-  if (trustedReplayPlayback && !trustedReplayPlayback.ended && !trustedReplayPlayback.terminalReached) {
-    const playback = trustedReplayPlayback;
-    playback.elapsedMs = Math.min(playback.timeline.durationMs, playback.elapsedMs + dt * 1000);
-    applyReplayInputMask(playback.timeline.inputMaskAt(playback.elapsedMs));
-    const actions = playback.timeline.evidence.actions;
-    while (playback.actionIndex < actions.length && Number(actions[playback.actionIndex][0]) <= playback.elapsedMs) {
-      performReplayAction(actions[playback.actionIndex][1]);
-      playback.actionIndex++;
-    }
-  }
-  if (replayGhost && timerRunning) {
-    replayGhost.elapsedMs = Math.min(replayGhost.timeline.durationMs, replayGhost.elapsedMs + dt * 1000);
-  }
-}
-
-function finishReplayExperienceStep() {
-  if (!trustedReplayPlayback || trustedReplayPlayback.ended || trustedReplayPlayback.terminalReached) return;
-  const playback = trustedReplayPlayback;
-  const checkpoints = playback.timeline.evidence.checkpoints;
-  let correction = null;
-  while (playback.checkpointIndex < checkpoints.length && Number(checkpoints[playback.checkpointIndex][0]) <= playback.elapsedMs) {
-    correction = checkpoints[playback.checkpointIndex++];
-  }
-  if (correction) {
-    player.x = Number(correction[1]);
-    player.y = Number(correction[2]);
-    player.vx = Number(correction[3]);
-    player.vy = Number(correction[4]);
-    player.facing = player.vx < -1 ? -1 : player.facing || 1;
-    cameraX = Math.max(0, Math.min(currentLevel().width - VIEW_W, player.x - VIEW_W * .35));
-  }
-  if (playback.elapsedMs < playback.timeline.durationMs) return;
-  playback.terminalReached = true;
-  clearReplayDrivenInput();
-  if (playback.timeline.evidence.terminal.kind === "death") {
-    if (deathTimer <= 0) startSpikeDeath(playback.timeline.evidence.terminal.reason || "replay");
-  } else playback.ended = true;
-  updateReplayModeHud();
 }
 
 function currentPublishedEvidenceTime() {
@@ -1648,7 +1545,7 @@ let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.39.0";
+const GAME_VERSION = "v0.38.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
@@ -1656,8 +1553,8 @@ const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const ACCOUNT_PREFERENCES_STORAGE_PREFIX = "platforms-past-account-preferences-v1:";
 const LEGACY_SHARED_PREFERENCE_KEYS = ["platforms-volume", "platforms-audio-mix-v1", "platforms-display-size"];
 const LEADERBOARD_RULESETS = [
-  { id: "full-custom-routes-v1", label: "Custom Routes · Version 0.37.0 to 0.39.0" },
-  { id: "crate-jump-collision-v1", label: "Classic Adventure · Version 0.24.1 to 0.39.0" },
+  { id: "full-custom-routes-v1", label: "Custom Routes · Version 0.37.0 to 0.38.0" },
+  { id: "crate-jump-collision-v1", label: "Classic Adventure · Version 0.24.1 to 0.38.0" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1702,7 +1599,7 @@ const CUSTOM_ROUTE_LEADERBOARD_ID = "full-custom-routes-v1";
 const CLASSIC_LEADERBOARD_ID = "crate-jump-collision-v1";
 const CURRENT_LEADERBOARD_ID = CUSTOM_ROUTE_LEADERBOARD_ID;
 const RELEASE_VERSIONS = [
-  "v0.39.0", "v0.38.0",
+  "v0.38.0",
   "v0.37.2", "v0.37.1", "v0.37.0", "v0.36.2", "v0.36.1", "v0.36.0", "v0.35.2", "v0.35.1", "v0.35.0", "v0.34.2", "v0.34.1", "v0.34.0",
   "v0.33.3", "v0.33.2", "v0.33.1", "v0.33.0", "v0.32.1", "v0.32.0", "v0.31.1", "v0.31.0", "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
@@ -1985,7 +1882,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -2004,7 +1901,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -2235,7 +2132,7 @@ function startSpikeDeath(hazardId = null) {
   }
   playSfx("death");
   deathTimer = DEATH_DURATION;
-  if (publishedLevelActive && !trustedReplayPlayback && currentLevel().levelType === "survival") publishedSurvivalEnding = true;
+  if (publishedLevelActive && currentLevel().levelType === "survival") publishedSurvivalEnding = true;
   pressed.jump = false;
   const x = player.x + PLAYER_W / 2;
   const y = player.y + PLAYER_H / 2;
@@ -2859,7 +2756,6 @@ function loadLevel(index, keepScore = true) {
   gauntletCompleteMessage.hidden = true;
   resetLevelMotion();
   resetPlayer(false, true);
-  if (editorPlaytestActive && (trustedReplayPlayback || replayGhost)) resetReplayExperience();
   if (timerRunning && gameStarted) beginLevelTimer();
   else resetLevelTimer();
   updateHud();
@@ -2877,9 +2773,7 @@ function restartLevel() {
   resetLevelMotion();
   resetPlayer(false, true);
   resetPublishedRunEvidence();
-  resetReplayExperience();
-  if (trustedReplayPlayback) resetLevelTimer();
-  else beginLevelTimer();
+  beginLevelTimer();
   updateHud();
   return true;
 }
@@ -2895,14 +2789,7 @@ function startEditorPlaytest(levelData, options = {}) {
   editorPlaytestIndex = levels.length;
   levels.push(result.level);
   editorPlaytestActive = true;
-  trustedReplayPlayback = options.replayTimeline ? {
-    timeline: options.replayTimeline, runnerName: options.replayRunnerName || "Unknown runner",
-    elapsedMs: 0, inputMask: 0, actionIndex: 0, checkpointIndex: 0, ended: false, terminalReached: false
-  } : null;
-  replayGhost = options.ghostTimeline ? {
-    timeline: options.ghostTimeline, runnerName: options.ghostRunnerName || "Unknown runner", elapsedMs: 0
-  } : null;
-  publishedLevelActive = options.source === "published" || options.source === "replay";
+  publishedLevelActive = options.source === "published";
   publishedLevelContext = publishedLevelActive ? {
     levelId: options.levelId,
     ownerId: options.ownerId || null,
@@ -2934,7 +2821,6 @@ function startEditorPlaytest(levelData, options = {}) {
   restartRunButton.disabled = false;
   quitButton.disabled = false;
   startMusic(currentLevel().music || "level1");
-  updateReplayModeHud();
   canvas.focus();
 }
 
@@ -2957,9 +2843,6 @@ function returnFromEditorPlaytest(note = "Returned from playtest.") {
   publishedLevelContext = null;
   publishedRunEvidence = null;
   publishedSurvivalEnding = false;
-  trustedReplayPlayback = null;
-  replayGhost = null;
-  updateReplayModeHud();
   runIntegrityWarning.hidden = true;
   levelIndex = 0;
   if (removeIndex >= 0 && levels[removeIndex]?.editorPlaytest) levels.splice(removeIndex, 1);
@@ -3045,9 +2928,7 @@ function finishPublishedSurvivalRun() {
 
 function updateHud() {
   levelLabel.textContent = editorPlaytestActive
-    ? trustedReplayPlayback
-      ? `Watching ${trustedReplayPlayback.runnerName} — ${currentLevel().name}`
-      : publishedLevelActive
+    ? publishedLevelActive
       ? `Published Level — ${currentLevel().name}`
       : `Editor Playtest — ${currentLevel().name}`
     : currentLevel().gauntletId
@@ -3077,11 +2958,6 @@ function formatRunTime(seconds) {
 }
 
 function updateTimerHud() {
-  if (trustedReplayPlayback) {
-    timerLabel.textContent = `Replay ${formatRunTime(trustedReplayPlayback.elapsedMs / 1000)} / ${formatRunTime(trustedReplayPlayback.timeline.durationMs / 1000)}`;
-    levelTimerLabel.textContent = trustedReplayPlayback.ended ? "Playback complete" : paused ? "Playback paused" : "Trusted replay";
-    return;
-  }
   timerLabel.textContent = `Run ${formatRunTime(currentRunTime())}`;
   levelTimerLabel.textContent = `Level ${formatRunTime(currentLevelTime())}`;
 }
@@ -4514,82 +4390,6 @@ async function openCustomLevelDetails(levelId, returnTo = "community") {
   }
 }
 
-async function startPublishedReplayExperience(run, mode, button) {
-  if (!run?.run_id || !customLevelDetailsEntry) return;
-  if (mode === "race" && !accountSession?.user) {
-    customLevelLeaderboardNote.textContent = "Sign in to race a trusted replay ghost.";
-    return;
-  }
-  const detail = customLevelDetailsEntry;
-  button.disabled = true;
-  closeCustomLevelDetailsButton.disabled = true;
-  customLevelDetailsRefreshButton.disabled = true;
-  customLevelDetailsCreator.disabled = true;
-  customLevelLeaderboardNote.textContent = mode === "race" ? "Preparing the ghost race..." : "Loading trusted replay...";
-  try {
-    const replay = await window.PlatformsAccount.loadCustomLevelRunReplay(run.run_id);
-    if (!replay) {
-      const latest = await window.PlatformsAccount.loadPublishedCustomLevelDetails(detail.level_id).catch(() => null);
-      if (!latest) throw new Error("This level was unpublished, so its replay is no longer available.");
-      if (Number(latest.version) !== Number(detail.version)) {
-        throw new Error(`This level was republished as v${latest.version}; the previous-version replay is no longer public.`);
-      }
-      throw new Error("This run does not have an available trusted replay.");
-    }
-    if (replay.level_id !== detail.level_id || Number(replay.level_version) !== Number(detail.version)) {
-      throw new Error("This replay belongs to a different published version.");
-    }
-    const published = await window.PlatformsAccount.loadPublishedCustomLevel(replay.level_id);
-    if (!published) throw new Error("This level was unpublished while the replay was loading.");
-    if (Number(published.version) !== Number(replay.level_version)) {
-      throw new Error(`This level was republished as v${published.version}; the previous-version replay is no longer public.`);
-    }
-    const prepared = window.PlatformsLevelData.cloneLevel(published.level_data);
-    if (!prepared?.ok) throw new Error("The immutable published level snapshot is invalid.");
-    let timeline;
-    try {
-      timeline = window.PlatformsReplayPlayback.createTimeline(replay.replay_data, {
-        levelId: replay.level_id,
-        levelVersion: replay.level_version,
-        levelDigest: window.PlatformsReplayValidator.levelDigest(prepared.level)
-      });
-    } catch {
-      throw new Error("This trusted replay could not be decoded safely.");
-    }
-    const sharedOptions = {
-      levelId: published.level_id,
-      ownerId: published.owner_id,
-      ownerName: published.owner_name,
-      ownerUsername: published.owner_username,
-      version: published.version,
-      levelData: prepared.level
-    };
-    if (mode === "race") {
-      const runTicket = await window.PlatformsAccount.issueCustomLevelRunTicket(published.level_id, published.version);
-      if (!runTicket) throw new Error("A new ranked run could not be initialized.");
-      startEditorPlaytest(prepared.level, {
-        ...sharedOptions, source: "published", runTicket,
-        ghostTimeline: timeline, ghostRunnerName: replay.runner_name
-      });
-    } else {
-      startEditorPlaytest(prepared.level, {
-        ...sharedOptions, source: "replay", runTicket: null,
-        replayTimeline: timeline, replayRunnerName: replay.runner_name
-      });
-    }
-    customLevelDetailsMenu.hidden = true;
-  } catch (error) {
-    customLevelLeaderboardNote.textContent = String(error?.message || "Trusted replay playback is unavailable.");
-    button.disabled = false;
-  } finally {
-    if (!customLevelDetailsMenu.hidden && customLevelDetailsEntry === detail) {
-      closeCustomLevelDetailsButton.disabled = false;
-      customLevelDetailsRefreshButton.disabled = false;
-      customLevelDetailsCreator.disabled = !detail.owner_id;
-    }
-  }
-}
-
 function renderCustomLevelRuns(runs) {
   customLevelLeaderboard.replaceChildren();
   if (!runs.length) {
@@ -4622,30 +4422,13 @@ function renderCustomLevelRuns(runs) {
           : ({ valid: "Valid", disputed: "Disputed", invalidated: "Invalidated", restored: "Restored" })[run.ranking_status] || "Invalidated";
     status.textContent = `${stateLabel} · ${invalid ? (run.status_reason || "Not ranked") : `${run.stars} stars`}`;
     item.append(rank, name, time, status);
-    const actions = document.createElement("div");
-    actions.className = "custom-level-run-actions";
-    if (trusted && ["valid", "restored"].includes(run.ranking_status)) {
-      const watch = document.createElement("button");
-      watch.type = "button";
-      watch.textContent = "Watch";
-      watch.addEventListener("click", () => startPublishedReplayExperience(run, "watch", watch));
-      actions.append(watch);
-      if (accountSession?.user) {
-        const race = document.createElement("button");
-        race.type = "button";
-        race.textContent = "Race Ghost";
-        race.addEventListener("click", () => startPublishedReplayExperience(run, "race", race));
-        actions.append(race);
-      }
-    }
     if (customLevelDetailsEntry.level_type === "survival" && trusted && accountSession?.user && ["valid", "restored", "disputed"].includes(run.ranking_status)) {
       const report = document.createElement("button");
       report.type = "button";
       report.textContent = "Flag";
       report.addEventListener("click", () => flagSurvivalRun(run.run_id));
-      actions.append(report);
+      item.append(report);
     }
-    if (actions.childElementCount) item.append(actions);
     customLevelLeaderboard.append(item);
   });
 }
@@ -4815,7 +4598,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -5572,7 +5355,6 @@ function resetEchoLoop() {
 }
 
 function setKey(code, down) {
-  if (trustedReplayPlayback) return;
   if (down && (!gameStarted || paused || won || cutsceneActive || deathTimer > 0 || levelTransition > 0)) return;
   if (down && ["ArrowLeft", "KeyA", "ArrowRight", "KeyD", "ArrowUp", "KeyW", "Space", "ArrowDown", "KeyS", "KeyF", "KeyG"].includes(code)) startRunTimer();
   if (["ArrowLeft", "KeyA"].includes(code)) input.left = down;
@@ -5705,7 +5487,7 @@ canvas.addEventListener("pointerdown", (event) => {
     else startRewindLevel();
     return;
   }
-  if (!gameStarted || paused || won || deathTimer > 0 || levelTransition > 0 || trustedReplayPlayback) return;
+  if (!gameStarted || paused || won || deathTimer > 0 || levelTransition > 0) return;
   const pointer = canvasPointerPosition(event);
   const echoControl = echoPromptButtons().find((button) => pointInsideButton(pointer, button));
   if (echoControl) {
@@ -5750,7 +5532,7 @@ canvas.addEventListener("pointerup", releaseRewindPointer);
 canvas.addEventListener("pointercancel", releaseRewindPointer);
 canvas.addEventListener("lostpointercapture", releaseRewindPointer);
 canvas.addEventListener("pointermove", (event) => {
-  if (!gameStarted || paused || won || cutsceneActive || deathTimer > 0 || levelTransition > 0 || trustedReplayPlayback) {
+  if (!gameStarted || paused || won || cutsceneActive || deathTimer > 0 || levelTransition > 0) {
     canvas.style.cursor = "default";
     return;
   }
@@ -5852,11 +5634,9 @@ function trackMusicTempoSequence(event) {
 
 addEventListener("keydown", (event) => {
   if (event.target instanceof Element && event.target.matches("input, textarea, select")) return;
-  if (!trustedReplayPlayback) {
-    trackDevelopmentSequence(event);
-    trackMusicTempoSequence(event);
-    if (trackLevelDeveloperSequence(event)) return;
-  }
+  trackDevelopmentSequence(event);
+  trackMusicTempoSequence(event);
+  if (trackLevelDeveloperSequence(event)) return;
   if (event.target instanceof Element && event.target.matches("button")) return;
   if (!gameStarted) return;
   if (cutsceneActive) return;
@@ -5868,10 +5648,6 @@ addEventListener("keydown", (event) => {
     return;
   }
   if (paused) return;
-  if (trustedReplayPlayback) {
-    if (event.code === "KeyR" || event.code === "KeyT") restartLevel();
-    return;
-  }
   if (won) {
     if (event.code === "Enter") {
       if (!echoChapterMessage.hidden) startEchoCutscene();
@@ -5914,18 +5690,12 @@ addEventListener("blur", () => {
 });
 restartButton.addEventListener("click", restartLevel);
 restartRunButton.addEventListener("click", () => {
-  if (!won && !cutsceneActive && deathTimer <= 0 && levelTransition <= 0) {
-    if (trustedReplayPlayback) restartLevel();
-    else startOver();
-  }
+  if (!won && !cutsceneActive && deathTimer <= 0 && levelTransition <= 0) startOver();
 });
 pauseButton.addEventListener("click", () => setPaused(!paused));
 resumeButton.addEventListener("click", () => setPaused(false));
 pauseRestartLevelButton.addEventListener("click", () => { restartLevel(); setPaused(false); });
-pauseRestartRunButton.addEventListener("click", () => {
-  if (trustedReplayPlayback) { restartLevel(); setPaused(false); }
-  else startOver();
-});
+pauseRestartRunButton.addEventListener("click", startOver);
 pauseQuitButton.addEventListener("click", quitRun);
 mainLeaderboardButton.addEventListener("click", () => openLeaderboard("main"));
 communityLevelsButton.addEventListener("click", openCommunityLevels);
@@ -7163,9 +6933,6 @@ function update(dt) {
     return;
   }
 
-  advanceReplayExperience(dt);
-  if (trustedReplayPlayback?.ended) return;
-
   updateBlockDebris(dt);
   updateLandingParticles(dt);
   updateEnemyDeathParticles(dt);
@@ -7179,11 +6946,6 @@ function update(dt) {
       particle.rotation += particle.spin * dt;
     }
     if (deathTimer === 0) {
-      if (trustedReplayPlayback?.terminalReached) {
-        trustedReplayPlayback.ended = true;
-        updateReplayModeHud();
-        return;
-      }
       if (publishedSurvivalEnding && finishPublishedSurvivalRun()) return;
       resetPlayer(false);
       if (publishedLevelActive) resetPublishedRunEvidence();
@@ -7321,13 +7083,6 @@ function update(dt) {
   if (finishRequirementMet && overlaps(box, currentLevel().finish)) {
     playSfx("flag");
     if (editorPlaytestActive) {
-      if (trustedReplayPlayback) {
-        trustedReplayPlayback.terminalReached = true;
-        trustedReplayPlayback.ended = true;
-        clearReplayDrivenInput();
-        updateReplayModeHud();
-        return;
-      }
       recordPublishedLevelClear();
       returnFromEditorPlaytest("Playtest complete: the exit was reached.");
       return;
@@ -7814,17 +7569,6 @@ function drawEcho(time) {
   ctx.shadowColor = "#77e8ff";
   ctx.shadowBlur = 12;
   drawSlimeCharacter(echo, time, "echo");
-  ctx.restore();
-}
-
-function drawReplayGhost(time) {
-  if (!replayGhost) return;
-  const ghost = replayGhost.timeline.samplePlayer(replayGhost.elapsedMs);
-  ctx.save();
-  ctx.globalAlpha = .38;
-  ctx.shadowColor = "#ffd34d";
-  ctx.shadowBlur = 14;
-  drawSlimeCharacter(ghost, time, "player");
   ctx.restore();
 }
 
@@ -8536,7 +8280,6 @@ function render(time) {
   drawEchoRoutePreview(time);
   drawEnemies(time);
   drawEcho(time);
-  drawReplayGhost(time);
   currentLevel().stars.forEach(([x, y], i) => drawStar(x, y, i, time));
   drawEnemyStars(time);
   if (currentLevel().levelType !== "survival") drawFlag(currentLevel().finish);
@@ -8556,11 +8299,7 @@ function render(time) {
 function frame(time) {
   accumulator += Math.min(.05, (time - lastTime) / 1000);
   lastTime = time;
-  while (accumulator >= STEP) {
-    update(STEP);
-    finishReplayExperienceStep();
-    accumulator -= STEP;
-  }
+  while (accumulator >= STEP) { update(STEP); accumulator -= STEP; }
   updateMenuAnimation(time);
   updateTimerHud();
   render(time);

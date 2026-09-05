@@ -53,7 +53,7 @@ try {
     -WindowStyle Hidden -RedirectStandardOutput $mainStdoutPath -RedirectStandardError $mainStderrPath
   if ($mainProcess.ExitCode -ne 0) { throw "The game smoke test exited with code $($mainProcess.ExitCode)." }
   $mainDom = Get-Content -LiteralPath $mainStdoutPath -Raw
-  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.38.0')) {
+  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.39.0')) {
     throw 'The complete game did not initialize with the current verification and level-data scripts.'
   }
   Write-Host 'Complete game initialization: 1/1 passed' -ForegroundColor Green
@@ -67,6 +67,7 @@ try {
   $styles = Get-Content -LiteralPath (Join-Path $repoRoot 'styles.css') -Raw
   $runRules = Get-Content -LiteralPath (Join-Path $repoRoot 'run-rules.js') -Raw
   $validator = Get-Content -LiteralPath (Join-Path $repoRoot 'supabase\functions\_shared\replay-validator.js') -Raw
+  $playback = Get-Content -LiteralPath (Join-Path $repoRoot 'replay-playback.js') -Raw
   $edgeVerifier = Get-Content -LiteralPath (Join-Path $repoRoot 'supabase\functions\verify-custom-run\index.ts') -Raw
   $supabaseConfig = Get-Content -LiteralPath (Join-Path $repoRoot 'supabase\config.toml') -Raw
   $trustedSql = $sql.Substring($sql.IndexOf('-- v0.35.0:'))
@@ -74,9 +75,11 @@ try {
   $listEnd = $trustedSql.IndexOf('create or replace function public.record_custom_level_completion', $listStart)
   $listSql = $trustedSql.Substring($listStart, $listEnd - $listStart)
   $detailStart = $sql.IndexOf('-- v0.36.0: metadata-only published-level details')
-  $detailsSql = if ($detailStart -ge 0) { $sql.Substring($detailStart) } else { '' }
   $favoriteStart = $sql.IndexOf('-- v0.38.0: private account favorites')
-  $favoritesSql = if ($favoriteStart -ge 0) { $sql.Substring($favoriteStart) } else { '' }
+  $replayPlaybackStart = $sql.IndexOf('-- v0.39.0: fetch one trusted replay')
+  $detailsSql = if ($detailStart -ge 0 -and $favoriteStart -gt $detailStart) { $sql.Substring($detailStart, $favoriteStart - $detailStart) } else { '' }
+  $favoritesSql = if ($favoriteStart -ge 0 -and $replayPlaybackStart -gt $favoriteStart) { $sql.Substring($favoriteStart, $replayPlaybackStart - $favoriteStart) } else { '' }
+  $replayPlaybackSql = if ($replayPlaybackStart -ge 0) { $sql.Substring($replayPlaybackStart) } else { '' }
   $contracts = [ordered]@{}
   $contracts['SQL accepts exactly three level types'] = $sql.Contains("level_type in ('exit', 'exit-stars', 'survival')")
   $contracts['SQL creates monotonically increasing immutable versions'] = $sql.Contains('coalesce(max(history.version), 0) + 1')
@@ -166,6 +169,20 @@ try {
   $contracts['Favorite pagination has stable bounds and tie-breaking'] = $favoritesSql.Contains('catalog.level_id') -and $favoritesSql.Contains('offset least(greatest(coalesce(p_offset, 0), 0), 100000)') -and $favoritesSql.Contains('limit least(greatest(coalesce(p_limit, 13), 1), 51)')
   $contracts['Signed-in My Favorites is an account-filtered Community view'] = $account.Contains('p_favorites_only: Boolean(favoritesOnly)') -and $game.Contains('communityFavoritesButton.hidden = !userId') -and $game.Contains('communityFavoritesOnly')
   $contracts['Guests see counts but cannot favorite'] = $game.Contains('favorite.disabled = !accountSession?.user') -and $game.Contains('Sign in to favorite levels')
+  $contracts['Replay fetch returns one trusted run through a narrow RPC'] = $replayPlaybackSql.Contains('create function public.get_custom_level_run_replay') -and $account.Contains('rpc("get_custom_level_run_replay"')
+  $contracts['Replay fetch refuses non-trusted evidence'] = $replayPlaybackSql.Contains("run.validation_state = 'trusted'")
+  $contracts['Replay fetch refuses unpublished levels'] = $replayPlaybackSql.Contains('join public.published_custom_levels current') -and $replayPlaybackSql.Contains('current.level_id = run.level_id')
+  $contracts['Replay fetch refuses runs after a newer publication'] = $replayPlaybackSql.Contains('current.version = run.level_version')
+  $contracts['Replay fetch is public without granting replay-table reads'] = $replayPlaybackSql.Contains('grant execute on function public.get_custom_level_run_replay(uuid) to anon, authenticated') -and $sql.Contains('public.custom_level_runs, public.survival_exploit_reports')
+  $contracts['Leaderboard listing remains metadata-only after replay playback'] = -not $listSql.Contains('replay_data')
+  $contracts['Only trusted valid or restored rows offer Watch'] = $game.Contains('if (trusted && ["valid", "restored"].includes(run.ranking_status))') -and $game.Contains('watch.textContent = "Watch"')
+  $contracts['Watch validates replay level version and immutable digest'] = $game.Contains('levelVersion: replay.level_version') -and $game.Contains('levelDigest: window.PlatformsReplayValidator.levelDigest(prepared.level)')
+  $contracts['Watch creates no ticket or submission evidence'] = $game.Contains('source: "replay", runTicket: null') -and $game.Contains('publishedLevelActive && !trustedReplayPlayback')
+  $contracts['Watch blocks live keyboard touch and canvas gameplay input'] = $game.Contains('function setKey(code, down) {') -and $game.Contains('if (trustedReplayPlayback) return;') -and $game.Contains('levelTransition > 0 || trustedReplayPlayback) return;')
+  $contracts['Ghost race uses a fresh normal ranked ticket'] = $game.Contains('const runTicket = await window.PlatformsAccount.issueCustomLevelRunTicket') -and $game.Contains('ghostTimeline: timeline') -and $game.Contains('source: "published", runTicket')
+  $contracts['Ghost remains presentation-only'] = $game.Contains('function drawReplayGhost') -and $game.Contains('replayGhost.timeline.samplePlayer') -and -not $playback.Contains('moveActorAndCollide')
+  $contracts['Replay playback supports pause restart and a time readout'] = $game.Contains('if (event.code === "KeyR" || event.code === "KeyT") restartLevel()') -and $game.Contains('Replay ${formatRunTime(trustedReplayPlayback.elapsedMs / 1000)}')
+  $contracts['Replay playback fails clearly after unpublish republish or decode failure'] = $game.Contains('This level was unpublished') -and $game.Contains('This level was republished as') -and $game.Contains('trusted replay could not be decoded safely')
   $contractFailures = @($contracts.GetEnumerator() | Where-Object { -not $_.Value })
   foreach ($failure in $contractFailures) { Write-Host "FAIL: source contract - $($failure.Key)" -ForegroundColor Red }
   if ($contractFailures.Count -gt 0) { throw "$($contractFailures.Count) database/source contracts failed." }

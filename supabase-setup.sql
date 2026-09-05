@@ -14,8 +14,8 @@ create table if not exists public.leaderboard_rulesets (
 
 insert into public.leaderboard_rulesets (id, label, accepted_versions)
 values
-  ('full-custom-routes-v1', 'Custom Routes · Version 0.37.0 to 0.38.0', array['v0.37.0', 'v0.37.1', 'v0.37.2', 'v0.38.0']),
-  ('crate-jump-collision-v1', 'Classic Adventure · Version 0.24.1 to 0.38.0', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1', 'v0.28.2', 'v0.29.0', 'v0.29.1', 'v0.30.0', 'v0.30.1', 'v0.30.2', 'v0.30.3', 'v0.31.0', 'v0.31.1', 'v0.32.0', 'v0.32.1', 'v0.33.0', 'v0.33.1', 'v0.33.2', 'v0.33.3', 'v0.34.0', 'v0.34.1', 'v0.34.2', 'v0.35.0', 'v0.35.1', 'v0.35.2', 'v0.36.0', 'v0.36.1', 'v0.36.2', 'v0.37.0', 'v0.37.1', 'v0.37.2', 'v0.38.0']),
+  ('full-custom-routes-v1', 'Custom Routes · Version 0.37.0 to 0.39.0', array['v0.37.0', 'v0.37.1', 'v0.37.2', 'v0.38.0', 'v0.39.0']),
+  ('crate-jump-collision-v1', 'Classic Adventure · Version 0.24.1 to 0.39.0', array['v0.24.1', 'v0.24.2', 'v0.25.0', 'v0.26.0', 'v0.26.1', 'v0.26.2', 'v0.26.3', 'v0.26.4', 'v0.26.5', 'v0.26.6', 'v0.27.0', 'v0.27.1', 'v0.28.0', 'v0.28.1', 'v0.28.2', 'v0.29.0', 'v0.29.1', 'v0.30.0', 'v0.30.1', 'v0.30.2', 'v0.30.3', 'v0.31.0', 'v0.31.1', 'v0.32.0', 'v0.32.1', 'v0.33.0', 'v0.33.1', 'v0.33.2', 'v0.33.3', 'v0.34.0', 'v0.34.1', 'v0.34.2', 'v0.35.0', 'v0.35.1', 'v0.35.2', 'v0.36.0', 'v0.36.1', 'v0.36.2', 'v0.37.0', 'v0.37.1', 'v0.37.2', 'v0.38.0', 'v0.39.0']),
   ('crate-platform-collision-v1', 'Version 0.23.2 to 0.24.0', array['v0.23.2', 'v0.24.0']),
   ('history-forge-gate-v1', 'Version 0.23.1 to 0.23.1', array['v0.23.1']),
   ('crate-gravity-v1', 'Version 0.23.0 to 0.23.0', array['v0.23.0']),
@@ -257,7 +257,7 @@ create policy "Anyone can submit validated scores"
     )
     and char_length(run_type_id) between 1 and 500
     and (
-      game_version not in ('v0.37.0', 'v0.37.1', 'v0.37.2', 'v0.38.0')
+      game_version not in ('v0.37.0', 'v0.37.1', 'v0.37.2', 'v0.38.0', 'v0.39.0')
       or (leaderboard_id = 'crate-jump-collision-v1' and run_type_id = 'classic')
       or (leaderboard_id = 'full-custom-routes-v1' and run_type_id <> 'classic')
     )
@@ -2377,3 +2377,29 @@ revoke all on function public.list_published_custom_levels(text, text, integer, 
 grant execute on function public.set_custom_level_favorite(uuid, boolean) to authenticated;
 grant execute on function public.get_published_custom_level_details(uuid) to anon, authenticated;
 grant execute on function public.list_published_custom_levels(text, text, integer, integer, boolean) to anon, authenticated;
+
+-- v0.39.0: fetch one trusted replay without exposing replay evidence in leaderboard listings.
+
+drop function if exists public.get_custom_level_run_replay(uuid);
+create function public.get_custom_level_run_replay(p_run_id uuid)
+returns table (
+  run_id uuid,
+  level_id uuid,
+  level_version integer,
+  user_id uuid,
+  runner_name text,
+  seconds numeric,
+  stars smallint,
+  replay_data jsonb
+)
+language sql security definer set search_path = '' stable as $$
+  select run.id, run.level_id, run.level_version, run.user_id, run.runner_name,
+    run.seconds, run.stars, run.replay_data
+  from public.custom_level_runs run
+  join public.published_custom_levels current
+    on current.level_id = run.level_id and current.version = run.level_version
+  where run.id = p_run_id and run.validation_state = 'trusted';
+$$;
+
+revoke all on function public.get_custom_level_run_replay(uuid) from public;
+grant execute on function public.get_custom_level_run_replay(uuid) to anon, authenticated;

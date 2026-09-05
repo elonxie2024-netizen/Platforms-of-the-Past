@@ -63,7 +63,6 @@
         message.includes("custom_level_runs") || message.includes("survival_exploit") ||
         message.includes("enqueue_custom_level_run") || message.includes("get_published_custom_level_details") ||
         message.includes("list_published_custom_levels") ||
-        message.includes("get_custom_level_run_replay") ||
         message.includes("verify-custom-run") || message.includes("custom_level_favorites") ||
         message.includes("set_custom_level_favorite")) {
       return "Custom-level cloud setup is incomplete. Run the latest Supabase setup.";
@@ -430,12 +429,6 @@
     return Array.isArray(data) ? data : [];
   }
 
-  async function loadCustomLevelRunReplay(runId) {
-    const { data, error } = await requireClient().rpc("get_custom_level_run_replay", { p_run_id: runId });
-    if (error) throw error;
-    return Array.isArray(data) ? data[0] || null : data;
-  }
-
   async function loadCustomLevelReviewState(levelId, levelVersion) {
     const { data, error } = await requireClient().rpc("get_custom_level_review_state", {
       p_level_id: levelId,
@@ -501,7 +494,6 @@
     issueCustomLevelRunTicket,
     submitCustomLevelRun,
     listCustomLevelRuns,
-    loadCustomLevelRunReplay,
     loadCustomLevelReviewState,
     reportSurvivalStrategy,
     voteSurvivalStrategy,

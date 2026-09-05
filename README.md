@@ -8,7 +8,7 @@ No install, download, or plugins. It runs entirely in the browser.
 
 > **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
 
-**Current version:** `v0.38.0`
+**Current version:** `v0.39.0`
 
 ## How it works
 
@@ -41,6 +41,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 **View public profiles.** Click a signed-in runner on the global leaderboard or a creator in Community Levels to see their public username, best run categories and world placements, currently published levels, and notable signed-in custom-level clears. Custom-level highlights are recorded only for current published snapshots completed without developer cheats.
 
 **Discover community favorites.** Community Levels shows public favorite totals and can sort by Newest, Recently Updated, or Most Favorited. Signed-in players can keep a private My Favorites list. Favorites belong to the level itself, survive new published versions, and reappear if a creator republishes an unpublished level; other players can see only the total count, never who favorited it.
+
+**Watch trusted runs.** Published-level leaderboards offer Watch for trusted valid or restored runs on the current immutable version. Playback drives the existing level simulation from recorded controls without awarding progress or submitting a run. Signed-in players can also start a normal ranked attempt while a translucent, non-interactive replay ghost follows the trusted run.
 
 **Choose a custom-level type.** Creators can publish Exit, Exit + Required Stars, or Survival levels. Exit versions become verified after their first valid cheat-free completion; Survival versions rank immediately by longest time. Every gameplay-changing publication is verified independently. Survival strategy disputes start without invalidating a run, require at least three community votes and a two-thirds majority, and remain reversible without deleting run records.
 
@@ -118,6 +120,7 @@ The playable prototype includes:
 - A pause menu that freezes the timer
 - A global, version-separated leaderboard for named full-adventure runs
 - A metadata-only Community Levels browser with creator search, publication sorting, incremental loading, and direct play of current published snapshots
+- Trusted current-version custom-level replay watching and non-interactive ghost racing from published-level leaderboards
 - Optional Supabase email/password accounts with persistent sessions, password recovery, private emails, public display names, cloud progression, and account-scoped browser preferences
 - A versioned, validated level-data format with safe import/export, stable object links, and runtime-state cloning
 - A visual level editor with one temporary blank guest workspace, strictly isolated lazy Supabase account workspaces, crash recovery, conflict-aware Owner/Editor collaboration, play-first Viewer access, username sharing, append-only publication history, stable direct-to-play public links, JSON import/export, portable `POTP1-` text save codes, and isolated in-engine playtesting

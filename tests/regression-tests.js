@@ -4,6 +4,7 @@
   const rules = window.PlatformsVerificationRules;
   const levels = window.PlatformsLevelData;
   const replayVerifier = window.PlatformsReplayValidator;
+  const replayPlayback = window.PlatformsReplayPlayback;
   const runRules = window.PlatformsRunRules;
   const results = [];
   const measurements = {};
@@ -73,7 +74,7 @@
     points.push(terminalPoint);
     return {
       format: replayVerifier.LEGACY_FORMAT,
-      gameVersion: "v0.38.0",
+      gameVersion: "v0.39.0",
       sampleIntervalMs: 250,
       levelId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       levelVersion: 3,
@@ -540,6 +541,37 @@
     assert(trustedReplay(level, { evidence: compact }).ok);
     measurements.exit = { expanded: replayVerifier.serializedBytes(expanded), compact: replayVerifier.serializedBytes(compact) };
     assert(measurements.exit.compact < measurements.exit.expanded * .8);
+  });
+  test("Replay playback: compact POTP-RUN-3 evidence reproduces its trusted endpoint", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const compact = replayVerifier.encodeReplay(replayEvidence(level));
+    const timeline = replayPlayback.createTimeline(compact, {
+      levelId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      levelVersion: 3,
+      levelDigest: replayVerifier.levelDigest(level)
+    });
+    const validated = trustedReplay(level, { evidence: compact });
+    const endpoint = timeline.samplePlayer(timeline.durationMs);
+    assert(validated.ok && validated.result.seconds === timeline.durationMs / 1000);
+    assert(endpoint.x === level.exit.x && endpoint.y === level.exit.y);
+    assert(timeline.inputMaskAt(0) === 2 && timeline.inputMaskAt(timeline.durationMs) === 2);
+  });
+  test("Replay playback: wrong immutable versions and snapshots are rejected", () => {
+    const level = baseLevel({ levelType: "exit" });
+    const compact = replayVerifier.encodeReplay(replayEvidence(level));
+    throws(() => replayPlayback.createTimeline(compact, { levelVersion: 4 }));
+    throws(() => replayPlayback.createTimeline(compact, { levelDigest: "wrong-digest" }));
+  });
+  test("Replay ghost sampling cannot alter trusted evidence or its derived result", () => {
+    const level = baseLevel({ levelType: "exit-stars", requiredStars: 2 });
+    const compact = replayVerifier.encodeReplay(replayEvidence(level, { collectedStars: [0, 1] }));
+    const before = JSON.stringify(compact);
+    const initialResult = trustedReplay(level, { evidence: compact });
+    const timeline = replayPlayback.createTimeline(compact);
+    for (let time = 0; time <= timeline.durationMs; time += 125) timeline.samplePlayer(time);
+    const finalResult = trustedReplay(level, { evidence: compact });
+    equal(finalResult, initialResult);
+    assert(JSON.stringify(compact) === before);
   });
   test("Compact replay: unsupported properties are rejected instead of stored", () => {
     const level = baseLevel({ levelType: "exit" });

@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $releases = [ordered]@{
+  'v0.38.0' = '0d6bc02'
   'v0.37.2' = '47da46c'
   'v0.37.1' = '2a30a5a'
   'v0.37.0' = '84a0db0'
@@ -161,7 +162,7 @@ foreach ($release in $releases.GetEnumerator()) {
   }
   New-Item -ItemType Directory -Force -Path $releaseRoot | Out-Null
   $releaseFiles = @('index.html', 'styles.css', 'game.js')
-  foreach ($optionalFile in @('verification-rules.js', 'run-rules.js', 'level-data.js', 'account.js', 'editor.css', 'editor.js', 'supabase/functions/_shared/replay-validator.js')) {
+  foreach ($optionalFile in @('verification-rules.js', 'run-rules.js', 'level-data.js', 'account.js', 'editor.css', 'editor.js', 'replay-playback.js', 'supabase/functions/_shared/replay-validator.js')) {
     if ($release.Value -eq 'WORKTREE') {
       if (Test-Path -LiteralPath (Join-Path $repoRoot $optionalFile)) { $releaseFiles += $optionalFile }
     } else {
@@ -191,6 +192,7 @@ foreach ($release in $releases.GetEnumerator()) {
       $content = $content.Replace('src="level-data.js', 'src="./level-data.js')
       $content = $content.Replace('src="account.js', 'src="./account.js')
       $content = $content.Replace('src="editor.js', 'src="./editor.js')
+      $content = $content.Replace('src="replay-playback.js', 'src="./replay-playback.js')
       $content = $content.Replace('src="supabase/functions/_shared/replay-validator.js', 'src="./supabase/functions/_shared/replay-validator.js')
       $content = $content.Replace('src="game.js', 'src="./game.js')
     }
