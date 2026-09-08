@@ -36,28 +36,6 @@
     ))].sort((a, b) => canonicalOrder(a) - canonicalOrder(b));
   }
 
-  function isFullCampaignRoute(route) {
-    const normalized = normalizeRoute(route);
-    return normalized.length === ALL_CAMPAIGN_LEVELS.length &&
-      normalized.every((index, position) => index === ALL_CAMPAIGN_LEVELS[position]);
-  }
-
-  function campaignResults({ runElapsed = 0, totalStars = 0, starMaximum = 0, levelSplits = [] } = {}) {
-    const splits = ALL_CAMPAIGN_LEVELS.map((index) => Number.isFinite(levelSplits[index]) ? Number(levelSplits[index]) : null);
-    const chapterSplits = Array.from({ length: CHAPTER_COUNT }, (_, chapter) => {
-      const values = splits.slice(chapter * CHAPTER_SIZE, (chapter + 1) * CHAPTER_SIZE);
-      return values.every(Number.isFinite) ? values.reduce((sum, value) => sum + value, 0) : null;
-    });
-    return {
-      seconds: Math.round(Math.max(0, Number(runElapsed) || 0) * 10) / 10,
-      stars: Math.max(0, Number(totalStars) || 0),
-      starMaximum: Math.max(0, Number(starMaximum) || 0),
-      splits,
-      chapterSplits,
-      complete: splits.every(Number.isFinite)
-    };
-  }
-
   function routeToken(index) {
     return index < CAMPAIGN_LEVEL_COUNT ? String(index + 1) : `G${index - CAMPAIGN_LEVEL_COUNT + 1}`;
   }
@@ -248,7 +226,7 @@
   window.PlatformsRunRules = Object.freeze({
     CAMPAIGN_LEVEL_COUNT, CHAPTER_SIZE, CHAPTER_COUNT, GAUNTLET_COUNT,
     OBJECTIVES, CONSTRAINTS, METRICS, ALL_CAMPAIGN_LEVELS, ALL_GAUNTLETS,
-    chapterLevels, normalizeRoute, isFullCampaignRoute, campaignResults, routeToken, routeIndex, routeKey, routeSummary,
+    chapterLevels, normalizeRoute, routeToken, routeIndex, routeKey, routeSummary,
     humanRouteLabel, challengeLabel, boardLabel, routeContents, nextRouteItem,
     normalizeConfig, runTypeId, leaderboardIdentity, parseRunTypeId,
     parseLeaderboardIdentity, evaluateRequirements, rankRuns

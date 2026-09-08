@@ -53,7 +53,7 @@ try {
     -WindowStyle Hidden -RedirectStandardOutput $mainStdoutPath -RedirectStandardError $mainStderrPath
   if ($mainProcess.ExitCode -ne 0) { throw "The game smoke test exited with code $($mainProcess.ExitCode)." }
   $mainDom = Get-Content -LiteralPath $mainStdoutPath -Raw
-  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.40.1')) {
+  if (-not $mainDom.Contains('Level 1 / 40') -or -not $mainDom.Contains('Level Editor · v0.41.0')) {
     throw 'The complete game did not initialize with the current verification and level-data scripts.'
   }
   Write-Host 'Complete game initialization: 1/1 passed' -ForegroundColor Green
@@ -85,6 +85,8 @@ try {
   $finalSql = if ($v40Start -ge 0) { $sql.Substring($v40Start) } else { '' }
   $favoritesSql = if ($favoriteStart -ge 0 -and $replayPlaybackStart -gt $favoriteStart) { $sql.Substring($favoriteStart, $replayPlaybackStart - $favoriteStart) } else { '' }
   $replayPlaybackSql = if ($replayPlaybackStart -ge 0) { $sql.Substring($replayPlaybackStart) } else { '' }
+  $endingStartBody = [regex]::Match($game, 'function startEndingCutscene\(\) \{(?<body>[\s\S]*?)\r?\n\}').Groups['body'].Value
+  $endingFinishBody = [regex]::Match($game, 'function finishCampaignEnding\(\) \{(?<body>[\s\S]*?)\r?\n\}').Groups['body'].Value
   $contracts = [ordered]@{}
   $contracts['Final SQL accepts exactly two level types'] = $finalSql.Contains("level_type in ('exit', 'exit-stars')") -and -not $finalSql.Contains("level_type in ('exit', 'exit-stars', 'survival')")
   $contracts['SQL creates monotonically increasing immutable versions'] = $sql.Contains('coalesce(max(history.version), 0) + 1')
@@ -187,6 +189,16 @@ try {
   $contracts['Ghost remains presentation-only'] = $game.Contains('function drawReplayGhost') -and $game.Contains('replayGhost.timeline.samplePlayer') -and -not $playback.Contains('moveActorAndCollide')
   $contracts['Replay playback supports pause restart and a time readout'] = $game.Contains('if (event.code === "KeyR" || event.code === "KeyT") restartLevel()') -and $game.Contains('Replay ${formatRunTime(trustedReplayPlayback.elapsedMs / 1000)}')
   $contracts['Replay playback fails clearly after unpublish republish or decode failure'] = $game.Contains('This level was unpublished') -and $game.Contains('This level was republished as') -and $game.Contains('trusted replay could not be decoded safely')
+  $contracts['Level 40 ending advances instead of quitting'] = $game.Contains('finalContinueButton.addEventListener("click", startEndingCutscene)') -and -not $game.Contains('finalContinueButton.addEventListener("click", quitRun)')
+  $contracts['Ending uses the established three-line title-card grammar'] = $game.Contains('AFTER THE FINAL LEVEL...') -and $game.Contains('CAMPAIGN COMPLETE') -and $game.Contains('PLATFORMS OF THE PAST')
+  $contracts['Ending can be skipped directly to campaign results'] = $game.Contains('if (cutsceneKind === "ending") finishCampaignEnding()') -and $game.Contains('showRunResults(true)')
+  $contracts['Run timer is stopped and never resumed by the ending'] = $endingStartBody.Contains('finishRunTimer();') -and -not $endingStartBody.Contains('resumeRunTimerForLoadedLevel') -and -not $endingFinishBody.Contains('resumeRunTimerForLoadedLevel')
+  $contracts['Campaign results use all forty splits and the campaign star maximum'] = $game.Contains('runRules.campaignResults') -and $game.Contains('starMaximum: routeStarTotal(ALL_CAMPAIGN_LEVELS)') -and $game.Contains('Stars ${campaign.stars} / ${campaign.starMaximum}')
+  $contracts['Campaign results reuse full-route publishing'] = $game.Contains('runTypeId: runTypeId(campaignConfig)') -and $game.Contains('route: [...ALL_CAMPAIGN_LEVELS]') -and $index.Contains('id="publishRunButton"')
+  $contracts['Campaign completion derives from account-scoped chapter progress'] = $game.Contains('return completedChapters.has(3)') -and $game.Contains('completed_chapters: progress.completedChapters') -and $game.Contains('applyCampaignCompletionState()')
+  $contracts['Signed-out guests do not inherit campaign completion'] = [regex]::IsMatch($game, 'function restoreGuestProgress\(\)[\s\S]*?applyProgress\(normalizedProgress\(\)\)')
+  $contracts['Credits are reachable from ending and completed main menu'] = $game.Contains('openCredits("ending")') -and $game.Contains('openCredits("main")') -and $index.Contains('elonxie2024-netizen')
+  $contracts['Presentation release keeps both existing rulesets'] = $sql.Contains("'full-custom-routes-v1', 'Custom Routes · Version 0.37.0 to 0.41.0'") -and $sql.Contains("'crate-jump-collision-v1', 'Classic Adventure · Version 0.24.1 to 0.41.0'")
   $contractFailures = @($contracts.GetEnumerator() | Where-Object { -not $_.Value })
   foreach ($failure in $contractFailures) { Write-Host "FAIL: source contract - $($failure.Key)" -ForegroundColor Red }
   if ($contractFailures.Count -gt 0) { throw "$($contractFailures.Count) database/source contracts failed." }

@@ -6,9 +6,9 @@ A browser-based puzzle platformer built on time-manipulation mechanics. Run, jum
 
 No install, download, or plugins. It runs entirely in the browser.
 
-> **Development status:** The platforming prototype is playable now. Ten rewind levels, ten Echo Chapter levels, and ten combined Rewind + Echo levels follow the introductory adventure and awakening cinematic. Four optional chapter gauntlets provide harder challenges outside the forty-level campaign.
+> **Development status:** The complete forty-level campaign is playable from beginning to ending, with four optional chapter gauntlets and a custom-level editor providing additional challenges.
 
-**Current version:** `v0.40.1`
+**Current version:** `v0.41.0`
 
 ## How it works
 
@@ -20,7 +20,7 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 
 **Collect stars.** Each level hides stars across its main route and more dangerous jumps.
 
-**Reach the flag.** Finish all ten introductory levels to complete the current adventure and see your final results.
+**Reach the flag.** Finish all forty campaign levels to reach the ending and see full-campaign results.
 
 **Awaken rewind.** Completing the introductory adventure opens the results screen, followed by a cinematic in which the slime discovers a time machine and gains its first time-travel power. Click the cinematic to skip directly to level 11.
 
@@ -29,6 +29,8 @@ Reach the flag at the end of each level while crossing gaps, avoiding spikes, an
 **Create an echo.** Completing level 20 opens a chapter-ending screen and a second time-machine cinematic before level 21. Press `C` to start recording the slime's real movement, jumps, and switch interactions. Press `C` again to stop and preview the route with a golden starting outline and directional arrows, then press `C` once more to create the cyan looping echo. Press `V` to remove it. Later Echo Chapter levels combine repeated timing, remote switches, pressure plates, crates, enemies, hazards, and moving platforms before the level-30 final exam.
 
 **Converge timelines.** Chapter 4 combines rewind and echoes across levels 31–40. Echo actions continue changing the present while platforms, crates, broken blocks, enemies, and dangerous moving blades retrace their recorded history. The chapter emphasizes interactions between established rules rather than tighter execution, ending with a long combined final exam.
+
+**Finish the campaign.** Completing level 40 closes the three-card ability sequence with a final campaign title card. The results screen totals the complete run, compares collected stars with the campaign maximum, shows a split for each chapter, and offers the existing full-campaign leaderboard publishing flow. Credits remain available from both the results and the completed main menu.
 
 **Race the clock.** The speedrun timer starts with your first move or jump and continues between levels. Continuing the story preserves the same run timer across the Introduction, Rewind, and Echo chapters while pausing it during both cutscenes. Your final score is 300 minus your completion time in seconds, plus 2 points for every star.
 

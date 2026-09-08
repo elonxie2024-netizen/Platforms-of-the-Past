@@ -578,6 +578,31 @@
     assert(runRules.ALL_CAMPAIGN_LEVELS.length === 40);
     assert(runRules.routeSummary(runRules.ALL_CAMPAIGN_LEVELS) === "All 40 campaign levels");
   });
+  test("Campaign ending: only the complete forty-level route qualifies", () => {
+    assert(runRules.isFullCampaignRoute(runRules.ALL_CAMPAIGN_LEVELS));
+    assert(runRules.isFullCampaignRoute([...runRules.ALL_CAMPAIGN_LEVELS].reverse()));
+    assert(!runRules.isFullCampaignRoute(runRules.ALL_CAMPAIGN_LEVELS.slice(0, 39)));
+    assert(!runRules.isFullCampaignRoute([...runRules.ALL_CAMPAIGN_LEVELS, 40]));
+  });
+  test("Campaign results: total time, stars, and all forty splits are retained", () => {
+    const result = runRules.campaignResults({
+      runElapsed: 400.04,
+      totalStars: 57,
+      starMaximum: 61,
+      levelSplits: Array.from({ length: 40 }, () => 10)
+    });
+    equal({ seconds: result.seconds, stars: result.stars, starMaximum: result.starMaximum },
+      { seconds: 400, stars: 57, starMaximum: 61 });
+    assert(result.complete && result.splits.length === 40);
+    equal(result.chapterSplits, [100, 100, 100, 100]);
+  });
+  test("Campaign results: every chapter requires all ten successful level splits", () => {
+    const splits = Array.from({ length: 40 }, (_, index) => index + 1);
+    splits[24] = undefined;
+    const result = runRules.campaignResults({ runElapsed: 900, totalStars: 20, starMaximum: 61, levelSplits: splits });
+    assert(!result.complete);
+    equal(result.chapterSplits, [55, 155, null, 355]);
+  });
   test("Custom routes: gauntlets remain a separate explicit selection", () => {
     assert(runRules.ALL_GAUNTLETS.length === 4);
     assert(runRules.normalizeRoute([...runRules.ALL_CAMPAIGN_LEVELS, ...runRules.ALL_GAUNTLETS]).length === 44);

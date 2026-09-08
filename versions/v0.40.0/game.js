@@ -8,9 +8,6 @@ const levelTimerLabel = document.querySelector("#levelTimerLabel");
 const starLabel = document.querySelector("#starLabel");
 const message = document.querySelector("#message");
 const scoreSummary = document.querySelector("#scoreSummary");
-const adventureResultEyebrow = document.querySelector("#adventureResultEyebrow");
-const adventureResultTitle = document.querySelector("#adventureResultTitle");
-const splitSummaryTitle = document.querySelector("#splitSummaryTitle");
 const gameShell = document.querySelector(".game-shell");
 const gameFrame = document.querySelector(".game-frame");
 const gameSurface = document.querySelector(".game-surface");
@@ -20,7 +17,6 @@ const restartButton = document.querySelector("#restartButton");
 const restartRunButton = document.querySelector("#restartRunButton");
 const quitButton = document.querySelector("#quitButton");
 const victoryQuitButton = document.querySelector("#victoryQuitButton");
-const endingCreditsButton = document.querySelector("#endingCreditsButton");
 const continueButton = document.querySelector("#continueButton");
 const introGauntletButton = document.querySelector("#introGauntletButton");
 const introMasteryStatus = document.querySelector("#introMasteryStatus");
@@ -128,10 +124,6 @@ const publishRunButton = document.querySelector("#publishRunButton");
 const publishStatus = document.querySelector("#publishStatus");
 const splitList = document.querySelector("#splitList");
 const mainChangelogButton = document.querySelector("#mainChangelogButton");
-const mainCreditsButton = document.querySelector("#mainCreditsButton");
-const campaignCompleteNotice = document.querySelector("#campaignCompleteNotice");
-const creditsMenu = document.querySelector("#creditsMenu");
-const closeCreditsButton = document.querySelector("#closeCreditsButton");
 const restartSessionButton = document.querySelector("#restartSessionButton");
 const pauseChangelogButton = document.querySelector("#pauseChangelogButton");
 const changelogMenu = document.querySelector("#changelogMenu");
@@ -190,8 +182,6 @@ const profileDisplayName = document.querySelector("#profileDisplayName");
 const profileUsername = document.querySelector("#profileUsername");
 
 const CHANGELOG_ENTRIES = [
-  { version: "v0.41.0", commit: "Pending commit", date: "2026-09-07", message: "Give the campaign an ending", description: "Added a final campaign-complete title card after level 40, a forty-level results screen with total time, campaign stars, chapter splits, and the existing custom-run publishing flow, plus credits for elonxie2024-netizen. Campaign completion now changes the main-menu presentation and keeps Credits available afterward, while the existing account-scoped chapter completion supplies persistence without a new database flag. Run timer accumulation, gameplay, physics, scoring, and leaderboard rulesets are unchanged." },
-  { version: "v0.40.1", commit: "Pending commit", date: "2026-09-05", message: "Correct the documented game premise", description: "Removed unbuilt time-travel claims from the README. The project description, the \"Change the past\" section, and the \"Time-travel plans\" list all promised past, present, and future versions of each level, era switching during platforming, cross-era cause and effect, and secrets found by comparing a place across time. None of that was ever implemented. The documented premise now describes the Rewind and Echo mechanics the game actually ships. No gameplay, level, timing, star, scoring, or database behavior changed." },
   { version: "v0.40.0", commit: "Pending commit", date: "2026-09-05", message: "Remove Survival custom levels", description: "Removed the Survival custom-level type, its leaderboard and community-review systems, and every Survival draft, publication, run, completion, favorite, report, and vote. This database purge is irreversible. Custom levels now support only Exit and Exit + Required Stars; the Survival-only Ranked, Disputed, and Restored states were migrated away and removed from their constraints." },
   { version: "v0.39.0", commit: "Pending commit", date: "2026-09-04", message: "Trusted replay playback", description: "Added secure Watch controls for trusted current-version custom-level runs and an optional signed-in Race Ghost mode. Replay viewing uses the exact immutable published snapshot, replays recorded controls without creating progress or submissions, and keeps ghost motion translucent and non-interactive while a fresh ranked attempt follows the normal trusted ticket flow." },
   { version: "v0.38.0", commit: "Pending commit", date: "2026-09-01", message: "Favorites and Community discovery", description: "Added private account Favorites for published custom levels, public aggregate favorite counts, a signed-in My Favorites view, and server-side Most Favorited sorting that remains compatible with search and pagination. Favorites stay attached to the stable level identity across publication versions, disappear from public views while a level is unpublished, and return when it is republished without exposing which accounts favorited it." },
@@ -365,7 +355,6 @@ const PLATFORM_TOP_GRACE = 10;
 const DEATH_DURATION = 0.42;
 const CUTSCENE_DURATION = 10.4;
 const ECHO_CUTSCENE_DURATION = 9.2;
-const ENDING_CUTSCENE_DURATION = ECHO_CUTSCENE_DURATION;
 const INTRO_LEVEL_COUNT = 10;
 const CAMPAIGN_LEVEL_COUNT = 40;
 const GAUNTLET_COUNT = 4;
@@ -1627,12 +1616,11 @@ let levelTimerWasRunningBeforePause = false;
 let leaderboardReturn = "main";
 const recentLeaderboardBoards = [];
 let changelogReturn = "main";
-let creditsReturn = "main";
 let finishedRun = null;
 let runPublished = false;
 let gauntletChapterReturnState = null;
 const LEGACY_SESSION_STORAGE_KEYS = ["platforms-past-progress-v1", "platforms-past-rewind-awakened-v1"];
-const GAME_VERSION = "v0.41.0";
+const GAME_VERSION = "v0.40.0";
 const SUPABASE_URL = "https://fuhqixfcdeyyjzpdnivy.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2ILI9grJw5pwi35d7v5qCQ_zTgh-I4A";
 const GUEST_PROGRESS_STORAGE_KEY = "platforms-past-guest-progress-v3";
@@ -1640,8 +1628,8 @@ const ACCOUNT_PROGRESS_STORAGE_PREFIX = "platforms-past-account-progress-v1:";
 const ACCOUNT_PREFERENCES_STORAGE_PREFIX = "platforms-past-account-preferences-v1:";
 const LEGACY_SHARED_PREFERENCE_KEYS = ["platforms-volume", "platforms-audio-mix-v1", "platforms-display-size"];
 const LEADERBOARD_RULESETS = [
-  { id: "full-custom-routes-v1", label: "Custom Routes · Version 0.37.0 to 0.41.0" },
-  { id: "crate-jump-collision-v1", label: "Classic Adventure · Version 0.24.1 to 0.41.0" },
+  { id: "full-custom-routes-v1", label: "Custom Routes · Version 0.37.0 to 0.40.0" },
+  { id: "crate-jump-collision-v1", label: "Classic Adventure · Version 0.24.1 to 0.40.0" },
   { id: "crate-platform-collision-v1", label: "Version 0.23.2 to 0.24.0" },
   { id: "history-forge-gate-v1", label: "Version 0.23.1 to 0.23.1" },
   { id: "crate-gravity-v1", label: "Version 0.23.0 to 0.23.0" },
@@ -1686,7 +1674,7 @@ const CUSTOM_ROUTE_LEADERBOARD_ID = "full-custom-routes-v1";
 const CLASSIC_LEADERBOARD_ID = "crate-jump-collision-v1";
 const CURRENT_LEADERBOARD_ID = CUSTOM_ROUTE_LEADERBOARD_ID;
 const RELEASE_VERSIONS = [
-  "v0.41.0", "v0.40.1", "v0.40.0", "v0.39.0", "v0.38.0",
+  "v0.40.0", "v0.39.0", "v0.38.0",
   "v0.37.2", "v0.37.1", "v0.37.0", "v0.36.2", "v0.36.1", "v0.36.0", "v0.35.2", "v0.35.1", "v0.35.0", "v0.34.2", "v0.34.1", "v0.34.0",
   "v0.33.3", "v0.33.2", "v0.33.1", "v0.33.0", "v0.32.1", "v0.32.0", "v0.31.1", "v0.31.0", "v0.30.3", "v0.30.2", "v0.30.1", "v0.30.0", "v0.29.1", "v0.29.0", "v0.28.2", "v0.28.1", "v0.28.0", "v0.27.1", "v0.27.0",
   "v0.26.6", "v0.26.5", "v0.26.4", "v0.26.3", "v0.26.2", "v0.26.1", "v0.26.0", "v0.25.0", "v0.24.2", "v0.24.1", "v0.24.0", "v0.23.2", "v0.23.1", "v0.23.0", "v0.22.2", "v0.22.1", "v0.22.0", "v0.21.5", "v0.21.4", "v0.21.3", "v0.21.2", "v0.21.1", "v0.21.0", "v0.20.1", "v0.20.0", "v0.19.7", "v0.19.6", "v0.19.5", "v0.19.4", "v0.19.3", "v0.19.2", "v0.19.1", "v0.19.0", "v0.18.0", "v0.17.0", "v0.16.1", "v0.16.0", "v0.15.3", "v0.15.2", "v0.15.1", "v0.15.0",
@@ -1918,7 +1906,6 @@ function applyProgress(progress) {
   rewindMenuAwakened = safe.rewindMenuAwakened;
   menuPlatformTexture = safe.menuPlatformTexture;
   menuBackdrop = safe.menuBackdrop;
-  applyCampaignCompletionState();
 }
 
 function readStoredProgress(key) {
@@ -1970,7 +1957,7 @@ spriteSheet.addEventListener("load", () => {
   renderMenuPlatformAssets();
   window.PlatformsEditor?.redraw?.();
 });
-spriteSheet.src = "assets/platformer-assets.png";
+spriteSheet.src = "../assets/platformer-assets.png";
 
 const gameArt = {};
 for (const [name, filename] of Object.entries({
@@ -1989,7 +1976,7 @@ for (const [name, filename] of Object.entries({
   movingObstacle: "moving-obstacle.svg"
 })) {
   const image = new Image();
-  image.src = `assets/${filename}`;
+  image.src = `../assets/${filename}`;
   gameArt[name] = image;
 }
 
@@ -3111,21 +3098,6 @@ function renderSplitSummary() {
   });
 }
 
-function renderCampaignChapterSplits() {
-  splitList.replaceChildren();
-  const campaign = runRules.campaignResults({ levelSplits });
-  for (let chapter = 0; chapter < runRules.CHAPTER_COUNT; chapter++) {
-    const item = document.createElement("li");
-    const name = document.createElement("span");
-    name.textContent = `Chapter ${chapter + 1} · ${ROADMAP_CHAPTERS[chapter]}`;
-    const time = document.createElement("strong");
-    time.textContent = Number.isFinite(campaign.chapterSplits[chapter])
-      ? formatRunTime(campaign.chapterSplits[chapter]) : "—";
-    item.append(name, time);
-    splitList.append(item);
-  }
-}
-
 function leaderboardHeaders(includeJson = false) {
   return {
     apikey: SUPABASE_PUBLISHABLE_KEY,
@@ -3503,19 +3475,7 @@ function completeChapter(chapterIndex) {
   const previousSize = completedChapters.size;
   completedChapters.add(chapterIndex);
   if (completedChapters.size !== previousSize) persistProgress();
-  applyCampaignCompletionState();
   if (!roadmapMenu.hidden) renderRoadmap();
-}
-
-function campaignCompleted() {
-  return completedChapters.has(3);
-}
-
-function applyCampaignCompletionState() {
-  const complete = campaignCompleted();
-  mainMenu.classList.toggle("campaign-complete", complete);
-  mainCreditsButton.hidden = !complete;
-  campaignCompleteNotice.hidden = !complete;
 }
 
 function resetRunProgress() {
@@ -4703,7 +4663,7 @@ function renderVersions() {
   RELEASE_VERSIONS.forEach(version => {
     const link = document.createElement("a");
     link.textContent = version === GAME_VERSION ? `${version} (current)` : version;
-    link.href = version === GAME_VERSION ? "./" : `./versions/${version}/index.html`;
+    link.href = version === GAME_VERSION ? "./" : `../${version}/index.html`;
     link.target = "_blank";
     link.rel = "noopener";
     versionsList.append(link);
@@ -4771,29 +4731,6 @@ function closeChangelog() {
   } else {
     mainMenu.hidden = false;
     mainChangelogButton.focus();
-  }
-}
-
-function openCredits(source = "main") {
-  creditsReturn = source;
-  if (source === "ending") message.hidden = true;
-  else {
-    settingsPanel.hidden = true;
-    settingsButton.setAttribute("aria-expanded", "false");
-    mainMenu.hidden = true;
-  }
-  creditsMenu.hidden = false;
-  closeCreditsButton.focus();
-}
-
-function closeCredits() {
-  creditsMenu.hidden = true;
-  if (creditsReturn === "ending") {
-    message.hidden = false;
-    endingCreditsButton.focus();
-  } else {
-    mainMenu.hidden = false;
-    mainCreditsButton.focus();
   }
 }
 
@@ -4894,7 +4831,6 @@ function resetFinishedRun() {
   publishRunButton.disabled = false;
   publishStatus.textContent = "";
   continueButton.hidden = false;
-  endingCreditsButton.hidden = true;
   splitList.replaceChildren();
   applyLeaderboardIdentity();
 }
@@ -4950,71 +4886,24 @@ function prepareAdventureResults() {
   renderSplitSummary();
 }
 
-function prepareCampaignResults() {
-  const campaign = runRules.campaignResults({
-    runElapsed, totalStars, starMaximum: routeStarTotal(ALL_CAMPAIGN_LEVELS), levelSplits
-  });
-  const timeScore = Math.round((300 - campaign.seconds) * 10) / 10;
-  const starBonus = campaign.stars * 2;
-  const finalScore = Math.round((timeScore + starBonus) * 10) / 10;
-  const campaignConfig = runRules.normalizeConfig({
-    objective: "complete-all", constraint: "none", metric: "time", levels: ALL_CAMPAIGN_LEVELS
-  });
-  const eligible = runStartLevel === 0 && campaign.complete;
-  scoreSummary.textContent = `Time ${formatRunTime(campaign.seconds)} · Stars ${campaign.stars} / ${campaign.starMaximum} · Final score ${finalScore}`;
-  finishedRun = {
-    seconds: campaign.seconds, stars: campaign.stars, score: finalScore, splits: campaign.splits,
-    chapterSplits: campaign.chapterSplits,
-    route: [...ALL_CAMPAIGN_LEVELS], eligible, metric: "time",
-    runTypeId: runTypeId(campaignConfig), runTypeLabel: runTypeLabel(campaignConfig), failureReason: ""
-  };
-  runPublished = false;
-  runNameInput.value = "";
-  runNameInput.disabled = false;
-  publishRunButton.disabled = false;
-  publishStatus.textContent = eligible
-    ? ""
-    : "Practice run: complete Levels 1–40 continuously to publish a full-campaign ranking.";
-  applyLeaderboardIdentity();
-  renderCampaignChapterSplits();
-}
-
-function isFullCampaignRoute(config) {
-  return Boolean(config && runRules.isFullCampaignRoute(config.levels));
-}
-
-function showRunResults(campaignResults = false) {
+function showRunResults() {
   finishRunTimer();
-  if (campaignResults && !activeRunConfig) prepareCampaignResults();
-  else prepareAdventureResults();
-  adventureResultEyebrow.textContent = campaignResults ? "Campaign complete" : "Adventure complete";
-  adventureResultTitle.textContent = campaignResults ? "You completed Platforms of the Past!" : "You reached the summit!";
-  splitSummaryTitle.textContent = campaignResults ? "Chapter splits" : "Level splits";
-  if (campaignResults) {
-    const campaign = runRules.campaignResults({
-      runElapsed, totalStars, starMaximum: routeStarTotal(ALL_CAMPAIGN_LEVELS), levelSplits
-    });
-    const finalScore = Math.round((300 - campaign.seconds + campaign.stars * 2) * 10) / 10;
-    scoreSummary.textContent = `Time ${formatRunTime(campaign.seconds)} · Stars ${campaign.stars} / ${campaign.starMaximum} · Final score ${finalScore}`;
-    finishedRun.chapterSplits = campaign.chapterSplits;
-    renderCampaignChapterSplits();
-  }
+  prepareAdventureResults();
   if (finishedRun?.runTypeId) rememberLeaderboardBoard(finishedRun.runTypeId, finishedRun.runTypeLabel);
   won = true;
   message.hidden = false;
   introSplitSummary.hidden = false;
   introPublishRun.hidden = false;
-  introMasteryStatus.hidden = campaignResults || !completedGauntlets.has("G1");
-  introMasteryStatus.textContent = !campaignResults && completedGauntlets.has("G1") ? "G1 mastered." : "";
+  introMasteryStatus.hidden = !completedGauntlets.has("G1");
+  introMasteryStatus.textContent = completedGauntlets.has("G1") ? "G1 mastered." : "";
   pauseButton.disabled = true;
   restartButton.disabled = true;
   restartRunButton.disabled = true;
   quitButton.disabled = true;
   Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
   pressed.jump = false;
-  continueButton.hidden = campaignResults || Boolean(activeRunConfig);
-  introGauntletButton.hidden = campaignResults || Boolean(activeRunConfig);
-  endingCreditsButton.hidden = !campaignResults;
+  continueButton.hidden = Boolean(activeRunConfig);
+  introGauntletButton.hidden = Boolean(activeRunConfig);
   if (finishedRun.eligible) runNameInput.focus();
   else if (!continueButton.hidden) continueButton.focus();
   else victoryQuitButton.focus();
@@ -5166,30 +5055,6 @@ function finishCombinedChapter() {
   finalContinueButton.focus();
 }
 
-function startEndingCutscene() {
-  finishRunTimer();
-  resetCutscene();
-  cutsceneKind = "ending";
-  developerPanel.hidden = true;
-  resetDeveloperEffects();
-  levelDeveloperSequencePosition = 0;
-  won = false;
-  cutsceneActive = true;
-  gameShell.classList.add("cutscene-playing");
-  chapterCompleteMessage.hidden = true;
-  pauseButton.disabled = true;
-  restartButton.disabled = true;
-  restartRunButton.disabled = true;
-  quitButton.disabled = true;
-  Object.assign(input, { left: false, right: false, jump: false, down: false, rewind: false, forwardTime: false });
-  pressed.jump = false;
-}
-
-function finishCampaignEnding() {
-  resetCutscene();
-  showRunResults(true);
-}
-
 function restoreChapterReturnState() {
   const state = gauntletChapterReturnState;
   if (!state) return null;
@@ -5300,13 +5165,8 @@ function replayCombinedFinale() {
 }
 
 function updateCutscene(dt) {
-  const duration = cutsceneKind === "rewind" ? CUTSCENE_DURATION
-    : cutsceneKind === "ending" ? ENDING_CUTSCENE_DURATION : ECHO_CUTSCENE_DURATION;
+  const duration = cutsceneKind === "echo" ? ECHO_CUTSCENE_DURATION : CUTSCENE_DURATION;
   cutsceneTime = Math.min(duration, cutsceneTime + dt);
-  if (cutsceneKind === "ending") {
-    if (cutsceneTime >= duration) finishCampaignEnding();
-    return;
-  }
   if (cutsceneKind === "echo") {
     if (!cutsceneZapPlayed && cutsceneTime >= 5.35) {
       cutsceneZapPlayed = true;
@@ -5369,10 +5229,7 @@ function completeConfiguredRouteItem() {
     unlockThrough(levelIndex + 1);
   }
   runQueuePosition++;
-  if (runQueuePosition >= runLevelQueue.length) {
-    if (isFullCampaignRoute(activeRunConfig)) startEndingCutscene();
-    else showRunResults();
-  }
+  if (runQueuePosition >= runLevelQueue.length) showRunResults();
   else {
     nextLevelIndex = runLevelQueue[runQueuePosition];
     levelTransition = .65;
@@ -5692,8 +5549,7 @@ function releaseRewindPointer(event) {
 canvas.addEventListener("pointerdown", (event) => {
   if (cutsceneActive) {
     event.preventDefault();
-    if (cutsceneKind === "ending") finishCampaignEnding();
-    else if (cutsceneKind === "echo") startEchoLevel();
+    if (cutsceneKind === "echo") startEchoLevel();
     else startRewindLevel();
     return;
   }
@@ -5869,7 +5725,7 @@ addEventListener("keydown", (event) => {
       if (!echoChapterMessage.hidden) startEchoCutscene();
       else if (!convergenceChapterMessage.hidden) startConvergenceLevel();
       else if (!message.hidden && !continueButton.hidden) startRewindCutscene();
-      else if (!chapterCompleteMessage.hidden) startEndingCutscene();
+      else if (!chapterCompleteMessage.hidden) quitRun();
     }
     return;
   }
@@ -5963,9 +5819,6 @@ closeLeaderboardButton.addEventListener("click", closeLeaderboard);
 mainChangelogButton.addEventListener("click", () => openChangelog("main"));
 pauseChangelogButton.addEventListener("click", () => openChangelog("pause"));
 closeChangelogButton.addEventListener("click", closeChangelog);
-mainCreditsButton.addEventListener("click", () => openCredits("main"));
-endingCreditsButton.addEventListener("click", () => openCredits("ending"));
-closeCreditsButton.addEventListener("click", closeCredits);
 closeDeveloperPanelButton.addEventListener("click", () => {
   developerPanel.hidden = true;
   resetDeveloperEffects();
@@ -6015,7 +5868,7 @@ echoMenuButton.addEventListener("click", quitRun);
 convergenceContinueButton.addEventListener("click", startConvergenceLevel);
 echoGauntletButton.addEventListener("click", () => startChapterGauntlet(2));
 convergenceMenuButton.addEventListener("click", quitRun);
-finalContinueButton.addEventListener("click", startEndingCutscene);
+finalContinueButton.addEventListener("click", quitRun);
 combinedGauntletButton.addEventListener("click", () => startChapterGauntlet(3));
 replayRewindButton.addEventListener("click", replayCombinedFinale);
 replayGauntletButton.addEventListener("click", startOver);
@@ -8280,47 +8133,6 @@ function drawEchoCutscene() {
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 }
 
-function drawEndingCutscene() {
-  const time = cutsceneTime;
-  const gradient = ctx.createLinearGradient(0, 0, 0, VIEW_H);
-  gradient.addColorStop(0, "#07132b");
-  gradient.addColorStop(.55, "#17375e");
-  gradient.addColorStop(1, "#080d1b");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-
-  if (time < 1.55) {
-    ctx.save();
-    ctx.globalAlpha = Math.min(1, time / .45) * Math.max(0, 1 - (time - 1.12) / .43);
-    ctx.fillStyle = "#e8fbff";
-    ctx.textAlign = "center";
-    ctx.font = "800 18px Inter, sans-serif";
-    ctx.fillText("AFTER THE FINAL LEVEL...", VIEW_W / 2, 64);
-    ctx.restore();
-  }
-
-  if (time >= 6.55) {
-    const reveal = cutsceneEase((time - 6.55) / .75);
-    ctx.save();
-    ctx.globalAlpha = reveal;
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#a7f7ff";
-    ctx.shadowColor = "#63e8ff";
-    ctx.shadowBlur = 18;
-    ctx.font = "900 15px Inter, sans-serif";
-    ctx.fillText("CAMPAIGN COMPLETE", VIEW_W / 2, 76);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "900 44px Inter, sans-serif";
-    ctx.fillText("PLATFORMS OF THE PAST", VIEW_W / 2, 122);
-    ctx.restore();
-  }
-
-  const fadeIn = Math.max(0, 1 - time / .45);
-  const fadeOut = Math.max(0, (time - (ENDING_CUTSCENE_DURATION - .7)) / .7);
-  ctx.fillStyle = `rgba(3,8,20,${Math.max(fadeIn, fadeOut)})`;
-  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-}
-
 function drawCutscene(time) {
   const sceneTime = cutsceneTime;
   const gradient = ctx.createLinearGradient(0, 0, 0, VIEW_H);
@@ -8553,8 +8365,7 @@ function drawEchoTutorialPrompt(time) {
 function render(time) {
   ctx.clearRect(0, 0, VIEW_W, VIEW_H);
   if (cutsceneActive) {
-    if (cutsceneKind === "ending") drawEndingCutscene();
-    else if (cutsceneKind === "echo") drawEchoCutscene();
+    if (cutsceneKind === "echo") drawEchoCutscene();
     else drawCutscene(time);
     return;
   }

@@ -311,7 +311,7 @@ canvas {
   bottom: 48px;
   width: 44px;
   height: 44px;
-  background: url("assets/slime-player.svg") center / contain no-repeat;
+  background: url("../assets/slime-player.svg") center / contain no-repeat;
   filter: drop-shadow(0 6px 5px #17482b45);
   will-change: left, bottom, transform;
 }
@@ -423,33 +423,6 @@ canvas {
   background: transparent;
   box-shadow: none;
   text-align: left;
-}
-
-.main-menu.campaign-complete .menu-panel h2 {
-  color: #fff5b5;
-  text-shadow: 0 0 24px #ffe36a66, 0 5px 22px #0007;
-}
-
-.campaign-complete-notice {
-  margin: -2px 0 0;
-  padding: 6px 13px;
-  border: 1px solid #ffe78966;
-  border-radius: 999px;
-  color: #fff0a5;
-  background: #382d174d;
-  font-size: .78rem;
-  font-weight: 850;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-
-.credits-panel {
-  text-align: center;
-}
-
-.credits-panel a {
-  color: #8de4ff;
-  font-weight: 850;
 }
 .account-area #accountIdentity:not(:disabled):hover { color: #8de4ff; background: transparent; transform: none; text-decoration: underline; }
 .account-area #accountIdentity::before {
